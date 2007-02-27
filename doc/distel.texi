@@ -1,0 +1,641 @@
+\input texinfo   @c -*-texinfo-*-
+@c %**start of header
+@setfilename distel.info
+@settitle Distel User Manual
+@c %**end of header
+
+@set EDITION Distel Jungerl
+@set UPDATED $Date: 2005/02/20 22:10:15 $
+@set VERSION Jungerl
+
+@titlepage
+@title Distel User Manual
+@subtitle @value{EDITION}, updated @value{UPDATED}
+@author Luke Gorrie
+@end titlepage
+
+@dircategory Emacs
+@direntry
+* Distel: (distel).             Erlang development environment.
+@end direntry
+
+@c @setchapternewpage off
+
+@contents
+
+@node Top, Introduction, (dir), (dir)
+@comment  node-name,  next,  previous,  up
+
+@noindent
+
+@ifinfo
+This is the user manual for Distel.
+@end ifinfo
+
+@menu
+* Introduction::                
+* Programming Aids::            
+* Applications::                
+
+@detailmenu
+ --- The Detailed Node Listing ---
+
+Introduction
+
+* Principles::                  The underlying model of operation.
+* Conventions::                 Common conventions for commands.
+
+Programming Aids
+
+* Tags::                        Looking up function definitions.
+* Completion::                  Completing module and function names.
+* Evaluation::                  Evaluating snippets and reloading modules.
+* Refactoring::                 
+* Documentation::               Looking up online documentation.
+
+Applications
+
+* Process Manager::             See and manipulate Erlang processes.
+* Debugger::                    Debug Erlang programs.
+* Interactive Sessions::        Hybrid Emacs buffer / Erlang shell.
+* Profiler::                    Profile with fprof.
+
+Debugger
+
+* Basic Commands::              Interpreting modules and setting breakpoints.
+* Monitor Buffer::              Monitoring interpreted processes.
+* Attach Buffer::               Single-stepping a process.
+* Synchronising Breakpoints::   Resynchronising breakpoints after edits.
+* Saving and Restoring::        Temporarily saving debugging state.
+
+@end detailmenu
+@end menu
+
+@node Introduction, Programming Aids, Top, Top
+@chapter Introduction
+
+Distel is a set of Emacs-based programs for interacting with running
+Erlang nodes. The purpose is to make everyday Erlang programming tasks
+easier -- looking up function definitions, debugging and profiling,
+experimenting with code snippets, and so on. It builds on the existing
+@code{erlang-mode} to provide more of the features common to
+Integrated Development Environments.
+
+This manual describes Distel from the user's point of view. For
+details on how Distel works and how to write your own Distel-based
+programs, see the paper @cite{Distel: Distributed Emacs Lisp (for
+Erlang)} from the proceedings of the 2002 Erlang User Conference. The
+paper is also available from the Distel home page,
+@url{http://distel.sourceforge.net}
+
+@ifinfo
+The overall principles of Distel's operation and use are described in
+the following sections.
+@end ifinfo
+
+@menu
+* Principles::                  The underlying model of operation.
+* Conventions::                 Common conventions for commands.
+@end menu
+
+@node Principles, Conventions, Introduction, Introduction
+@section Principles of Operation
+
+Distel works by talking to Erlang nodes using the Erlang distribution
+protocol. It creates an ``Emacs node,'' similar to the ``C nodes'' of
+@code{erl_interface}, and then talks directly to Erlang nodes with RPC
+and other forms of message-passing.
+
+Of course, this means that to use Distel you need to have an Erlang
+node running. The node should be able to load some supporting modules
+for Distel to make RPCs to -- setting this up is simple, and described
+in the @file{INSTALL} file in the distribution. Other aspects of the
+node's setup, such as which other modules it can find, will also
+affect Distel's operation. More on this in the relevant sections.
+
+@node Conventions,  , Principles, Introduction
+@section Conventions of Use
+
+Most Distel commands need to know which Erlang node to talk to.
+(Distel doesn't start an Erlang node, you have to do that yourself.)
+The first command you use will prompt in the minibuffer for the name
+of the node to use. You can answer with either a @code{name@@host}
+node name, or with just the @code{name} part as an abbreviation for a
+node on the local machine.
+
+As a convenience, the node name you enter is cached and then reused in
+future commands. If you later want to talk to a different node you can
+use the command @code{erl-choose-nodename} (@kbd{C-c C-d n}) to select
+a new node to talk to. The currently cached node name is always shown
+in the modeline.
+
+Some commands accept a prefix argument to alter their behaviour in
+some specific way. You can give a prefix with @kbd{C-u} followed by
+the command you want to call. For example, @kbd{C-u M-.} tells the
+@kbd{M-.} command to prompt for the function to lookup, instead
+choosing one by looking at the source text in the buffer. The effect,
+if any, of a prefix on a command is included in the command's
+documentation.
+
+@node Programming Aids, Applications, Introduction, Top
+@chapter Programming Aids
+
+Distel includes a few small sets of related commands to automate
+common programming chores. These are described in the following
+sections.
+
+@menu
+* Tags::                        Looking up function definitions.
+* Completion::                  Completing module and function names.
+* Evaluation::                  Evaluating snippets and reloading modules.
+* Refactoring::                 
+* Documentation::               Looking up online documentation.
+@end menu
+
+@node Tags, Completion, Programming Aids, Programming Aids
+@section Cross-Referencing (Tags)
+
+A ``dynamic tags'' facility effectively makes each function call in an
+Erlang source file into a hyperlink to the definition of that
+function. For example, if you have a line of code like this:
+
+@example
+lists:keysort(2, L).
+@end example
+
+You can place the point on the function name, press @kbd{M-.}, and up
+pops @file{lists.erl} at the definition of @code{keysort/2}. After you
+have perused the definition to your satisfaction, you press @kbd{M-,}
+to jump back where you came from. You can also jump through several
+(sub)function definitions and then use @kbd{M-,} several times to
+unwind step-by-step back to where you came from.
+
+This feature is a dynamic version of a traditional Emacs facility
+called ``Tags.''  Whereas Tags needs you to maintain a special
+@file{TAGS} file to keep track of definitions, Distel simply asks an
+Erlang node, ``Where is the source file for module @code{foo}?'' The
+Erlang node makes a well-educated guess at which source file we want
+(based on the location and attributes of the beam file for the same
+module), and sends back the path. Emacs then opens the file and scans
+down to the definition of the function with the right arity.
+
+If you have several versions of the same source file (perhaps
+belonging to separate branches in revision control), then Distel will
+find the one that matches the code in the Erlang node you're talking
+to. So, to work on a particular source tree you just connect to a node
+that has the matching code in its code path.
+
+@table @kbd
+
+@item M-.
+Jump from a function call to the definition of the function
+(@code{erl-find-source-under-point}). If the variable
+@code{distel-tags-compliant} is non-nil, or a prefix argument is
+given, this command prompts for the function name to lookup.
+
+@item M-,
+Jump back from a function definition
+(@code{erl-find-source-unwind}). This is a multi-level unwind through
+a stack of positions from which you have jumped with @kbd{M-.} The
+command is also bound to @kbd{M-*} for consistency with ``etags.''
+@end table
+
+To actually find the source file for a particular module, the Erlang
+node first ensures that it can load the module, and then tries each of
+these locations in order:
+
+@enumerate
+@item
+Same directory as the beam file.
+@item
+@file{../src/} from the beam file.
+@item
+@file{../erl/} from the beam file.
+@item
+The directory from which the beam file was compiled. We can find this
+using @code{module_info/1}, because the compiler records it as an
+attribute in the beam file.
+@end enumerate
+
+@node Completion, Evaluation, Tags, Programming Aids
+@section Completion of Modules and Functions
+
+Completion allows you to write some part of a module or remote
+function name and then press @kbd{M-TAB} to have it completed
+automatically. When multiple completions exist they are displayed in a
+popup buffer, much like Emacs's normal filename completion. The
+completion buffer can simply be read to see which completions exist,
+or either @kbd{RET} or the middle mouse button can be used to select
+one.
+
+@table @kbd
+
+@item M-TAB
+Complete the module or function at point. (@code{erl-complete})
+
+@item M-?
+Alternative binding for @code{erl-complete}, since @kbd{M-TAB} is
+often reserved by window managers.
+@end table
+
+@node Evaluation, Refactoring, Completion, Programming Aids
+@section Evaluting Erlang Code
+
+Distel includes some simple ways to evaluate Erlang code, described
+here. More elaborate interactive evaluation is provided by Interactive
+Sessions (@pxref{Interactive Sessions}).
+
+@table @kbd
+
+@item C-c C-d :
+Read an Erlang expression from the minibuffer, evaluate it on an
+Erlang node, and show the result. (@code{erl-eval-expression})
+
+@item C-c C-d L
+Read a module name from the minibuffer and reload that module in an
+Erlang node. (@code{erl-reload-module})
+@end table
+
+@node Refactoring, Documentation, Evaluation, Programming Aids
+@section Refactoring
+
+@emph{The Refactoring feature requires the syntax-tools package to be
+in the Erlang node's code path. You can download syntax-tools from the
+erlang.org ``User Contributions'' area.}
+
+Expressions within functions can be automatically ``refactored'' into
+their own sub-functions by using the @code{erl-refactor-subfunction}
+command (@kbd{C-c C-d f}). The command takes the text of the
+expression, determines which variables it needs from the original
+function, and then generates the new function and puts it on the kill
+ring for insertion by hand (with @code{yank}, @kbd{C-y}). The original
+function is rewritten with a call to the subfunction where the
+refactored expression used to be.
+
+For example, suppose we want to refactor the following function:
+
+@example
+eval_expression(S) ->
+    case parse_expr(S) of
+        @{ok, Parse@} ->
+            case catch erl_eval:exprs(Parse, []) of
+                @{value, V, _@} ->
+                    @{ok, flatten(io_lib:format("~p", [V]))@};
+                @{'EXIT', Reason@} ->
+                    @{error, Reason@}
+            end;
+        @{error, @{_, erl_parse, Err@}@} ->
+            @{error, Err@}
+    end.
+@end example
+
+In this example we will take the inner @code{case} expression and move
+it into a new function called @code{try_evaluation}. We do this by
+setting the Emacs region (using the mouse or @kbd{C-SPC}) from the
+word @code{case} until the end of the word @code{end} -- marking
+exactly one whole expression. We then enter @kbd{C-c C-d f} to
+refactor, and when prompted for the function name we respond with
+``@code{try_evaluation}''. The original function is then rewritten to:
+
+@example
+eval_expression(S) ->
+    case parse_expr(S) of
+       @{ok, Parse@} ->
+           try_evaluation(Parse);
+       @{error, @{_, erl_parse, Err@}@} ->
+           @{error, Err@}
+    end.
+@end example
+
+And at the front of the kill ring we have the new function definition,
+which can be pasted into the buffer wherever we want. The actual
+definition we get is:
+
+@example
+try_evaluation(Parse) ->
+    case catch erl_eval:exprs(Parse, []) of
+       @{value, V, _@} ->
+           @{ok, flatten(io_lib:format("~p", [V]))@};
+       @{'EXIT', Reason@} ->
+           @{error, Reason@}
+    end.
+@end example
+
+@strong{Important note:} This command is not a ``pure'' refactoring,
+because although it will import variables from the parent function
+into the subfunction, it will not export new bindings created in the
+subfunction back to the parent. However, if you follow good
+programming practice and never ``export'' variables from inner
+expressions, this is not a problem. An example of @emph{bad} code that
+will not refactor correctly is this @code{if} expression:
+
+@example
+if A < B -> X = true;
+   B > A -> X = false
+end,
+foo(X)
+@end example
+
+This is in poor style -- a variable created inside the @code{if} is
+used by code at an outer level of nesting. To work with refactoring,
+and to be in better style, it should be rewritten like this:
+
+@example
+X = if A < B -> true;
+       B > A -> false
+    end,
+foo(X)
+@end example
+
+@node Documentation,  , Refactoring, Programming Aids
+@section Documentation
+
+Simple online Erlang documentation is provided via an Erlang program
+called @code{fdoc}. The documentation is automatically scanned out of
+source files by building a searchable database of the comments
+appearing before each function. Naturally, the quality of
+documentation provided by this scheme will depend on the style in
+which the source files are commented.
+
+@table @kbd
+@item C-c C-d d
+Describe an Erlang module or function by
+name. (@code{erl-fdoc-describe})
+@item C-c C-d a
+Show apropos information about Erlang functions, by regular
+expression. All functions whose names or comments match the regexp are
+displayed. (@code{erl-fdoc-apropos})
+@end table
+
+With a prefix argument, these commands rebuild the @code{fdoc}
+database before searching. This is useful after (re)loading a lot of
+modules, since @code{fdoc} only scans the currently loaded modules for
+documentation when it builds the database.
+
+@node Applications,  , Programming Aids, Top
+@chapter Applications
+
+This chapter describes the larger applications included with Distel.
+
+@menu
+* Process Manager::             See and manipulate Erlang processes.
+* Debugger::                    Debug Erlang programs.
+* Interactive Sessions::        Hybrid Emacs buffer / Erlang shell.
+* Profiler::                    Profile with fprof.
+@end menu
+
+@node Process Manager, Debugger, Applications, Applications
+@section Process Manager
+
+The process manager displays a list of all the processes running on an
+Erlang node, and offers commands to manipulate them.
+
+@table @kbd
+@item C-c C-d l
+Popup a process manager buffer. (@code{erl-process-list})
+@end table
+
+Within the process manager's buffer, the following commands are
+available:
+
+@table @kbd
+@item q
+Quit the process manager, and restore the Emacs windows as they were
+before it popped up.
+@item u
+Update the process list.
+@item k
+Kill a process.
+@item RET
+Pop up a buffer showing all the information about a process. The
+buffer also continuously traces the process by appending events to the
+buffer, until the buffer is killed with @kbd{q}.
+@item i
+Show a piece of information about the process, specified by name. The
+name can be any key accepted by the @code{process_info/2} BIF.
+@item b
+Show a backtrace for a process. The backtrace is a fairly low-level
+snapshot of the stack of a process, obtained from
+@code{process_info(P, backtrace)}. It may take a little pratice to
+learn how to read them.
+@item m
+Show the contents of a process's mailbox.
+@end table
+
+@node Debugger, Interactive Sessions, Process Manager, Applications
+@section Debugger
+Distel includes a front-end to the Erlang debugger, using the same
+backend as the standard Tk-based OTP debugger. The Distel debugger has
+three parts: commands in Erlang source buffers for interpreting
+modules and configuring breakpoints, a ``Monitor'' buffer listing
+processes running interpreted code, and one ``Attach'' buffer for each
+process that is being single-stepped.
+
+@menu
+* Basic Commands::              Interpreting modules and setting breakpoints.
+* Monitor Buffer::              Monitoring interpreted processes.
+* Attach Buffer::               Single-stepping a process.
+* Synchronising Breakpoints::   Resynchronising breakpoints after edits.
+* Saving and Restoring::        Temporarily saving debugging state.
+@end menu
+
+@node Basic Commands, Monitor Buffer, Debugger, Debugger
+@subsection Basic Commands
+
+@table @kbd
+@item C-c C-d i
+Toggle interpretedness of the current buffer's module.
+(@code{edb-toggle-interpret})
+@item C-x SPC
+Toggle a breakpoint on the current line.
+(@code{edb-toggle-breakpoint})
+@item C-c C-d m
+Popup the Monitor buffer. (@code{edb-monitor})
+@end table
+
+@node Monitor Buffer, Attach Buffer, Basic Commands, Debugger
+@subsection Monitor Buffer
+
+The monitor buffer displays all processes that the debugger knows
+about, line-by-line. This includes all processes that have run
+interpreted code, and all that are stopped in breakpoints. The current
+status of each process is shown -- running, at breakpoint, or
+exited. You can attach to a debugged process by pressing @kbd{RET} on
+its summary line.
+
+@table @kbd
+@item RET
+Popup an attach buffer for a process.
+@item q
+Hide the Monitor buffer and restore Emacs' window configuration to the
+way it was before.
+@item k
+Kill the monitor. This disconnects Emacs from the Erlang node's
+debugging state and deletes all the local debugging state
+(e.g. breakpoints in buffers.) The next debugger command will
+automatically re-attach the monitor.
+@end table
+
+@node Attach Buffer, Synchronising Breakpoints, Monitor Buffer, Debugger
+@subsection Attach Buffer
+
+An attach buffer corresponds to a particular Erlang process that is
+being debugged. It displays the source to the module currently being
+executed and, when the process is stopped at a breakpoint, an arrow
+showing the next line of execution. The attach buffer is accompanied
+by a buffer showing the variable bindings in the current stack frame.
+
+@table @kbd
+@item SPC
+Step into the next expression. If the expression is a function call,
+the debugger will enter that function. (@code{edb-attach-step})
+@item n
+Step over the next expression, without going down into a subfunction.
+(@code{edb-attach-next})
+@item c
+Continue execution until the next breakpoint.
+(@code{edb-attach-continue})
+@item u
+Show the previous stack frame. (@code{edb-attach-up})
+@item d
+Show the next stack frame. (@code{edb-attach-down})
+@item b
+Toggle a breakpoint on the current line.
+(@code{edb-toggle-breakpoint})
+@item q
+Kill the attach buffer. This does not affect the actual Erlang
+process.
+@item h
+Display online help, showing essentially this information.
+(@code{edb-attach-help})
+@end table
+
+@node Synchronising Breakpoints, Saving and Restoring, Attach Buffer, Debugger
+@subsection Synchronising Breakpoints
+
+At any point in time the breakpoints in a particular buffer will be
+either ``fresh'' or ``stale,'' depending on whether the buffer has
+been modified. Breakpoints are fresh when, as far as Emacs knows, the
+buffer's source text (line numbers) correspond with the code in the
+Erlang node. After the buffer is modified, the breakpoints become
+stale, because edits may change line numbers so that the breakpoints
+in Emacs no longer correspond with the actual program. Stale
+breakpoints are made fresh by using the @code{edb-synch-breakpoints}
+(@kbd{C-c C-d s}) command to reassert that they are correct. This
+command is typically used after recompiling and reloading the module.
+
+Fresh breakpoints are marked in red, stale breakpoints are marked in
+purple.
+
+@table @kbd
+@item C-c C-d s
+Synchronise breakpoints by discarding the ones in the Erlang node and
+then re-setting them from those in the Emacs buffer.
+@end table
+
+@iftex
+The overall debugger state machine for Erlang-mode buffers is shown in
+this figure:
+
+@image{dbg, 6in}
+
+In the ``Normal'' state, no breakpoints exist. In the ``Interpreted''
+state, all breakpoints are fresh. In the ``Out of sync'' state, all
+breakpoints are stale. The transitions illustrate how you can navigate
+between the states.
+@end iftex
+
+Care must be taken to only synchronise breakpoints when the Erlang
+node is actually running the same code that is in the Emacs
+buffer. Otherwise, the Erlang processes may break in unexpected
+places.
+
+When reloading modules during debugging, it is preferable to use the
+@code{erl-reload-module} command (@kbd{C-c C-d L}, @pxref{Evaluation})
+than to call @code{l(mymodule)} directly in the Erlang shell. This is
+because the Distel command is specially coded to make sure reloading
+interpreted modules keeps them interpreted, but this doesn't appear to
+work correctly in the Erlang shell.
+
+@node Saving and Restoring,  , Synchronising Breakpoints, Debugger
+@subsection Saving and Restoring Debugger State
+
+The overall debugger state (set of breakpoints and interpreted
+modules) can be temporarily saved inside Emacs and then restored to
+the Erlang node. This is particularly useful when you want to restart
+the Erlang node and then continue debugging where you left off: you
+just save the debug state, restart the node, and then restore.
+
+@table @kbd
+@item C-c C-d S
+Save the set of breakpoints and interpreted modules inside
+Emacs. (@code{edb-save-dbg-state})
+@item C-c C-d R
+Restore Emacs's saved debugger state to the Erlang
+node. (@code{edb-restore-dbg-state})
+@end table
+
+@node Interactive Sessions, Profiler, Debugger, Applications
+@section Interactive Sessions
+
+Interactive sessions are an Erlang version of the Emacs Lisp
+@file{*scratch*} buffer. You can enter arbitrary Erlang expressions
+and function definitions in an interactive session buffer and evaluate
+them immediately, without creating any files.
+
+@table @kbd
+@item C-c C-d e
+Display the Interactive Session buffer for an Erlang node, creating it
+if necessary. (@code{erl-ie-show-session})
+@end table
+
+Within the session buffer, these commands are available:
+
+@table @kbd
+@item C-j
+Evaluate the Erlang expression on the current line, and insert the
+result in-line. (@code{erl-ie-eval-expression})
+@item C-M-x
+Evaluate the function definition before the point. Once defined, the
+function can then be called from expressions in the session buffer,
+and can be redefined later.
+@end table
+
+@node Profiler,  , Interactive Sessions, Applications
+@section Profiler
+
+Distel supports profiling function calls via the OTP @code{fprof}
+application. This is a very convenient profiler, in that it doesn't
+require any special compiler options or initialisation -- you can use
+it whenever you want.
+
+@table @kbd
+@item C-c C-d p
+Prompt for an Erlang expression, evaluate it with profiling, and then
+summarise the results. (@code{fprof})
+@item C-c C-d P
+Load and display prerecorded profiler data, from a file created by
+@code{fprof:analyse/1}. (@code{fprof-analyse})
+@end table
+
+After an expression is profiled, the results are popped up in
+``profiler results'' buffer. The buffer contains one line to describe
+each function that was called, with the following columns:
+
+@table @code
+@item Calls
+The total number of times the function was called.
+@item ACC
+The total time (ms) spent in the function, including its callees.
+@item Own
+The total time (ms) spent by the function itself, excluding time spent
+in its callees.
+@end table
+
+Furthermore, pressing @kbd{RET} on a summary line in the results
+buffer will pop up another buffer showing more information about the
+function: how much time it spent on behalf of each of its callers, and
+how much time it spent in each of its subfunctions.
+
+@bye
+
