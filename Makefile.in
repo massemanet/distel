@@ -16,8 +16,8 @@ ERL_SRC_DIR = ${datadir}/distel/src
 ########################################
 ## Main part
 
-ERL_SRC := $(wildcard erl/*.erl)
-ERL_OBJ := $(patsubst erl/%.erl,ebin/%.beam,${ERL_SRC})
+ERL_SRC := $(wildcard src/*.erl)
+ERL_OBJ := $(patsubst src/%.erl,ebin/%.beam,${ERL_SRC})
 
 ELISP_SRC := elisp/erlext.el
 ELISP_OBJ := $(patsubst %.el,%.elc,${ELISP_SRC})
@@ -39,7 +39,7 @@ erl: ${ERL_OBJ}
 ## Rules
 
 ## Erlang
-ebin/%.beam: erl/%.erl
+ebin/%.beam: src/%.erl
 	erlc -W -o ebin +debug_info $<
 
 ## Elisp
@@ -59,7 +59,7 @@ doc/distel.dvi: ${DOC_SRC}
 
 ########################################
 
-configure: configure.in Makefile.in
+configure: configure.in
 	autoconf
 
 Makefile: Makefile.in config.status

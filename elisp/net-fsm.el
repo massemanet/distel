@@ -240,6 +240,7 @@ buffer."
 (defun fsm-shutdown ()
   (setq fsm-state nil)
   (when fsm-process
+    (set-process-sentinel fsm-process nil)
     (kill-buffer (process-buffer fsm-process))))
 
 (defun assert-fsm-invariants ()

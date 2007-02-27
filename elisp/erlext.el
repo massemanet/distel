@@ -64,10 +64,8 @@
 (defconst empty-symbol (intern "")
   "The zero-length lisp symbol.")
 
-(defconst erl-tag (make-symbol "TYPE")
-  "Tag placed in the first element of a vector to indicate a non-tuple type.
-This is an uninterned symbol, which is only eq/eqv/equal/equalp to
-itself.")
+(defvar erl-tag (make-symbol "TYPE")
+  "Tag placed in the first element of a vector to indicate a non-tuple type.")
 
 ;; ------------------------------------------------------------
 ;; Encoding / decoding interface
@@ -137,7 +135,9 @@ itself.")
 	       ((erl-ref)
 		(apply #'erlext-write-ref elts))
 	       ((erl-new-ref)
-		(apply #'erlext-write-new-ref elts))))))
+		(apply #'erlext-write-new-ref elts))
+	       ((erl-binary)
+		(erlext-write-binary (car elts)))))))
 	((integerp obj)
 	 (erlext-write-int obj))
 	(t

@@ -33,6 +33,8 @@ commands. Using C-u to bypasses the cache.")
                            name-string
                          (concat name-string
                                  "@" (erl-determine-hostname))))))
+    (when (string= name-string "")
+      (error "No node name given"))
     (setq erl-nodename-cache name)
     (setq distel-modeline-node name-string)
     (force-mode-line-update))
@@ -128,8 +130,8 @@ Should be called with point directly before the opening ( or /."
 (add-hook 'erl-nodeup-hook 'erl-check-backend)
 
 (defun erl-check-backend (node _fsm)
-  "Check if we have the 'distel' module available on `node', and popup
-a warning if not."
+  "Check if we have the 'distel' module available on `node'.
+If not then try to send the module over as a binary and load it in."
   (unless distel-inhibit-backend-check
     (erl-spawn
       (erl-send `[rex ,node]
@@ -138,9 +140,45 @@ a warning if not."
 			     ,(erl-group-leader)]])
       (erl-receive (node)
 	  ((['rex ['error _]]
-	    (with-current-buffer (get-buffer-create "*Distel Warning*")
-	      (erase-buffer)
-	      (insert (format "\
+	    (&erl-load-backend node))
+	   (_ t))))))
+
+(defun &erl-load-backend (node)
+  (let* ((elisp-directory
+	  (file-name-directory (or (locate-library "distel") load-file-name)))
+	 (ebin-directory (concat elisp-directory "/../ebin"))
+	 (modules '()))
+    (dolist (file (directory-files ebin-directory))
+      (when (string-match "^\\(.*\\)\\.beam$" file)
+	(let ((module (intern (match-string 1 file)))
+	      (filename (concat ebin-directory "/" file)))
+	  (push (list module filename) modules))))
+    (if (null modules)
+	(erl-warn-backend-problem "don't have beam files")
+      (&erl-load-backend-modules node modules))))
+
+(defun &erl-load-backend-modules (node modules)
+  (message "modules = %S" modules)
+  (if (null modules)
+      (message "(Successfully uploaded backend modules into node)")
+    (let* ((module (caar modules))
+	   (filename (cadar modules))
+	   (content (erl-file-to-string filename))
+	   (binary (erl-binary content)))
+      (erl-send `[rex ,node]
+		`[,erl-self [call
+			     code load_binary ,(list module filename binary)
+			     ,(erl-group-leader)]])
+      (erl-receive (node modules)
+	  ((['rex ['error reason]]
+	    (erl-warn-backend-problem reason))
+	   (['rex _]
+	    (&erl-load-backend-modules node (rest modules))))))))
+
+(defun erl-warn-backend-problem (reason)
+  (with-current-buffer (get-buffer-create "*Distel Warning*")
+    (erase-buffer)
+    (insert (format "\
 Distel Warning: node `%s' can't seem to load the `distel' module.
 
 This means that most Distel commands won't function correctly, because
@@ -158,9 +196,14 @@ The most likely cause of this problem is either:
 To disable this warning in future, set `distel-inhibit-backend-check' to t.
 
 "
-			      node))
-	      (display-buffer (current-buffer))))
-	   (other t))))))
+		    node))
+    (display-buffer (current-buffer))
+    (error "Unable to load or upload distel backend: %S" reason)))
+
+(defun erl-file-to-string (filename)
+  (with-temp-buffer
+    (insert-file-contents filename)
+    (buffer-string)))
 
 ;;;; RPC
 

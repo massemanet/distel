@@ -261,6 +261,15 @@ Also makes the current process immediately reschedulable."
   "Make a unique reference object."
   (vector erl-tag 'erl-ref erl-node-name (incf erl-ref-counter) 0))
 
+(defun erl-binaryp (x)
+  (and (eq (elt x 0) erl-tag) (eq (elt x 1) 'erl-binary)))
+
+(defun erl-binary-string (x)
+  (elt x 2))
+
+(defun erl-binary (string)
+  (vector erl-tag 'erl-binary string))
+
 ;; receive
 
 

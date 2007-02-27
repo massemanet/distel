@@ -1,3 +1,21 @@
+2007-02-27  Luke Gorrie  <luke@synap.se>
+
+	* elisp/erl-service.el (erl-check-backend, &erl-load-backend):
+	If the Erlang node does not have the Distel modules available in
+	the code path then patch them in directly as binaries using RPC.
+	Now you don't have to bother adding Distel to the code path and
+	should be able to connect to any Erlang node (e.g. on a target
+	system).
+
+	* elisp/net-fsm.el (fsm-shutdown): Fixed annoying bug.
+
+	* elisp/erl.el (erl-binary, erl-binaryp, erl-binary-string):
+	Added explicit binary datatype that is sent to Erlang as a binary.
+
+	* elisp/erlext.el (erl-tag): Switched from defconst to defvar to
+	avoid unnecessarily redefining (which blows everything).
+	Added encoding of binaries.
+
 2006-09-25  Mats Cronqvist  <locmacr@mwlx084>
 
 	* src/distel.erl: added erl-reload-modules. reloads all modules

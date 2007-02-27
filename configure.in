@@ -10,3 +10,4 @@ dnl Check for standard headers.
 AC_HEADER_STDC
 
 AC_OUTPUT([Makefile])
+
