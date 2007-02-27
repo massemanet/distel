@@ -1,0 +1,43 @@
+Installation
+------------
+
+First compile Distel's Erlang modules with 'make'.
+
+Next add these modules to your code-path by adding a line to
+~/.erlang (substitute correct path):
+
+  code:add_pathz("/home/me/jungerl/lib/distel/ebin").
+
+Then add these lines to your ~/.emacs (again substitute correct path):
+
+  (add-to-list 'load-path "/home/me/jungerl/lib/distel/elisp")
+  (require 'distel)
+  (distel-setup)
+
+You can also build the documentation in doc/ with 'make postscript'
+for a printable manual and 'make install' to install the info manual.
+
+You should now be in the air! If so you should see "Erlang EXT" in the
+Emacs modeline when you open an Erlang source file (meaning you're in
+the EXTended erlang mode). Check out the manual in doc/ to find out
+what you can do!
+
+============================================================
+
+Special notes for Mac OSX:
+
+David Wallin reports the following procedure to setup Distel to work
+on an OSX machine with no network connection:
+
+1. Start NetInfo Manager.app (in /Applications/Utilities)
+2. From NetInfo Manager, select the directory path
+   "/machines/localhost" and mark property "name" and (and anytime
+   before here: click on the lock and enter the password) choose
+   "Append Value" from the "Directory" menu.
+3. Enter your machine name as the appended value and Save.
+
+This procedure is like putting "127.0.0.1 <hostname>" into /etc/hosts
+on a UNIX machine. It's necessary so that Emacs can open sockets to
+the localhost via the hostname part of a nodename without talking to
+DNS.
+

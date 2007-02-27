@@ -1,0 +1,63 @@
+This file aims to describe what the distel-ie package is. 
+
+The 'ie' suffix is an acronym for "Interactive Erlang".
+
+The original idea was to create something like the *scratch* buffer in emacs, 
+where you can play around with the language: define functions see how things 
+work etc. So in short, distel-ie is a shell with the unique feature of allowing
+ for functions to be defined.
+
+Example:
+
+Start a distel-ie session by doing : M-x erl-ie-session, or, if you run the 
+distel extension minor mode: C-c C-d s
+
+now type (without quotes) : 
+
+"sista(W) -> lists:last(W)."
+
+mark this region and press C-M-x, the function sista/1 is now defined and ready
+to be used from the session. You can try and call this function:
+
+"sista([1, 2, 3, distel_rocks])."
+
+Again, mark this region and press C-M-x, the result should come as no surprise
+:-)
+
+
+KEYBINDINGS:
+
+These keybindings are available when you run the distel extension minor mode
+
+C-c C-d s : Makes a session buffer the current buffer, if no session exists, 
+    	    it creates a new one.
+
+C-M-x     : Evaluates the marked region. If the marked region contains a 
+	    function definition, the function is defined. The result of the
+	    evaluation is returned on the minibuffer or in a new buffer.
+
+C-u C-M-x : Same as above, but the results ends up in the session buffer.
+
+C-c C-d r : Copies the marked region (in a file buffer) to the session buffer.
+    	    If no session exists, a session is created.
+
+C-c C-d c : Same as above but copies an entire buffer.
+
+
+
+THINGS NOT WORKING/TODO:
+
+- Evaluating a region containing more than one function definition is not 
+  working.
+
+- It would be nice to not having to mark the region yourself, 
+  erlang-mark-function or similar would be convenient, but is currently not 
+  a viable option. ("fun(X) ->\nlists:last(X)\nend." is not marking the 
+  correct region).
+
+
+Comments and suggestions are welcome,
+
+email_the_author() -> lists:reverse("ei.lu@nillaw.divad").
+
+

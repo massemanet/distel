@@ -1,0 +1,165 @@
+Jungerl version:
+
+	When you type the opening '(' for a function call Distel will
+	try to show the function's argument list(s) in the echo area.
+	(Very nice feature by Martin Björklund.)
+
+	If you want to choose a new node to talk to then use
+	`erl-choose-nodename' (C-c C-d n). Now C-u is just a regular
+	prefix argument and not a node-chooser.
+
+	The default remote node name is now displayed in the modeline.
+
+	The 'dec32' helper C program no longer exists! Thanks Dave
+	Love for reimplementing it in Elisp using floats (and doing a
+	whole slew of cleanups besides).
+
+	Distel now tricks R10B-0 into thinking that it can support
+	extended pids. This allows distribution to be established. Of
+	course it would be better to really support them :-)
+
+Version 3.3:
+
+	A User Manual is now available from the homepage,
+	http://www.bluetail.com/~luke/distel/
+
+	'fdoc' online docmentation is now included, with "C-c C-d d"
+	and "C-c C-d a" to do "describe" and "apropos",
+	respectively. 'fdoc' is a program for automatically extracting
+	documentation from the comments in source files - it primarily
+	exists in the Jungerl.
+
+	Refactoring support now exists, with a command to take an
+	expression from a function and "refactor" it into a separate
+	sub-function. Distel automatically passes the appropriate
+	variables to the new function by using the 'syntax_tools'
+	package to analyse the expression. This feature requires
+	'syntax_tools' version 1.2 to be installed separately.
+
+	Breakpoint handling in the debugger has been improved in many
+	small ways. There is also an extra keybinding for toggling
+	breakpoints, "C-x SPC", for consistency with other Emacs
+	packages.
+
+	Giving a numeric prefix argument to M-. will force it to
+	prompt for the function to lookup. This is useful if you want
+	to find the source for a function that isn't being called in
+	any code that you have handy. You can give it a numeric prefix
+	with e.g. "M-1 M-."
+
+Version 3.2:
+
+	Completion of module and function names. So list:keyso
+	completes to lists:keysort, etc. Bound to M-TAB and (since
+	some window managers take that) M-?. Also has popups for
+	ambiguous completions and all that good stuff.
+	(Thanks Mikael Karlsson for suggesting this often enough that
+	it finally sunk in :-))
+
+	Major debugger extensions by Martin Björklund:
+
+	- Visual breakpoints: lines with breakpoints set are now
+          highlighted in red. If the buffer is modified, the
+          breakpoints turn purple to indicate that they may be out of
+          sync with the line numbers in the Erlang node. Once editing
+          is finished at the code is reloaded, the breakpoints can be
+          resynchronized with C-c C-d s.
+
+	  Note that using "l(module)" in the shell seems to go behind
+          the debugger's back, so to reload an interpreted module you
+          should use either C-c C-d L in Emacs, or i(...) in the
+          shell.
+
+	- Save (C-c C-d S) and Restore (C-c C-d R) of debugger state
+          (set of interpreted modules and breakpoints.) This can be
+          used to temprarily save your debug settings while restarting
+          a node, etc. The settings are stored inside Emacs.
+
+        Group for Customization (M-x customize), so customizable
+        variables can be configured interactively. It's in
+        Programming->Tools->Distel.
+
+        More faithful tags-compliance (i.e. prompting for which tag to
+        follow after M-.) optionally available, via the (Customizable)
+        `distel-tags-compliant' variable (Martin Björklund.)
+
+	Distel commands now appear in the Erlang pull-down menu
+	(Martin Björklund)
+
+	Improved "Interactive Session" support. Now C-j evaluates the
+	previous expression and inserts the result in-line, and C-M-x
+	evaluates a function definition and prints the result as a
+	message. The binding for creating/showing a session is now 
+	C-c C-d e.
+
+	Improved process-manager support, with many small UI
+	enhancements: 'u' updates the list, 'k' kills a process, fewer
+	buffers are created, better errors when inspecting dead
+	processes, ... (thanks Martin Björklund and Mats Cronqvist)
+
+	EXIT signals are now generated for remote processes when the
+	link goes down. This solves some long-standing problems like
+	the debug monitor hanging if you restart the node you were
+	debugging on.
+
+	Option to explicitly set a cookie in the variable
+	`derl-cookie' (Mats Cronqvist)
+
+	Now you can connect several Emacsen to the same Erlang node,
+	because Distel now uses a unique distel_<pid>@<host> node name
+	for each Emacs.
+
+Version 3.1:
+
+	Compatibility with R9.
+
+	New and incompatible pattern syntax:
+          [foo Bar] becomes ['foo bar].
+	In other words, symbols without quotes are now variables, even
+	if they're lower case.
+
+	References can now be sent and received, and also created with
+	(erl-make-ref).
+
+	Greatly improved support for helping the debugger find the
+	code for the modules you want to interpret, courtesy of Mats
+	Cronqvist <etxmacr@cbe.ericsson.se>.
+
+	Automated bug reporting with "M-x report-distel-problem",
+	which generates an email template addressed to the mailing
+	list, populated with some trace information.
+
+	M-. (erl-find-source-under-point) doesn't RPC on local
+	function lookups, making it faster. M-* now does the same as
+	M-, (jump back from a function definition), since it is more
+	consistent with TAGS. (M-, still works too.)
+
+Version 3.0:
+
+	Lots and lots and lots.
+
+	Dynamic TAGS, debugger, profiler, shell-cum-scratchpad, and
+	generally "end-user" applications.
+	
+	Substantial improvements to the programming interface too,
+	particularly eliminating the ugly `tuple' tag.
+
+	Thanks are due to David Wallin (!), Torbjörn Törnkvist, and
+	Darius Bacon (so far..) for hacks and ideas, and all the good
+	sports here at Bluetail for beta testing :-)
+
+Version 2.0:
+
+	Major additions are pattern matching and `erl-receive'. This
+	has simplified the programming interface a lot, making
+	`erl-mailbox' become undocumented and `erl-continue' be
+	reclassified as an ``internal'' function. All existing
+	programs can be updated to be much neater. The actual changes
+	are backwards compatible, even though some things have
+	disappeared from the documentation.
+
+	Ported to XEmacs (21.1).
+
+	Many thanks to Vladimir Sekissov, Darius Bacon, and Vlad
+	Dumitrescu for code and advice on this release.
+
