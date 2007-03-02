@@ -81,7 +81,7 @@ install: base
 	@echo
 	@echo "* Installing Erlang Library"
 	install -m 775 ebin/*.beam ${EBIN_DIR}
-	install -m 775 erl/*.erl ${ERL_SRC_DIR}
+	install -m 775 src/*.erl ${ERL_SRC_DIR}
 	@echo
 	@echo "*** Successfully installed. See README for usage instructions."
 	@echo
