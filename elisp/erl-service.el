@@ -25,6 +25,19 @@ commands. Using C-u to bypasses the cache.")
   (or erl-nodename-cache
       (erl-choose-nodename)))
 
+(defun erl-set-cookie ()
+  "Prompt the user for the cookie."
+  (interactive)
+  (let* ((cookie (read-string "Cookie: ")))
+    (if (string= cookie "")
+        (setq derl-cookie nil)
+      (setq derl-cookie cookie))))
+
+(defun erl-get-cookie ()
+  "Print the cookie."
+  (interactive)
+  (message "Cookie: %s" derl-cookie))
+
 (defun erl-choose-nodename ()
   "Prompt the user for the nodename to connect to in future."
   (interactive)
@@ -146,7 +159,7 @@ If not then try to send the module over as a binary and load it in."
 (defun &erl-load-backend (node)
   (let* ((elisp-directory
 	  (file-name-directory (or (locate-library "distel") load-file-name)))
-	 (ebin-directory (concat elisp-directory "/../ebin"))
+	 (ebin-directory (concat elisp-directory "../ebin"))
 	 (modules '()))
     (dolist (file (directory-files ebin-directory))
       (when (string-match "^\\(.*\\)\\.beam$" file)
@@ -158,7 +171,7 @@ If not then try to send the module over as a binary and load it in."
       (&erl-load-backend-modules node modules))))
 
 (defun &erl-load-backend-modules (node modules)
-  (message "modules = %S" modules)
+  (message "loading = %S" (car modules))
   (if (null modules)
       (message "(Successfully uploaded backend modules into node)")
     (let* ((module (caar modules))

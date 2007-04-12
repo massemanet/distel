@@ -1,3 +1,10 @@
+2007-04-12  Mats Cronqvist  <mats.cronqvist@ericsson.com>
+
+	* elisp/erl-service.el (erl-set-cookie, erl-get-cookie): 
+	sets/gets the lisp side cookie. if emacs and erlang are running on
+	different machines you typically want to set the lisp side cookie
+	to the same as on the erlang side (use erlang:get_cookie/0).
+
 2007-02-27  Luke Gorrie  <luke@synap.se>
 
 	* elisp/erl-service.el (erl-check-backend, &erl-load-backend):
@@ -16,20 +23,20 @@
 	avoid unnecessarily redefining (which blows everything).
 	Added encoding of binaries.
 
-2006-09-25  Mats Cronqvist  <locmacr@mwlx084>
+2006-09-25  Mats Cronqvist  <mats.cronqvist@ericsson.com>
 
 	* src/distel.erl: added erl-reload-modules. reloads all modules
 	that are out of date. compares time of compilation for the loaded
 	code and the code in the corresponding beam file.
 	* elisp/distel.el: bound erl-reload-modules to C-c C-d r.
 	
-2006-09-04  Mats Cronqvist  <locmacr@mwlx084>
+2006-09-04  Mats Cronqvist  <mats.cronqvist@ericsson.com>
 
 	* src/distel.erl (Module): reload_module/2; 1st arg assumed to be
 	sting, could be atom or string.  resolved by creating to_atom/1
 	and to_bin/1. got rid of l2a/1 and l2b/1.
 
-2006-08-03  Mats Cronqvist  <locmacr@mwlx084>
+2006-08-03  Mats Cronqvist  <mats.cronqvist@ericsson.com>
 
 	* src/distel.erl (Module): had problems in guess_source_file/2;
 	1st arg was assumed to be atom, but could be atom or list.
@@ -41,7 +48,7 @@
 
 	and use them consistently.
 	
-2006-05-15  Mats Cronqvist  <locmacr@mwlx084>
+2006-05-15  Mats Cronqvist  <mats.cronqvist@ericsson.com>
 
 	* src/distel.erl (Module): behaviour of int:meta changed in R10B-10.
 	edb now understands the new, and (hopefully) the old as well.
@@ -52,11 +59,11 @@
 
 	fixed bug when trying to do c:l/1 on a string
 	
-2005-06-07  Mats Cronqvist  <locmacr@mwlx084>
+2005-06-07  Mats Cronqvist  <mats.cronqvist@ericsson.com>
 
 	* elisp/derl.el (derl-cookie): made derl-cookie writable
 
-2005-06-03  Mats Cronqvist  <locmacr@mwlx084>
+2005-06-03  Mats Cronqvist  <mats.cronqvist@ericsson.com>
 
 	* elisp/erl-service.el (erl-openparent): inserts a "(" and the
 	argument list from erl-openparen.
@@ -71,7 +78,7 @@
 
 	* elisp/distel.el (Module): bound M-( to erl-openparent
 
-2005-06-02  Mats Cronqvist  <locmacr@mwlx084>
+2005-06-02  Mats Cronqvist  <mats.cronqvist@ericsson.com>
 
 	* src/distel.erl (reload_module/2): runs c:l/1, if it fails it looks
 	for the beam file in in srcdir and srcdir/../ebin (srcdir is where
