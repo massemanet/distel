@@ -1166,7 +1166,14 @@ calls(Mod) ->
 calls(ThisMod, Tree, Applies) ->
     {_, Calls} =
 	lists:foldl(fun(T, Acc) ->
-			    do_funs(T, Acc, ThisMod, Applies)
+                            %% erl_syntax_lib:fold and friends can
+                            %% crash when encountering certain kinds
+                            %% of syntax, e.g. binary comprehensions
+                            %% (at least in R11B-4 and earlier)
+                            case catch do_funs(T, Acc, ThisMod, Applies) of
+                                {'EXIT', _} -> Acc;
+                                R -> R
+			    end
 		    end, {[], []}, Tree),
     Calls.
 

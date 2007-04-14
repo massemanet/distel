@@ -1,3 +1,8 @@
+2007-04-14  Luke Gorrie  <luke@synap.se>
+
+	* src/distel.erl (calls): Added a 'catch' over erl_syntax calls to
+	make who-calls more robust. (Patch from Matthias Radestock.)
+
 2007-04-12  Mats Cronqvist  <mats.cronqvist@ericsson.com>
 
 	* elisp/erl-service.el (erl-set-cookie, erl-get-cookie): 
