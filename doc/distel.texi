@@ -430,6 +430,8 @@ three parts: commands in Erlang source buffers for interpreting
 modules and configuring breakpoints, a ``Monitor'' buffer listing
 processes running interpreted code, and one ``Attach'' buffer for each
 process that is being single-stepped.
+Note that none of this will work unless the modules are compiled with the 
+``+debug_info'' switch to erlc.
 
 @menu
 * Basic Commands::              Interpreting modules and setting breakpoints.
