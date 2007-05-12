@@ -1,3 +1,4 @@
+
 PACKAGE := distel
 VERSION := 4.0pre
 
@@ -59,20 +60,11 @@ doc/distel.dvi: ${DOC_SRC}
 
 ########################################
 
-configure: configure.in
-	autoconf
-
-Makefile: Makefile.in config.status
-	./config.status
-
-config.status: configure
-	./config.status --recheck
-
 clean:
 	-rm -f ${OBJECTS} 2>/dev/null
 
 distclean: clean
-	-rm -f config.* configure.scan Makefile *~ */*~ 2>/dev/null
+	-rm -f *~ */*~ 2>/dev/null
 
 install: base
 	@echo "* Installing Emacs Lisp Library"
@@ -93,7 +85,7 @@ info_install: info
 	  install-info --info-dir=${infodir} --section Emacs \
 		       ${infodir}/distel.info
 
-dist: always distclean configure
+dist: always distclean
 	cd .. && ln -sf ${PACKAGE} ${PACKAGE}-${VERSION}
 	cd .. && (find ${PACKAGE}-${VERSION} -follow -type f | \
 		  egrep -v '(^attic/)|/CVS/|\.cvsignore|\.rej|\.orig|\#' | \
