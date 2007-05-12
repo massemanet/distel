@@ -1,3 +1,9 @@
+2007-05-12  Luke Gorrie  <luke@synap.se>
+
+	* Makefile: Removed configure/autoconf. Not needed anymore!
+
+	* elisp/distel.el (distel-menu-items): Added erl-reload-modules.
+
 2007-04-14  Luke Gorrie  <luke@synap.se>
 
 	* src/distel.erl (calls): Added a 'catch' over erl_syntax calls to

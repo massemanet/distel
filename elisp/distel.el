@@ -170,6 +170,7 @@ sequence. For general information about Emacs' online help, use
      (("List all erlang processes" erl-process-list)
       ("Eval an erlang expression" erl-eval-expression)
       ("Reload an erlang module" erl-reload-module)
+      ("Reload all changed erlang modules" erl-reload-modules)
       nil
       ("Profile an erlang expression" fprof)
       ("View profiler results" fprof-analyse)
