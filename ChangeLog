@@ -1,3 +1,8 @@
+2007-06-06  Luke Gorrie  <luke@synap.se>
+
+	* src/fdoc.erl (import_module): Fixed pattern matching bug.
+	Thanks Matthias Radestock.
+
 2007-05-12  Luke Gorrie  <luke@synap.se>
 
 	* Makefile: Removed configure/autoconf. Not needed anymore!
