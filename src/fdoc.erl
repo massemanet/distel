@@ -183,7 +183,7 @@ import_module(Mod) ->
 		{error, _Reason} ->
 		    skipped
 	    end;
-	error ->
+	{error, _Reason} ->
 	    skipped
     end.
 
