@@ -91,7 +91,9 @@ edb."))
 	  ((['rex 'interpreted]
 	    (message "Interpreting: %S" module))
 	   (['rex 'uninterpreted]
-	    (message "Stopped interpreting: %S" module))
+	    (message "Stopped interpreting: %S" module)
+	    (if (edb-monitor-live-p) (kill-buffer edb-monitor-buffer))
+	    (setq edb-interpreted-modules nil))
 	   (['rex ['badrpc reason]]
 	    (message "Failed to interpret-toggle: %S" reason)))))))
 

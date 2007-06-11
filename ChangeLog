@@ -1,3 +1,12 @@
+2007-06-11  Bill Clementson  <billclem@gmail.com>
+
+	* elisp/erl-service.el (erl-eval-expression): Use current region
+	as default expression to evaluate.
+
+	* elisp/edb.el (edb-toggle-interpret): Fix problem with debugger
+	not toggling properly when connection to erlang node had been
+	stopped and subsequently restarted.
+
 2007-06-06  Luke Gorrie  <luke@synap.se>
 
 	* src/fdoc.erl (import_module): Fixed pattern matching bug.
