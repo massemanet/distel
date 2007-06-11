@@ -248,8 +248,10 @@ Sessions (@pxref{Interactive Sessions}).
 @table @kbd
 
 @item C-c C-d :
-Read an Erlang expression from the minibuffer, evaluate it on an
-Erlang node, and show the result. (@code{erl-eval-expression})
+Read an Erlang expression from the minibuffer, evaluate it on an Erlang
+node, and show the result. If there is an active region in the source
+buffer, that region will be the default that is displayed in the
+minibuffer. (@code{erl-eval-expression})
 
 @item C-c C-d L
 Read a module name from the minibuffer and reload that module in an

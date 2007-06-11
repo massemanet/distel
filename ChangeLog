@@ -3,6 +3,8 @@
 	* elisp/erl-service.el (erl-eval-expression): Use current region
 	as default expression to evaluate.
 
+	* doc/distel.texi: Updated document with mod for erl-eval-expression.
+
 	* elisp/edb.el (edb-toggle-interpret): Fix problem with debugger
 	not toggling properly when connection to erlang node had been
 	stopped and subsequently restarted.
