@@ -626,7 +626,12 @@ time it spent in subfunctions."
 
 (defun erl-eval-expression (node string)
   (interactive (list (erl-target-node)
-		     (erl-add-terminator (read-string "Expression: "))))
+		     (erl-add-terminator (read-from-minibuffer
+					  "Expression: "
+					  (if (equal mark-active nil)
+					      ""
+					    (copy-region-as-kill (mark) (point))
+					    (current-kill 0))))))
   (erl-spawn
     (erl-send-rpc node
 		  'distel
