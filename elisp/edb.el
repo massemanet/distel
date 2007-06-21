@@ -91,9 +91,7 @@ edb."))
 	  ((['rex 'interpreted]
 	    (message "Interpreting: %S" module))
 	   (['rex 'uninterpreted]
-	    (message "Stopped interpreting: %S" module)
-	    (if (edb-monitor-live-p) (kill-buffer edb-monitor-buffer))
-	    (setq edb-interpreted-modules nil))
+	    (message "Stopped interpreting: %S" module))
 	   (['rex ['badrpc reason]]
 	    (message "Failed to interpret-toggle: %S" reason)))))))
 
@@ -414,7 +412,8 @@ When MOD is given, only update those visiting that module."
   "Cleanup state after the edb process exits."
   (setq edb-interpreted-modules '())
   (edb-delete-all-breakpoints)
-  (edb-update-source-buffers))
+  (edb-update-source-buffers)
+  (setq edb-monitor-node nil))
 
 ;; ----------------------------------------------------------------------
 ;; Attach process
