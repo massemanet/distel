@@ -1,3 +1,11 @@
+2007-06-21  Bill Clementson  <billclem@gmail.com>
+
+	* elisp/edb.el (edb-toggle-interpret, edb-monitor-cleanup): Reverted my 
+	2007-06-11 change (as it was causing problems when doing multi-module
+	debugging) and cleared edb-monitor-node in edb-monitor-cleanup so that 
+	debugging would be initialized properly when re-debugging the same 
+	node. Thanks to Matthias Radestock for helping to identify the bug.
+
 2007-06-11  Bill Clementson  <billclem@gmail.com>
 
 	* elisp/erl-service.el (erl-eval-expression): Use current region
