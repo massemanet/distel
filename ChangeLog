@@ -1,3 +1,8 @@
+2007-06-22  Bill Clementson  <billclem@gmail.com>
+
+	* elisp/erl-service.el (erl-reload-module): Change "eq" to "equal" 
+	when comparing node to edb-monitor-node.
+	
 2007-06-21  Bill Clementson  <billclem@gmail.com>
 
 	* elisp/edb.el (edb-toggle-interpret, edb-monitor-cleanup): Reverted my 
