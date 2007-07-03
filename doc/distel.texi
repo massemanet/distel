@@ -129,13 +129,20 @@ use the command @code{erl-choose-nodename} (@kbd{C-c C-d n}) to select
 a new node to talk to. The currently cached node name is always shown
 in the modeline.
 
-Some commands accept a prefix argument to alter their behaviour in
-some specific way. You can give a prefix with @kbd{C-u} followed by
-the command you want to call. For example, @kbd{C-u M-.} tells the
-@kbd{M-.} command to prompt for the function to lookup, instead
-choosing one by looking at the source text in the buffer. The effect,
-if any, of a prefix on a command is included in the command's
-documentation.
+Some commands accept a prefix argument to alter their behaviour in some
+specific way. You can give a prefix with @kbd{C-u} followed by the
+command you want to call. For example, @kbd{C-u M-.} tells the @kbd{M-.}
+command to prompt for the function to lookup, instead choosing one by
+looking at the source text in the buffer. The effect, if any, of a
+prefix on a command is included in the command's documentation. In
+addition, many commands take a node name as a parameter and, by default,
+the node name is defaulted to the last node name that was
+selected. However, if the command is called with a prefix, the node name
+will be prompted for.
+
+The command @code{erl-ping} (@kbd{C-c C-d g}) can be used to determine
+whether distel can communicate with a specific node. As a side effect,
+erl-ping will also load the distel modules into the node.
 
 @node Programming Aids, Applications, Introduction, Top
 @chapter Programming Aids
