@@ -21,8 +21,10 @@
 commands. Using C-u to bypasses the cache.")
 
 (defun erl-target-node ()
-  "Return the name of the default target node for commands."
-  (or erl-nodename-cache
+  "Return the name of the default target node for commands.
+Force node selection if no such node has been choosen yet, or when
+invoked with a prefix argument." 
+  (or (and (not current-prefix-arg) erl-nodename-cache)
       (erl-choose-nodename)))
 
 (defun erl-set-cookie ()
@@ -255,6 +257,19 @@ On an error, Result will be [badrpc Reason]."
 	   nil
 	   node
 	   m f a))
+
+(defun erl-ping (node)
+  "Ping the NODE, uploading distel code as a side effect."
+  (interactive (list (erl-target-node)))
+  (erl-spawn
+    (erl-send-rpc node 'erlang 'node nil)
+    (erl-receive (node)
+	((['rex response]
+          (if (equal node response)
+              (message "Successfully communicated with remote node %S"
+                       node)
+            (message "Failed to communicate with node %S: %S"
+                     node response)))))))
 
 ;;;; Process list
 
@@ -1014,10 +1029,14 @@ variables."
   "Face for function names in `fdoc' results."
   :group 'distel)
 
+(defun maybe-select-db-rebuild ()
+  (and current-prefix-arg
+       (equal (read-string "Rebuild DB (yes/no)? " "no") "yes")))
+
 (defun erl-fdoc-apropos (node regexp rebuild-db)
   (interactive (list (erl-target-node)
 		     (read-string "Regexp: ")
-		     current-prefix-arg))
+                     (maybe-select-db-rebuild)))
   (unless (string= regexp "")
     (erl-spawn
       (erl-send-rpc node 'distel 'apropos (list regexp
@@ -1069,9 +1088,8 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
 (defvar erl-mfa-regexp-arity-match    5)
 
 (defun erl-fdoc-describe (node rebuild-db)
-  (interactive
-   (list (erl-target-node)
-	 current-prefix-arg))
+  (interactive (list (erl-target-node)
+                     (maybe-select-db-rebuild)))
   (let* ((mfa (erl-read-call-mfa))
 	 (defaultstr (if (null mfa)
 			 nil
