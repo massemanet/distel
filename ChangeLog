@@ -1,3 +1,23 @@
+2007-07-02  Bill Clementson  <billclem@gmail.com> & Matthias Radestock
+
+	* elisp/erl-service.el (erl-ping): New function erl-ping checks to see
+	whether it is possible to communicate with a node.
+	
+	* elisp/erl-service.el (maybe-select-db-rebuild, erl-fdoc-apropos, 
+	erl-fdoc-describe): New function maybe-select-db-rebuild handles prefix
+	arg prompting for fdoc commands that might require a rebuild of the 
+	fdoc db.
+	
+	* elisp/erl-service.el (erl-target-node): Force node selection if no 
+	such node has been choosen yet, or when invoked with a prefix argument.
+
+	* elisp/distel.el (distel-keys): Added "C-c C-d g" key binding for 
+	ner erl-ping command.
+
+	* doc/distel.texi  (Conventions): Added comments about mods made to 
+	allow selection of a node if a command is called with a prefix argument 
+	and new erl-ping command.
+	
 2007-06-22  Bill Clementson  <billclem@gmail.com>
 
 	* elisp/erl-service.el (erl-reload-module): Change "eq" to "equal" 
