@@ -111,6 +111,7 @@ sequence. For general information about Emacs' online help, use
     ("\M-?"      erl-complete)	; Some windowmanagers hijack M-TAB..
     ("\C-c\C-de" erl-ie-show-session)
     ("\C-c\C-df" erl-refactor-subfunction)
+    ("\C-c\C-dg" erl-ping)
     ("\C-c\C-dd" erl-fdoc-describe)
     ("\C-c\C-da" erl-fdoc-apropos)
     ("\C-c\C-dw" erl-who-calls)
