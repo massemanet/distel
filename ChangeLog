@@ -1,3 +1,9 @@
+2007-07-04  Bill Clementson  <billclem@gmail.com>
+
+	* elisp/erl-service.el (erl-find-source): Stop prompting for node name 
+	when erl-find-source is called with a prefix arg (earlier change in 
+	erl-target-node also affected erl-find-source).
+	
 2007-07-02  Bill Clementson  <billclem@gmail.com> & Matthias Radestock
 
 	* elisp/erl-service.el (erl-ping): New function erl-ping checks to see
