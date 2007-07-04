@@ -787,7 +787,7 @@ When FUNCTION is specified, the point is moved to its start."
   (if (equal module (erlang-get-module))
       (when function
 	(erl-search-function function arity))
-    (let ((node (erl-target-node)))
+    (let ((node erl-nodename-cache))
       (erl-spawn
 	(erl-send-rpc node 'distel 'find_source (list (intern module)))
 	(erl-receive (function arity)
