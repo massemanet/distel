@@ -1,3 +1,11 @@
+2007-07-05  Bill Clementson  <billclem@gmail.com>
+
+	* elisp/erl-service.el (erl-nodename-history, erl-choose-nodename): 
+	Added node name default value and history. 
+	
+	* elisp/erl-service.el (erl-find-mod): Deleted function erl-find-mod
+	as its functionality has been subsumed by erl-find-source-under-point.
+	
 2007-07-05  Mats Cronqvist  <mats dot cronqvist at gmail dot youguess>
 
 	* src/distel.erl: rewrote src_from_beam/1 just because the old one
