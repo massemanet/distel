@@ -20,6 +20,9 @@
   "The name of the node most recently contacted, for reuse in future
 commands. Using C-u to bypasses the cache.")
 
+(defvar erl-nodename-history nil
+  "The historical list of node names that have been selected.")
+
 (defun erl-target-node ()
   "Return the name of the default target node for commands.
 Force node selection if no such node has been choosen yet, or when
@@ -43,11 +46,20 @@ invoked with a prefix argument."
 (defun erl-choose-nodename ()
   "Prompt the user for the nodename to connect to in future."
   (interactive)
-  (let* ((name-string (read-string "Node: "))
+  (let* ((nodename-string (if erl-nodename-cache
+			      (symbol-name erl-nodename-cache)
+			    nil))
+	 (name-string (read-string (if nodename-string
+				       (format "Node (default %s): "
+					       nodename-string)
+				     "Node: ")
+				   nil
+				   'erl-nodename-history
+				   nodename-string))
          (name (intern (if (string-match "@" name-string)
                            name-string
-                         (concat name-string
-                                 "@" (erl-determine-hostname))))))
+			 (concat name-string
+				 "@" (erl-determine-hostname))))))
     (when (string= name-string "")
       (error "No node name given"))
     (setq erl-nodename-cache name)
@@ -730,23 +742,6 @@ default.)"
   (interactive)
   (apply #'erl-find-source
          (or (erl-read-call-mfa) (error "No call at point."))))
-
-(defun erl-find-mod (modstr)
-  "goto source code of mfa. mfa can be m, m:f or m:f/a.
-Similar to erl-find-source-under-point, but prompts user for mfa."
-  (interactive (list (read-string "Module: ")))
-  (let* ((mcolon (split-string modstr ":"))
-         (mslash (case (length mcolon)
-                   (1 nil)
-                   (2 (split-string (cadr mcolon) "/"))))
-         (mod (car mcolon))
-         (fun (if mslash 
-                  (car mslash)
-                nil))
-         (ari (if (eq 2 (length mslash))
-                  (string-to-number (cadr mslash))
-                nil)))
-    (apply #'erl-find-source (list mod fun ari))))
 
 (defun erl-find-source-unwind ()
   "Unwind back from uses of `erl-find-source-under-point'."
