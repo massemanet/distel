@@ -1,3 +1,8 @@
+2007-07-05  Mats Cronqvist  <mats dot cronqvist at gmail dot youguess>
+
+	* src/distel.erl: rewrote src_from_beam/1 just because the old one
+	was ugly.
+
 2007-07-04  Bill Clementson  <billclem@gmail.com>
 
 	* elisp/erl-service.el (erl-find-source): Stop prompting for node name 

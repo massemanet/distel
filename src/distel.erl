@@ -155,39 +155,26 @@ find_source(Mod) ->
 guess_source_file(Mod, BeamFName) ->
     Erl = to_list(Mod) ++ ".erl",
     Dir = dirname(BeamFName),
-    TryL = src_from_beam(BeamFName) ++
-	[Dir ++ "/" ++ Erl,
-	 join([Dir ++ "/../src/", Erl]),
-	 join([Dir ++ "/../esrc/", Erl]),
-	 join([Dir ++ "/../erl/", Erl])],
+    DotDot = dirname(Dir),
+    TryL = [src_from_beam(Mod),
+            join([Dir, Erl]),
+            join([DotDot, src, Erl]),
+            join([DotDot, esrc, Erl]),
+            join([DotDot, erl, Erl])],
     try_srcs(TryL).
 
+try_srcs([]) -> false;
 try_srcs([H | T]) ->
-    case file:read_file_info(H) of
-	{ok, #file_info{type = regular}} ->
-	    {true, H};
-	_ ->
-	    try_srcs(T)
-    end;
-try_srcs([]) ->
-    false.
+    case filelib:is_regular(H) of 
+      true -> {true, H};
+      false-> try_srcs(T)
+    end.
 
-src_from_beam(BeamFile) ->
-    case beam_lib:chunks(BeamFile, ["CInf"]) of
-	{ok, {_, [{"CInf", Bin}]}} ->
-	    case catch binary_to_term(Bin) of
-		L when list(L) ->
-		    case lists:keysearch(source, 1, L) of
-			{value, {_, Source}} ->
-			    [Source];
-			_ ->
-			    []
-		    end;
-		_ ->
-		    []
-	    end;
-	_ ->
-	    []
+src_from_beam(Mod) ->
+    try lists:keysearch(source,1,Mod:module_info(compile)) of
+        false -> [];
+        {_,{_,Src}} -> Src
+    catch _:_ -> []
     end.
 
 %% ----------------------------------------------------------------------
