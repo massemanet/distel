@@ -138,44 +138,47 @@ parse_expr(S) ->
     erl_parse:parse_exprs(Scan).
 
 find_source(Mod) ->
-    case beamfile(Mod) of
-	{ok, BeamFName} ->
-	    case guess_source_file(Mod, BeamFName) of
-		{true, SrcFName} ->
-		    {ok, SrcFName};
-		false ->
-		    {error, fmt("Can't guess matching source file from ~p",
-				[BeamFName])}
-	    end;
-	error ->
-            {error, fmt("Can't find module '~p' on ~p", [Mod, node()])}
-    end.
+  case beamfile(Mod) of
+    {ok, BeamFName} ->
+      try {ok,guess_source_file(Mod, BeamFName)}
+      catch
+        nothing -> {error,fmt("Can't find source for ~p", [BeamFName])};
+        several -> {error,fmt("Several possible sources for ~p", [BeamFName])}
+      end;
+    error ->
+      {error, fmt("Can't find module '~p' on ~p", [Mod, node()])}
+  end.
 
-%% Ret: {true, AbsName} | false
+%% Ret: AbsName | throw(Reason)
 guess_source_file(Mod, BeamFName) ->
-    Erl = to_list(Mod) ++ ".erl",
-    Dir = dirname(BeamFName),
-    DotDot = dirname(Dir),
-    TryL = [src_from_beam(Mod),
+  Erl = to_list(Mod) ++ ".erl",
+  Dir = dirname(BeamFName),
+  DotDot = dirname(Dir),
+  try_srcs([src_from_beam(Mod),
             join([Dir, Erl]),
             join([DotDot, src, Erl]),
+            join([DotDot, src, "*", Erl]),
             join([DotDot, esrc, Erl]),
-            join([DotDot, erl, Erl])],
-    try_srcs(TryL).
+            join([DotDot, erl, Erl])]).
 
-try_srcs([]) -> false;
+try_srcs([]) -> throw(nothing);
 try_srcs([H | T]) ->
-    case filelib:is_regular(H) of 
-      true -> {true, H};
-      false-> try_srcs(T)
-    end.
+  case filelib:wildcard(H) of
+    [File] -> 
+      case filelib:is_regular(File) of 
+        true -> File;
+        false-> try_srcs(T)
+      end;
+    []    -> try_srcs(T);
+    _Multi -> throw(several)
+  end.
 
 src_from_beam(Mod) ->
-    try lists:keysearch(source,1,Mod:module_info(compile)) of
-        false -> [];
-        {_,{_,Src}} -> Src
-    catch _:_ -> []
-    end.
+  try lists:keysearch(source,1,Mod:module_info(compile)) of
+      false -> [];
+      {_,{_,Src}} -> Src
+  catch _:_ -> []
+  end.
 
 %% ----------------------------------------------------------------------
 %% Summarise all processes in the system.

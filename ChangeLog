@@ -1,3 +1,15 @@
+2007-07-20  Mats Cronqvist  <locmacr@mwlx084>
+
+	* src/distel.erl (guess_source_file): added <beamfiledir>../src/*
+	to list of directories in which to search for erl files.
+	search dirs are now:
+	the one specified in the beamfile (the 'source' field in module_info(compile))
+	<beamfiledir>
+        <beamfiledir>../src
+	<beamfiledir>../src/*
+	<beamfiledir>../esrc
+	<beamfiledir>../erl
+	
 2007-07-05  Bill Clementson  <billclem@gmail.com>
 
 	* elisp/erl-service.el (erl-nodename-history, erl-choose-nodename): 
