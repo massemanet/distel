@@ -19,7 +19,7 @@
          process_summary_and_trace/2, fprof/3, fprof_analyse/1,
          debug_toggle/2, debug_subscribe/1, debug_add/1,
          break_toggle/2, break_delete/2, break_add/2, break_restore/1,
-         modules/1, functions/2,
+         modules/1, functions/2, who_calls/3,
          free_vars/1, free_vars/2,
          apropos/1, apropos/2, describe/3, describe/4]).
 
@@ -991,290 +991,49 @@ get_int(B) ->
 %%-----------------------------------------------------------------
 %% Call graph
 %%-----------------------------------------------------------------
--define(SERVER, distel_callers).
+-define(SERVER, distel_xref).
 
-%% Ret: [{M,F,A}], M = F = binary()
+%% Ret: [{M,F,A,Line}], M = F = binary()
 who_calls(M, F, A) ->
     [{fmt("~p", [Mod]), fmt("~p", [Fun]), Aa, Line}
-     || {Mod,Fun,Aa,Line} <- calls_to(M, F, A)].
+     || {{Mod,Fun,Aa},Line} <- calls_to({M, F, A})].
 
-%% Ret: [{M,F,A,Line}] of callers to M:F/A
-calls_to(M, F, A) ->
+%% {M,F,A} -> [{{M,F,A},Line}]
+calls_to(MFA) ->
     ensure_started(),
-    call({calls_to, {M,F,A}}).
+    {ok, Res} =
+        xref:q(?SERVER, string_format("(Lin)(domain (E || ~p))", [MFA])),
+    Res.
 
-%% Ret: [{{F,A}, [{CM,CF,CA,Line}]}] of calls from M
-calls_from(M) ->
-    ensure_started(),
-    call({calls_from, M}).
+string_format(S) -> S.
+string_format(S, A) -> lists:flatten(io_lib:fwrite(S, A)).
 
 rebuild() ->
     stop(),
     ensure_started().
 
 stop() ->
-    catch exit(?SERVER, shutdown),
-    ok.
+    case whereis(?SERVER) of
+        undefined -> ok;
+        _ -> xref:stop(?SERVER),
+             ok
+    end.
 
 ensure_started() ->
     case whereis(?SERVER) of
 	undefined ->
-	    Pid = proc_lib:start(?MODULE, start, []),
-	    register(?SERVER, Pid);
+            xref:start(?SERVER),
+            foreach(fun (Dir) -> xref:add_directory(?SERVER, Dir) end,
+                    get_code_path());
 	_ ->
-	    ok
+	    xref:update(?SERVER),
+            ok
     end.
-
-call(Msg) ->
-    ?SERVER ! {Msg, self()},
-    receive {?SERVER, Reply} -> Reply end.
-
-%% This is the process that keeps data per file in the code path.
-%% It will handle the case that a file is added/removed/updated, but
-%% it will not rebuild the code path.  So if the code path changes, it needs
-%% to rebuild the entire cache.
-start() ->
-    Applies = get_applies(),
-    Callers = init_callers(Applies),
-    proc_lib:init_ack(self()),
-    loop(Applies, Callers).
-
-loop(Applies, Callers0) ->
-    receive
-	{{calls_to, MFA}, From} ->
-	    Callers1 = refresh_callers(Callers0, Applies),
-	    Res = find_calls_to(Callers1, MFA),
-	    From ! {?SERVER, Res},
-	    distel:loop(Applies, Callers1);
-	{{calls_from, M}, From} ->
-	    Callers1 = refresh_callers(Callers0, Applies),
-	    Res = find_calls_from(Callers1, M),
-	    From ! {?SERVER, Res},
-	    distel:loop(Applies, Callers1)
-    end.
-	
-%% Callers = [{Dir, [{Mod, Timestamp, Calls}]}]
-%% Calls = [{F,Arity}, [{{CalledM, CalledF, CalledArity}, Line}]]
-init_callers(Applies) ->
-    Dirs = get_code_path(),
-    InitState = [{Dir, []} || Dir <- Dirs],
-    refresh_callers(InitState, Applies).
-
-find_calls_to(Callers, MFA) ->
-    foldl(fun({_Dir, Mods}, Ac1) ->
-		  foldl(fun({M, _Timestamp, Calls}, Ac2) ->
-				foldl(fun({{F, A}, Called}, Ac3) ->
-					      foldl(fun({CMFA, Line}, Ac4)
-						       when CMFA == MFA ->
-							    [{M,F,A,Line}|Ac4];
-						       (_, Ac4) ->
-							    Ac4
-						    end, Ac3, Called)
-				      end, Ac2, Calls)
-			end, Ac1, Mods)
-	  end, [], Callers).
-
-find_calls_from([{_Dir, Mods} | T], M) ->
-    case find_calls_from_mod(Mods, M) of
-	{ok, Calls} -> Calls;
-	error       -> find_calls_from(T, M)
-    end;
-find_calls_from([], _) ->
-    [].
-
-find_calls_from_mod([{M, _Timestamp, Calls} | _], M) ->
-    {ok, Calls};
-find_calls_from_mod([_ | T], M) ->
-    find_calls_from_mod(T, M);
-find_calls_from_mod([], _M) ->
-    error.
-
-refresh_callers(Callers, _Applies) ->
-    map(fun refresh_dir/1, Callers).
-
-ts(F) ->
-    {ok, FI} = file:read_file_info(F),
-    FI#file_info.mtime.
-
-refresh_dir({Dir, Mods}) ->
-    case file:list_dir(Dir) of
-	{ok, Files} ->
-	    FsMods0 = [{to_atom(basename(F, ".beam")), ts(Dir++"/"++F)} ||
-			  F <- Files,
-			  lists:suffix(".beam", F)],
-	    FsMods = lists:keysort(1, FsMods0),
-	    {Dir, refresh_mods(Mods, FsMods)};
-	_ ->
-	    {Dir, []}
-    end.
-
-refresh_mods([{M, Ts, _Calls} = H | T1], [{M, Ts} | T2]) -> % not modified
-    [H | refresh_mods(T1, T2)];
-refresh_mods([{M, _, _} | T1], [{M, Ts} | T2]) -> % modified
-    [{M, Ts, calls(M)} | refresh_mods(T1, T2)];
-refresh_mods([{M1, _, _} | _] = L1, [{M2, Ts} | T2]) when M1 > M2 -> % M2 new
-    [{M2, Ts, calls(M2)} | refresh_mods(L1, T2)];
-refresh_mods([_ | T1], L2) -> % M1 removed
-    refresh_mods(T1, L2);
-refresh_mods([], [{M2, Ts} | T2]) -> % M2 new
-    [{M2, Ts, calls(M2)} | refresh_mods([], T2)];
-refresh_mods(_, []) ->
-    [].
-
-
-%% FIXME: make configurable (and complete in otp case)
-get_applies() ->
-    [{erlang, apply, 3},
-     {erlang, spawn, 3},
-     {erlang, spawn_link, 3},
-     {proc_lib, start_link, 3},
-     {rpc, call, 4},
-     {net_ctrl, multi_call, 3}].
 
 %% FIXME: make pruning configurable, e.g. remove all otp apps
 get_code_path() ->
     code:get_path().
 
-%% Ret: [{F,Arity}, [{{CalledM, CalledF, CalledArity}, Line}]]
-calls(Mod) ->
-    Applies = get_applies(),
-    case get_abst_from_debuginfo(Mod) of
-	{ok, {_Exports, Forms}} ->
-	    io:format("adding (debug_info): ~p\n", [Mod]),
-	    calls(Mod, Forms, Applies);
-	error ->
-	    io:format("adding (source): ~p\n", [Mod]),
-	    case get_forms_from_src(Mod) of
-		{ok, Forms} ->
-		    calls(Mod, Forms, Applies);
-		error ->
-		    io:format("not found: ~p\n", [Mod]),
-		    []
-	    end
-    end.
-
-calls(ThisMod, Tree, Applies) ->
-    {_, Calls} =
-	lists:foldl(fun(T, Acc) ->
-                            %% erl_syntax_lib:fold and friends can
-                            %% crash when encountering certain kinds
-                            %% of syntax, e.g. binary comprehensions
-                            %% (at least in R11B-4 and earlier)
-                            case catch do_funs(T, Acc, ThisMod, Applies) of
-                                {'EXIT', _} -> Acc;
-                                R -> R
-			    end
-		    end, {[], []}, Tree),
-    Calls.
-
-do_funs(Tree, {Imports, Calls} = Acc, ThisM, Applies) ->
-    case erl_syntax:type(Tree) of
-	attribute ->
-	    case catch erl_syntax_lib:analyze_attribute(Tree) of
-		{import, {Mod, Funs}} ->
-		    MFAs = [{Fun, Mod} || Fun <- Funs],
-		    {MFAs ++ Imports, Calls};
-		_ ->
-		    Acc
-	    end;
-	function ->
-	    F = erl_syntax:atom_value(erl_syntax:function_name(Tree)),
-	    A = erl_syntax:function_arity(Tree),
-	    Called = erl_syntax_lib:fold(
-		       fun(N,Ac) ->
-			       do_applications(N,Ac,ThisM,F,A,Imports,Applies)
-		       end, [], Tree),
-	    {Imports, [{{F,A}, Called} | Calls]};
-	_ ->
-	    Acc
-    end.
-
-%% FIXME: handle fun <name>/<arity> syntax.
-do_applications(Tree, Acc, ThisM,ThisF, ThisA,  Imports, Applies) ->
-    case erl_syntax:type(Tree) of
-	application ->
-	    Line = erl_syntax:get_pos(Tree),
-	    case catch erl_syntax_lib:analyze_application(Tree) of
-		{'EXIT', _X} -> % needed b/c analyze_app may throw syntax_error
-		    Acc;
-		{M, {F, A}} ->
-		    add_call(M, F, A, Line, Tree, Acc, Applies);
-		{ThisF, ThisA} -> % direct recursive call to our selves, ignore
-		    Acc;
-		{F, A} ->
-		    case lists:keysearch({F, A}, 1, Imports) of
-			{value, {_, M}} ->
-			    add_call(M, F, A, Line, Tree, Acc, Applies);
-			_ ->
-			    case is_bif(F, A) of
-				{true, M} ->
-				    add_call(M, F, A, Line, Tree, Acc, Applies);
-				false ->
-				    add_call(ThisM, F, A, Line, Tree, Acc, 
-					     Applies)
-			    end
-		    end;
-		_X ->
-		    Acc
-	    end;
-	_ ->
-	    Acc
-    end.
-
-add_call(M, F, A, Line, Tree, Calls, Applies) ->
-    MFA = {M,F,A},
-    case lists:member(MFA, Applies) of
-	true ->
-	    case application(Tree, A) of
-		{true, CalledMFA} ->
-		    [{MFA, Line}, CalledMFA | Calls];
-		false ->
-		    [{MFA, Line} | Calls]
-	    end;
-	false ->
-	    [{MFA, Line} | Calls]
-    end.
-
-application(Tree, 3) ->
-    [M, F, Args] = erl_syntax:application_arguments(Tree),
-    application(M,F,Args);
-application(Tree, 4) ->
-    [_Node, M, F, Args] = erl_syntax:application_arguments(Tree),
-    application(M,F,Args).
-
-application(M,F,Args) ->
-    case {erl_syntax:type(M), erl_syntax:type(F)} of
-	{atom, atom} ->
-	    Arity = case erl_syntax:type(Args) of
-			list -> case catch erl_syntax:list_length(Args) of
-				    N when integer(N) -> N;
-				    _ -> -1 % e.g. [A,B | T]
-				end;
-			nil -> 0;
-			_ -> -1
-		    end,
-	    {true, {erl_syntax:atom_value(M),
-		    erl_syntax:atom_value(F),
-		    Arity,
-		    erl_syntax:get_pos(M)}};
-	_ ->
-	    false
-    end.
-	    
-%% isn't there a better way to check this???
-is_bif(F, A) ->
-    case erl_bifs:is_bif(erlang, F, A) of
-	true ->
-	    {true, erlang};
-	false ->
-	    case erl_bifs:is_bif(math, F, A) of
-		true ->
-		    {true, math};
-		false ->
-		    false
-	    end
-    end.
-			  
 %%-----------------------------------------------------------------
 %% Call graph mode:
 %% 
