@@ -1,3 +1,9 @@
+2007-09-03  Bill Clementson  <billclem@gmail.com> 
+
+	* src/distel.erl: Replaced "who calls" (C-c C-d w) logic (all ~250
+	lines of it) with a single call to xref:q/2. (Patch from Matthias
+	Radestock)
+
 2007-07-20  Mats Cronqvist  <locmacr@mwlx084>
 
 	* src/distel.erl (guess_source_file): added <beamfiledir>../src/*
