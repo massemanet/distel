@@ -143,7 +143,8 @@ find_source(Mod) ->
       try {ok,guess_source_file(Mod, BeamFName)}
       catch
         nothing -> {error,fmt("Can't find source for ~p", [BeamFName])};
-        several -> {error,fmt("Several possible sources for ~p", [BeamFName])}
+        several -> {error,fmt("Several possible sources for ~p", [BeamFName])};
+	_:R -> {error,fmt("Couldnt guess source ~p ~p",[BeamFName,R])}
       end;
     error ->
       {error, fmt("Can't find module '~p' on ~p", [Mod, node()])}
@@ -162,6 +163,7 @@ guess_source_file(Mod, BeamFName) ->
             join([DotDot, erl, Erl])]).
 
 try_srcs([]) -> throw(nothing);
+try_srcs(["" | T]) -> try_srcs(T);
 try_srcs([H | T]) ->
   case filelib:wildcard(H) of
     [File] -> 
@@ -169,15 +171,17 @@ try_srcs([H | T]) ->
         true -> File;
         false-> try_srcs(T)
       end;
-    []    -> try_srcs(T);
+    [] -> try_srcs(T);
     _Multi -> throw(several)
   end.
 
 src_from_beam(Mod) ->
-  try lists:keysearch(source,1,Mod:module_info(compile)) of
-      false -> [];
-      {_,{_,Src}} -> Src
-  catch _:_ -> []
+  try 
+    case Mod:module_info(compile) of
+      [] -> int:file(Mod);
+      CompInfo -> {_,{_,Src}} = lists:keysearch(source,1,CompInfo), Src
+    end
+  catch _:_ -> ""
   end.
 
 %% ----------------------------------------------------------------------

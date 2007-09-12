@@ -1,3 +1,15 @@
+2007-09-12  Mats Cronqvist  <etxmacr@ws73032>
+
+	* src/distel.erl (src_from_beam/1): couldn't find the source name
+	in module_info/1 if the module was interpreted, which caused the
+	debugger to fail :<
+
+	the reason for the exit was that filelib:wildcard("") exits. might
+	not be a bug, but pretty wierd.
+
+	now, if the module is interpreted, the source file name is
+	retrieved from the interpreter (int:file/1)
+	
 2007-09-03  Bill Clementson  <billclem@gmail.com> 
 
 	* src/distel.erl: Replaced "who calls" (C-c C-d w) logic (all ~250
