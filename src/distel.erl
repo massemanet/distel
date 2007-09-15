@@ -20,6 +20,7 @@
          debug_toggle/2, debug_subscribe/1, debug_add/1,
          break_toggle/2, break_delete/2, break_add/2, break_restore/1,
          modules/1, functions/2, who_calls/3,
+         rebuild_completions/0, rebuild_call_graph/0,
          free_vars/1, free_vars/2,
          apropos/1, apropos/2, describe/3, describe/4]).
 
@@ -647,44 +648,33 @@ stack_pos(#attach{stack={Pos,_Max}}) -> Pos.
 %% ----------------------------------------------------------------------
 %% Completion support
 %% ----------------------------------------------------------------------
+-define(COMPLETION_SERVER, distel_complete).
+-define(COMPLETION_SERVER_OPTS, {xref_mode, modules}).
+
+rebuild_completions() ->
+    rebuild(?COMPLETION_SERVER, ?COMPLETION_SERVER_OPTS).
 
 %% Returns: [ModName] of all modules starting with Prefix.
 %% ModName = Prefix = string()
 modules(Prefix) ->
-%  FIXME: have to decide which approach is better - all loaded or all in path
-%         i, of course, prefer all in path (mbj)
-    Dirs = code:get_path(),
-    {ok, sort(foldl(fun(Dir, Acc) -> fm_dir(Dir, Prefix, Acc) end, [], Dirs))}.
-
-fm_dir(Dir, Prefix, Acc) ->
-    case file:list_dir(Dir) of
-	{ok, Files} ->
-	    Mods = [basename(F, ".beam") || F <- Files,
-					    lists:prefix(Prefix, F),
-					    lists:suffix(".beam", F)],
-	    Mods ++ Acc;
+    case  xref_q(?COMPLETION_SERVER, ?COMPLETION_SERVER_OPTS,
+                 '"~s.*" : Mod', [Prefix]) of
+	{ok, Mods} ->
+	    {ok, [atom_to_list(Mod) || Mod <- Mods]};
 	_ ->
-	    Acc
+	    {error, fmt("Can't find any matches for ~p", [Prefix])}
     end.
 
 %% Returns: [FunName] of all exported functions of Mod starting with Prefix.
 %% Mod = atom()
 %% Prefix = string()
-functions(Mod, _Prefix) ->
-%  FIXME: have to decide which approach is better - all loaded or all in path
-%         i, of course, prefer all in path (mbj)
-    case beamfile(Mod) of
-	{ok, BeamFile} ->
-	    case get_exports(BeamFile) of
-		{ok, Exports0} ->
-		    Exports = Exports0 -- [{"module_info",0},{"module_info",1}],
-		    Fns = [Fun || {Fun, _Arity} <- Exports],
-		    {ok, ordsets:to_list(ordsets:from_list(Fns))};
-		error ->
-		    {error, fmt("Can't get export list for ~p", [Mod])}
-	    end;
+functions(Mod, Prefix) ->
+    case  xref_q(?COMPLETION_SERVER, ?COMPLETION_SERVER_OPTS,                                                               
+                 '(X+B) * ~p:"~s.*"/_', [Mod, Prefix]) of                                                                   
+	{ok, Res} ->
+	    {ok, lists:usort([atom_to_list(Fun) || {_Mod, Fun, _Arity} <- Res])};
 	_ ->
-	    {error, fmt("Can't find beam file for ~p", [Mod])}
+	    {error, fmt("Can't find module ~p", [Mod])}
     end.
 
 %% ----------------------------------------------------------------------
@@ -995,7 +985,11 @@ get_int(B) ->
 %%-----------------------------------------------------------------
 %% Call graph
 %%-----------------------------------------------------------------
--define(SERVER, distel_xref).
+-define(CALL_GRAPH_SERVER, distel_call_graph).
+-define(CALL_GRAPH_SERVER_OPTS, []).
+
+rebuild_call_graph() ->
+    rebuild(?CALL_GRAPH_SERVER, ?CALL_GRAPH_SERVER_OPTS).
 
 %% Ret: [{M,F,A,Line}], M = F = binary()
 who_calls(M, F, A) ->
@@ -1004,33 +998,41 @@ who_calls(M, F, A) ->
 
 %% {M,F,A} -> [{{M,F,A},Line}]
 calls_to(MFA) ->
-    ensure_started(),
-    {ok, Res} =
-        xref:q(?SERVER, string_format("(Lin)(domain (E || ~p))", [MFA])),
+    {ok, Res} =  xref_q(?CALL_GRAPH_SERVER, ?CALL_GRAPH_SERVER_OPTS,
+                        "(Lin)(domain (E || ~p))", [MFA]),
     Res.
 
 string_format(S) -> S.
 string_format(S, A) -> lists:flatten(io_lib:fwrite(S, A)).
 
-rebuild() ->
-    stop(),
-    ensure_started().
+%%-----------------------------------------------------------------
+%% Support code for completion and call graph
+%%-----------------------------------------------------------------
 
-stop() ->
-    case whereis(?SERVER) of
+rebuild(Server, Opts) ->
+    stop(Server),
+    ensure_started(Server, Opts).
+
+stop(Server) ->
+    case whereis(Server) of
         undefined -> ok;
-        _ -> xref:stop(?SERVER),
+        _ -> xref:stop(Server),
              ok
     end.
 
-ensure_started() ->
-    case whereis(?SERVER) of
+xref_q(Server, Opts, Query, Args) ->
+    ensure_started(Server, Opts),
+    xref:q(Server, string_format(Query, Args)).
+
+ensure_started(Server, Opts) ->
+    case whereis(Server) of
 	undefined ->
-            xref:start(?SERVER),
-            foreach(fun (Dir) -> xref:add_directory(?SERVER, Dir) end,
+            xref:start(Server, Opts),
+	    xref:set_default(Server, builtins, true),
+            foreach(fun (Dir) -> xref:add_directory(Server, Dir) end,
                     get_code_path());
 	_ ->
-	    xref:update(?SERVER),
+	    xref:update(Server),
             ok
     end.
 
