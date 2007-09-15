@@ -1,3 +1,10 @@
+2007-09-03  Bill Clementson  <billclem@gmail.com> & Matthias Radestock  
+
+	* src/distel.erl: Replaced module and function
+	"completions" (M-TAB) logic with calls to xref:q/2 in order to
+	improve performance, reuse "who calls" xref code changes, and
+	provide support for BIF completions.
+	
 2007-09-12  Mats Cronqvist  <etxmacr@ws73032>
 
 	* src/distel.erl (src_from_beam/1): couldn't find the source name
