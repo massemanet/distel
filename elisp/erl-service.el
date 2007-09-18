@@ -1182,17 +1182,54 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
     (erl-receive ()
         ((['rex calls]
           (with-current-buffer (get-buffer-create "*Erlang Calls*")
+	    (erl-who-calls-mode)
             (setq buffer-read-only t)
             (let ((inhibit-read-only t))
-              (erlang-mode)
               (erase-buffer)
               (dolist (call calls)
-                (mlet [m f a _line] call
-                  ;; FIXME: Use line number for a hyperlink.
-                  (insert (format "%s:%s/%S\n" m f a)))))
+                (mlet [m f a line] call
+		  (erl-propertize-insert (list 'module m
+					       'function f
+					       'arity a
+					       'line line
+					       'face 'bold)
+					 (format "%s:%s/%S\n" m f a))))
+	      ;; Remove the final newline to ensure all lines contain xref's
+	      (backward-char 1)
+	      (delete-char 1))
             (goto-char (point-min))
             (message "")
             (pop-to-buffer (current-buffer))))))))
+
+(define-derived-mode erl-who-calls-mode fundamental-mode
+  "who-calls"
+  "Distel Who-Calls Mode. Goto caller by pressing RET.
+
+\\{erl-who-calls-mode-map}")
+
+(define-key erl-who-calls-mode-map (kbd "RET") 'erl-goto-caller)
+
+(defun erl-goto-caller ()
+  "Goto the caller that is at point."
+  (interactive)
+  (let ((line (get-text-property (line-beginning-position) 'line))
+	(module (get-text-property (line-beginning-position) 'module))
+	(node (or erl-nodename-cache (erl-target-node))))
+    (erl-spawn
+      (erl-send-rpc node 'distel 'find_source (list (intern module)))
+      (erl-receive (line)
+	  ((['rex ['ok path]]
+	    (find-file path)
+	    (goto-line line))
+	   (['rex ['error reason]]
+	    (message "Error: %s" reason)))))))
+
+(defmacro erl-propertize-insert (props &rest body)
+  "Execute and insert BODY and add PROPS to all the text that is inserted."
+  (let ((start (gensym)))
+    `(let ((,start (point)))
+       (prog1 (progn (insert ,@body))
+	 (add-text-properties ,start (point) ,props)))))
 
 (provide 'erl-service)
 
