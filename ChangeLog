@@ -1,4 +1,14 @@
-2007-09-03  Bill Clementson  <billclem@gmail.com> & Matthias Radestock  
+2007-09-17  Bill Clementson  <billclem@gmail.com> & Matthias Radestock  
+
+	* src/distel.erl: Changed who-calls xref:q call so that line
+	numbers of function calls were returned rather than the line
+	number of the start of the calling function.
+
+	* elisp/erl-service.el (erl-find-callers, erl-who-calls-mode,
+	erl-goto-caller, erl-propertize-insert): Added derived mode for
+	who-calls and functionality to go to call locations.	
+	
+2007-09-14  Bill Clementson  <billclem@gmail.com> & Matthias Radestock  
 
 	* src/distel.erl: Replaced module and function
 	"completions" (M-TAB) logic with calls to xref:q/2 in order to
