@@ -998,9 +998,10 @@ who_calls(M, F, A) ->
 
 %% {M,F,A} -> [{{M,F,A},Line}]
 calls_to(MFA) ->
-    {ok, Res} =  xref_q(?CALL_GRAPH_SERVER, ?CALL_GRAPH_SERVER_OPTS,
-                        "(Lin)(domain (E || ~p))", [MFA]),
-    Res.
+    {ok, Calls} = xref_q(?CALL_GRAPH_SERVER, ?CALL_GRAPH_SERVER_OPTS,
+			 "(XXL)(Lin)(E || ~p)", [MFA]),
+    lists:flatten([[{Caller, Line} || Line <- Lines]
+		   || {{{Caller,_},_}, Lines} <- Calls]).
 
 string_format(S) -> S.
 string_format(S, A) -> lists:flatten(io_lib:fwrite(S, A)).
