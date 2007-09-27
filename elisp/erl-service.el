@@ -827,6 +827,8 @@ When FUNCTION is specified, the point is moved to its start."
 (defun erl-complete (node)
   "Complete the module or remote function name at point."
   (interactive (list (erl-target-node)))
+  (let ((win (get-buffer-window "*Completions*" 0)))
+    (if win (with-selected-window win (bury-buffer))))
   (let ((end (point))
 	(beg (ignore-errors 
 	       (save-excursion (backward-sexp 1)
