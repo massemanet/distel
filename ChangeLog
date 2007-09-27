@@ -1,3 +1,8 @@
+2007-09-27  Bill Clementson  <billclem@gmail.com>
+
+	* elisp/erl-service.el (erl-complete): Modified Completions buffer
+	handling to better conform to standard Emacs completions.
+	
 2007-09-17  Bill Clementson  <billclem@gmail.com> & Matthias Radestock  
 
 	* src/distel.erl: Changed who-calls xref:q call so that line
