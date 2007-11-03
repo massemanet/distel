@@ -171,6 +171,11 @@ Use the distribution protocol's EXIT2 message."
       (derl-send-challenge-reply challenge)
       (fsm-change-state #'derl-recv-challenge-ack))))
 
+(defun derl-string-make-unibyte (string)
+  (if (fboundp 'string-make-unibyte)
+      (string-make-unibyte string)
+    string))
+
 (defun derl-recv-challenge-ack (event data)
   "Receive and check challenge ack. If it's OK then the handshake is
 complete and we become live."
@@ -182,7 +187,7 @@ complete and we become live."
       (fsm-fail 'wrong-tag))
     (let ((digest (buffer-substring (point) (+ (point) 16))))
       (derl-eat-msg)
-      (if (equal (derl-gen-digest (string 0 0 0 42)) digest)
+      (if (equal (derl-string-make-unibyte (derl-gen-digest (string 0 0 0 42))) digest)
 	  (derl-go-live)
 	(fsm-fail)))))
 
