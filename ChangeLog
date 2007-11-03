@@ -1,3 +1,12 @@
+2007-11-03  Bill Clementson  <billclem@gmail.com> 
+
+	* elisp/derl.el (derl-string-make-unibyte,
+	derl-recv-challenge-ack): Mods for unicode. Patch supplied by
+	Dimitris Dinodimos.
+
+	* elisp/net-fsm.el (fsm-open-socket): Mods for unicode. Patch
+	supplied by Dimitris Dinodimos.
+	
 2007-09-27  Bill Clementson  <billclem@gmail.com>
 
 	* elisp/erl-service.el (erl-complete): Modified Completions buffer
