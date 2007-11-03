@@ -55,6 +55,8 @@ addition to being passed as an argument.")
     (with-error-cleanup (kill-buffer buf)
       (let ((p (open-network-stream "netfsm" buf host port)))
 	(set-process-coding-system p 'no-conversion 'no-conversion)
+	(if (fboundp 'set-process-filter-multibyte)
+	  (set-process-filter-multibyte p nil))
 	p))))
 
 (defun fsm-connect (host port state0 &optional init-arg cont fail-cont buffer)
