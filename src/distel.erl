@@ -81,10 +81,12 @@ reload_modules() ->
     Tf = fun(F) -> {ok,{_,[{_,I}]}}=beam_lib:chunks(F,[compile_info]),T(I) end,
     Load = fun(M) -> c:l(M),M end,
     
-    [Load(M) || {M,F} <- code:all_loaded(), is_file(F), Tm(M)<Tf(F)].
+    [Load(M) || {M,F} <- code:all_loaded(), is_beamfile(F), Tm(M)<Tf(F)].
 
-is_file(F) -> ok == element(1,file:read_file_info(F)).
-    
+is_beamfile(F) -> 
+    ok == element(1,file:read_file_info(F)) andalso
+	".beam" == filename:extension(F).
+
 %% ----------------------------------------------------------------------
 %% if c:l(Mod) doesn't work, we look for the beam file in 
 %% srcdir and srcdir/../ebin; add the first one that works to path and 
