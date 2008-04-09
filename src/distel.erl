@@ -671,10 +671,10 @@ modules(Prefix) ->
 %% Mod = atom()
 %% Prefix = string()
 functions(Mod, Prefix) ->
-    case  xref_q(?COMPLETION_SERVER, ?COMPLETION_SERVER_OPTS,                                                               
-                 '(X+B) * ~p:"~s.*"/_', [Mod, Prefix]) of                                                                   
+    case  xref_q(?COMPLETION_SERVER, ?COMPLETION_SERVER_OPTS,
+                 '(X+B) * ~p:"~s.*"/_', [Mod, Prefix]) of
 	{ok, Res} ->
-	    {ok, lists:usort([atom_to_list(Fun) || {_Mod, Fun, _Arity} <- Res])};
+	    {ok,lists:usort([atom_to_list(Fun) || {_Mod, Fun, _Arity}<-Res])};
 	_ ->
 	    {error, fmt("Can't find module ~p", [Mod])}
     end.

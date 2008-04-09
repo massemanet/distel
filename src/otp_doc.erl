@@ -7,7 +7,7 @@
 -module('otp_doc').
 -author('Mats Cronqvist').
 
--define(is_str(S),is_integer(hd(S))).
+-define(is_str(S),is_integer(hd(S));S==[]).
 %% --------------------------------------------------------------------------
 %% gen_server boilerplate
 -behaviour(gen_server).
