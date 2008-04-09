@@ -7,6 +7,7 @@
 -module('otp_doc').
 -author('Mats Cronqvist').
 
+-define(is_str(S),is_integer(hd(S))).
 %% --------------------------------------------------------------------------
 %% gen_server boilerplate
 -behaviour(gen_server).
@@ -16,7 +17,7 @@
 %% --------------------------------------------------------------------------
 % API - these run in the shell
 -export([start/0,stop/0]).
--export([get_link/1,get_link/2,get_link/3]).
+-export([get/4]).
 -export([firefox/1,firefox/2,firefox/3]).
 -export([sig/1,sig/2,sig/3]).
 
@@ -29,23 +30,24 @@ stop() ->
 start() -> start([]).
 start(Props) -> assert(Props).
 
-get_link(M) when is_atom(M) -> get_link(M,'').
-get_link(M,F) when is_atom(M), is_atom(F) -> get_link(M,F,-1).
-get_link(M,F,A) when is_atom(M), is_atom(F), is_integer(A) ->
+get(What,M,F,A) when is_atom(What),is_atom(M),is_atom(F),is_integer(A) ->
+  get(What,to_list(M),to_list(F),A);
+get(sig,M,F,A) when ?is_str(M), ?is_str(F), is_integer(A) ->
   assert([]),
-  gen_server:call(?MODULE,{get_link,to_list(M),to_list(F),to_list(A)}).
+  gen_server:call(?MODULE,{sig,M,F,to_list(A)});
+get(link,M,F,A) when ?is_str(M), ?is_str(F), is_integer(A) ->
+  assert([]),
+  gen_server:call(?MODULE,{link,M,F,to_list(A)}).
 
 sig(M) -> sig(M,'').
 sig(M,F) -> sig(M,F,-1).
-sig(M,F,A) when is_atom(M), is_atom(F), is_integer(A) -> 
-  assert([]),
-  gen_server:call(?MODULE,{sig,to_list(M),to_list(F),to_list(A)}).
+sig(M,F,A) when is_atom(M), is_atom(F), is_integer(A) -> get(sig,M,F,A).
 
-firefox(M) -> ffx(get_link(M)).
-firefox(M,F) -> ffx(get_link(M,F)).
-firefox(M,F,A) -> ffx(get_link(M,F,A)).
+firefox(M) -> firefox(M,'').
+firefox(M,F) -> firefox(M,F,-1).
+firefox(M,F,A) -> ffx(get(link,M,F,A)).
   
-ffx(Link) when is_integer(hd(Link)) -> os:cmd("firefox file://"++Link);
+ffx(Link) when ?is_str(Link) -> os:cmd("firefox "++Link);
 ffx(MFAs) -> [io_str("~s:~s/~s",[M,F,A]) || {M,F,A} <- MFAs].
 
 assert(Props) ->
@@ -59,15 +61,15 @@ to_list(I) when is_integer(I)-> integer_to_list(I).
 
 %% --------------------------------------------------------------------------
 %% implementation - runs in the server
--record(state,{root_dir,browser}).
+-record(state,{root_dir,prot=file,delim="/"}).
 
 %% gen_server callbacks
 init(Props) -> 
   Dir =  proplists:get_value(root_dir, Props, code:root_dir()),
-  Browser = proplists:get_value(browser, Props, "firefox"),
+  Prot = proplists:get_value(prot, Props, file),
   ets:new(?MODULE,[named_table,ordered_set]),
-  html_index(Dir),
-  {ok,#state{root_dir=Dir,browser=Browser}}.
+  html_index(Prot,Dir),
+  {ok,#state{root_dir=Dir,prot=Prot}}.
 
 terminate(_,_) -> ok.
 code_change(_,State,_) -> {ok,State}.
@@ -78,8 +80,8 @@ handle_call(stop,_From,State) ->
   {stop,normal,ok,State};
 handle_call({sig,M,F,A},_From,State) -> 
   {reply,handle_sig(M,F,A,State),State};
-handle_call({get_link,M,F,A},_From,State) -> 
-  {reply,handle_get_link(M,F,A,State),State}.
+handle_call({link,M,F,A},_From,State) -> 
+  {reply,handle_link(M,F,A,State),State}.
 
 %% --------------------------------------------------------------------------
 handle_sig(Mo,Fu,Aa,_State) ->
@@ -89,10 +91,10 @@ handle_sig(Mo,Fu,Aa,_State) ->
     _:_ -> no_match
   end.
 
-handle_get_link(Mo,Fu,Aa,_State) ->
+handle_link(Mo,Fu,Aa,State) ->
   try 
     case matching_mfas(Mo, Fu, Aa) of
-      [{M,F,A}] -> io_str("~s#~s/~s",[e_get({file,M}),F,A]);
+      [{M,F,A}] -> format_link(M, F, A, State);
       MFAs -> 
 	case lists:usort([M || {M,_F,_A} <- MFAs]) of
 	  [M] -> e_get({file,M});
@@ -102,6 +104,14 @@ handle_get_link(Mo,Fu,Aa,_State) ->
   catch
     no_data -> []
   end.
+
+format_link(M, F, A, State) ->
+  io_str("~w://~s#~s~s~s",
+	 [State#state.prot,
+	  e_get({file,M}),
+	  F,
+	  State#state.delim,
+	  A]).
 
 get_sig(M,F,A) ->
   Sig = e_get({{sig,M,F},A}),
@@ -141,7 +151,7 @@ which_a(M,F,A) ->
 %% --------------------------------------------------------------------------
 %% read the index file
 %% store name of html file in {Mod,file}
-html_index(Dir) ->
+html_index(file,Dir) ->
   fold_file(curry(fun lines/3,Dir),[],filename:join([Dir,doc,man_index.html])).
 
 lines(Line,_,Dir) ->

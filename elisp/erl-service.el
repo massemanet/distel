@@ -795,6 +795,31 @@ When FUNCTION is specified, the point is moved to its start."
 	      (ring-remove erl-find-history-ring)
 	      (message "Error: %s" reason))))))))
 
+(defun erl-find-doc-under-point ()
+  "Find the documentation for the OTP function under point"
+  (interactive)
+  (apply #'erl-find-doc
+         (or (erl-read-call-mfa) (error "No call at point."))))
+
+(defun erl-find-doc (module function ari)
+  "Find the documentation for the OTP function module:function/arity"
+  (let ((node (or erl-nodename-cache (erl-target-node)))
+	(arity (or ari -1))
+	(what 'link))
+    (message "%s %s %d" module function arity)
+    (erl-spawn
+      (erl-send-rpc node 'otp_doc 'get (list what module function arity))
+      (erl-receive ()
+	  ((['rex nil]
+	    (message "No doc found."))
+	   (['rex link]
+	    (pop-to-buffer "*scratch*")
+	    (w3m-browse-url link))
+	   (['rex ['sig sig]]
+	    (message "Signature: %s" sig))
+	   (['rex [reaso reason]]
+	    (message "Error: %s %s" reaso reason)))))))
+
 (defun erl-search-function (function arity)
   "Goto the definition of FUNCTION/ARITY in the current buffer."
   (let ((origin (point))
