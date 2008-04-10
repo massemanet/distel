@@ -1,3 +1,19 @@
+2008-04-10  Mats Cronqvist  <masse@kreditor.se>
+
+	* elisp/erl-service.el: 
+	added erl-find-module (prompt for module name and open erl file) 
+
+	and 
+	
+	erl-find-sig-under-point (print function signature(s) in mini-buffer)
+	e.g., doing erl-find-sig-under-point on "li:fl" will print this;
+	
+	lib:flush_receive() -> void()
+	lists:flatlength(DeepList) -> int()
+	lists:flatmap(Fun, List1) -> List2
+	lists:flatten(DeepList, Tail) -> List
+	lists:flatten(DeepList) -> List
+
 2008-04-09  Mats Cronqvist  <masse@kreditor.se>
 
 	* src/otp_doc.erl: 

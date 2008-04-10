@@ -17,7 +17,7 @@
 %% --------------------------------------------------------------------------
 % API - these run in the shell
 -export([start/0,stop/0]).
--export([get/4]).
+-export([emacs/4]).
 -export([firefox/1,firefox/2,firefox/3]).
 -export([sig/1,sig/2,sig/3]).
 
@@ -30,34 +30,40 @@ stop() ->
 start() -> start([]).
 start(Props) -> assert(Props).
 
-get(What,M,F,A) when is_atom(What),is_atom(M),is_atom(F),is_integer(A) ->
-  get(What,to_list(M),to_list(F),A);
-get(sig,M,F,A) when ?is_str(M), ?is_str(F), is_integer(A) ->
-  assert([]),
-  gen_server:call(?MODULE,{sig,M,F,to_list(A)});
-get(link,M,F,A) when ?is_str(M), ?is_str(F), is_integer(A) ->
-  assert([]),
-  gen_server:call(?MODULE,{link,M,F,to_list(A)}).
+emacs(link,M,F,A) when ?is_str(M),?is_str(F),is_integer(A) ->
+  get(link,M,F,to_list(A));
+emacs(sig,M,F,A) when ?is_str(M),?is_str(F),is_integer(A) ->
+  case get(sig,M,F,to_list(A)) of
+    [] -> [];
+    Sigs -> {sig, str_join(Sigs,"\n")}
+  end;
+emacs(A,B,C,D) ->
+  erlang:display({A,B,C,D}),
+  [].
 
 sig(M) -> sig(M,'').
 sig(M,F) -> sig(M,F,-1).
-sig(M,F,A) when is_atom(M), is_atom(F), is_integer(A) -> get(sig,M,F,A).
+sig(M,F,A) when is_atom(M), is_atom(F), is_integer(A) -> 
+  get(sig,to_list(M),to_list(F),to_list(A)).
 
 firefox(M) -> firefox(M,'').
 firefox(M,F) -> firefox(M,F,-1).
-firefox(M,F,A) -> ffx(get(link,M,F,A)).
+firefox(M,F,A) when is_atom(M), is_atom(F), is_integer(A) -> 
+  ffx(get(link,to_list(M),to_list(F),to_list(A))).
   
-ffx(Link) when ?is_str(Link) -> os:cmd("firefox "++Link);
-ffx(MFAs) -> [io_str("~s:~s/~s",[M,F,A]) || {M,F,A} <- MFAs].
+ffx({link,Link}) -> os:cmd("firefox "++Link);
+ffx({mfas,MFAs}) -> MFAs;
+ffx([]) -> [].
+
+get(W,M,F,A) when W==sig;W==link, ?is_str(M), ?is_str(F), ?is_str(A) ->
+  assert([]),
+  gen_server:call(?MODULE,{W,M,F,A}).
 
 assert(Props) ->
   case whereis(?MODULE) of
     undefined -> gen_server:start({local,?MODULE},?MODULE,Props,[]);
     Pid -> {ok,Pid}
   end.
-
-to_list(A) when is_atom(A) -> atom_to_list(A);
-to_list(I) when is_integer(I)-> integer_to_list(I).
 
 %% --------------------------------------------------------------------------
 %% implementation - runs in the server
@@ -88,30 +94,34 @@ handle_sig(Mo,Fu,Aa,_State) ->
   try
     [get_sig(M,F,A) || {M,F,A} <- matching_mfas(Mo, Fu, Aa)]
   catch
-    _:_ -> no_match
+    _:_ -> []
   end.
 
 handle_link(Mo,Fu,Aa,State) ->
   try 
-    case matching_mfas(Mo, Fu, Aa) of
-      [{M,F,A}] -> format_link(M, F, A, State);
-      MFAs -> 
-	case lists:usort([M || {M,_F,_A} <- MFAs]) of
-	  [M] -> e_get({file,M});
-	  _ -> MFAs
-	end
-    end
+    MFAs = matching_mfas(Mo, Fu, Aa),
+    until([fun()->link_with_anchor(MFAs,State) end,
+	   fun()->link_without_anchor(MFAs,State) end,
+	   fun()->mfa_multi(MFAs,State) end])
   catch
-    no_data -> []
+    _C:_R -> []
   end.
 
-format_link(M, F, A, State) ->
-  io_str("~w://~s#~s~s~s",
-	 [State#state.prot,
-	  e_get({file,M}),
-	  F,
-	  State#state.delim,
-	  A]).
+until([F|Fs]) ->
+  try F()
+  catch _:_ ->until(Fs)
+  end.
+
+link_with_anchor(MFAs,State) -> 
+  [_] = lists:usort([{M,F}||{M,F,_A}<-MFAs]),
+  {A,{M,F}} = lists:min([{A,{M,F}}||{M,F,A}<-MFAs]),
+  {link,io_str("~w://~s#~s~s~s",
+	 [State#state.prot,e_get({file,M}),F,State#state.delim,A])}.
+link_without_anchor(MFAs,State) -> 
+  [M] = lists:usort([M || {M,_F,_A} <- MFAs]),
+  {link,io_str("~w://~s",[State#state.prot, e_get({file,M})])}.
+mfa_multi(MFAs,_State) ->
+  {mfas,str_join([io_str("~s:~s/~s",[M,F,A])||{M,F,A}<-MFAs],", ")}.
 
 get_sig(M,F,A) ->
   Sig = e_get({{sig,M,F},A}),
@@ -166,7 +176,7 @@ lines(Line,_,Dir) ->
 
 %% --------------------------------------------------------------------------
 %% read a module's html file
-%% store the function names in {Mod,fs}, the arities in {M,F,as} and the 
+%% store the function names in {fs,Mod}, the arities in {M,F,as} and the 
 %% function signature in {M,F,A,sig}
 
 maybe_cache(M) ->
@@ -181,8 +191,12 @@ cache_funcs(M) ->
 
 funcsf(Line,A,M) ->
   case string:tokens(Line++A,"<>\"") of
+    ["A NAME=",FA,"STRONG","CODE",Sig,"/CODE","/STRONG","/A","BR"|_] ->
+      a_line(M,string:tokens(FA,"/"),Sig),[];	% -R11
     ["P","A NAME=",FA,"STRONG","CODE",Sig,"/CODE","/STRONG","/A","BR"|_] ->
       a_line(M,string:tokens(FA,"/"),Sig),[];	% -R11
+    ["a name=",FA,"span class=","bold_code",Sig,"/span","/a","br/"|_] ->
+      a_line(M,string:tokens(FA,"-"),Sig),[];	% R12-
     ["p","a name=",FA,"span class=","bold_code",Sig,"/span","/a","br/"|_] ->
       a_line(M,string:tokens(FA,"-"),Sig),[];	% R12-
     ["P","A NAME=",_,"STRONG","CODE"|_] ->	% -R11, broken lines
@@ -251,3 +265,10 @@ io_str(F,A) -> lists:flatten(io_lib:format(F,A)).
 
 dehtml(Str) ->
   element(2,regexp:sub(Str,"&#62;",">")).
+
+str_join([], _Sep) -> "";
+str_join([Pref|Toks], Sep) ->
+  lists:foldl(fun(Tok,O) -> O++Sep++Tok end, Pref, Toks).
+
+to_list(A) when is_atom(A) -> atom_to_list(A);
+to_list(I) when is_integer(I)-> integer_to_list(I).

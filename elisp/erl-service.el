@@ -78,8 +78,10 @@ integer."
          (mfa (if (or (null mfa-at-point)
                       current-prefix-arg
                       distel-tags-compliant)
-                  (erl-parse-mfa (read-string "Function reference: "
-                                              (erl-format-mfa mfa-at-point)))
+                  (erl-parse-mfa 
+		   (read-string 
+		    "Function reference: "
+		    (if current-prefix-arg nil (erl-format-mfa mfa-at-point))))
                 mfa-at-point)))
     mfa))
 
@@ -773,6 +775,10 @@ default.)"
   (when (eq (char-after) ?:)
     (forward-sexp)))
 
+(defun erl-find-module ()
+  (interactive)
+  (erl-find-source (read-string "module: ")))
+ 
 (defun erl-find-source (module &optional function arity)
   "Find the source code for MODULE in a buffer, loading it if necessary.
 When FUNCTION is specified, the point is moved to its start."
@@ -796,29 +802,35 @@ When FUNCTION is specified, the point is moved to its start."
 	      (message "Error: %s" reason))))))))
 
 (defun erl-find-doc-under-point ()
-  "Find the documentation for the OTP function under point"
+  "Find the html documentation for the (possibly incomplete) OTP 
+function under point"
   (interactive)
-  (apply #'erl-find-doc
-         (or (erl-read-call-mfa) (error "No call at point."))))
+  (erl-find-doc 'link))
 
-(defun erl-find-doc (module function ari)
-  "Find the documentation for the OTP function module:function/arity"
-  (let ((node (or erl-nodename-cache (erl-target-node)))
-	(arity (or ari -1))
-	(what 'link))
-    (message "%s %s %d" module function arity)
-    (erl-spawn
-      (erl-send-rpc node 'otp_doc 'get (list what module function arity))
-      (erl-receive ()
-	  ((['rex nil]
-	    (message "No doc found."))
-	   (['rex link]
-	    (pop-to-buffer "*scratch*")
-	    (w3m-browse-url link))
-	   (['rex ['sig sig]]
-	    (message "Signature: %s" sig))
-	   (['rex [reaso reason]]
-	    (message "Error: %s %s" reaso reason)))))))
+(defun erl-find-sig-under-point ()
+  "Find the signatures for the (possibly incomplete) OTP function under point"
+  (interactive)
+  (erl-find-doc 'sig))
+
+(defun erl-find-doc (what)
+  "Find the documentation for the OTP function under point. if WHAT is 'link, tries to get a link to the html docs, and open it in a w3m buffer. if what is 'sig, prints the function signature in the mini-buffer."
+  (destructuring-bind (module function ari) 
+      (or (erl-read-call-mfa) (error "No call at point."))
+    (let ((node (or erl-nodename-cache (erl-target-node)))
+	  (arity (or ari -1)))
+      (erl-spawn
+	(erl-send-rpc node 'otp_doc 'emacs (list what module function arity))
+	(erl-receive ()
+	    ((['rex nil]
+	      (message "No doc found."))
+	     (['rex ['mfas string]]
+	      (message "candidates: %s" string))
+	     (['rex ['sig string]]
+	      (message "%s" string))
+	     (['rex ['link link]]
+	      (w3m-browse-url link))
+	     (['rex [reaso reason]]
+	      (message "Error: %s %s" reaso reason))))))))
 
 (defun erl-search-function (function arity)
   "Goto the definition of FUNCTION/ARITY in the current buffer."
