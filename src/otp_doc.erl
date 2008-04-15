@@ -51,9 +51,9 @@ firefox(M,F) -> firefox(M,F,-1).
 firefox(M,F,A) when is_atom(M), is_atom(F), is_integer(A) -> 
   ffx(get(link,to_list(M),to_list(F),to_list(A))).
   
-ffx({link,Link}) -> os:cmd("firefox "++Link);
+ffx({link,Link}) -> os:cmd("firefox "++Link),ok;
 ffx({mfas,MFAs}) -> MFAs;
-ffx([]) -> [].
+ffx([]) -> no_doc.
 
 get(W,M,F,A) when W==sig;W==link, ?is_str(M), ?is_str(F), ?is_str(A) ->
   assert([]),
@@ -67,7 +67,7 @@ assert(Props) ->
 
 %% --------------------------------------------------------------------------
 %% implementation - runs in the server
--record(state,{root_dir,prot=file,delim="/"}).
+-record(state,{root_dir,prot=file,delim=delim()}).
 
 %% gen_server callbacks
 init(Props) -> 
@@ -109,7 +109,7 @@ handle_link(Mo,Fu,Aa,State) ->
 
 until([F|Fs]) ->
   try F()
-  catch _:_ ->until(Fs)
+  catch _:_ -> until(Fs)
   end.
 
 link_with_anchor(MFAs,State) -> 
@@ -176,8 +176,8 @@ lines(Line,_,Dir) ->
 
 %% --------------------------------------------------------------------------
 %% read a module's html file
-%% store the function names in {fs,Mod}, the arities in {M,F,as} and the 
-%% function signature in {M,F,A,sig}
+%% store the function names in {fs,Mod}, the arities in {{as,M},F} and the 
+%% function signature in {{sig,M,F},A}
 
 maybe_cache(M) ->
   try e_get({fs,M}) 
@@ -190,17 +190,13 @@ cache_funcs(M) ->
   fold_file(curry(fun funcsf/3,M), [], e_get({file,M})).
 
 funcsf(Line,A,M) ->
-  case string:tokens(Line++A,"<>\"") of
-    ["A NAME=",FA,"STRONG","CODE",Sig,"/CODE","/STRONG","/A","BR"|_] ->
-      a_line(M,string:tokens(FA,"/"),Sig),[];	% -R11
-    ["P","A NAME=",FA,"STRONG","CODE",Sig,"/CODE","/STRONG","/A","BR"|_] ->
-      a_line(M,string:tokens(FA,"/"),Sig),[];	% -R11
+  case trim_P(string:tokens(Line++A,"<>\"")) of
     ["a name=",FA,"span class=","bold_code",Sig,"/span","/a","br/"|_] ->
-      a_line(M,string:tokens(FA,"-"),Sig),[];	% R12-
-    ["p","a name=",FA,"span class=","bold_code",Sig,"/span","/a","br/"|_] ->
-      a_line(M,string:tokens(FA,"-"),Sig),[];	% R12-
-    ["P","A NAME=",_,"STRONG","CODE"|_] ->	% -R11, broken lines
-      Line;
+      a_line(M,fa(FA),trim_erlang(Sig)),[];	% R12-
+    ["A NAME=",FA,"STRONG","CODE",Sig,"/CODE","/STRONG","/A","BR"|_] ->
+      a_line(M,fa(FA),trim_erlang(Sig)),[];	% -R11
+    ["A NAME=",_,"STRONG","CODE"|_] ->
+      Line;					% -R11, broken lines
     _ -> 
       case A of
 	[] -> [];
@@ -213,6 +209,20 @@ a_line(M,[F,A],Sig) ->
       e_bag({{as,M},F}, A),
       e_set({{sig,M,F},A}, dehtml(Sig))
   catch _:_ -> ok
+  end.
+
+fa(FA) -> string:tokens(trim_erlang(FA),delim()).
+
+trim_P(["P"|L]) -> L;
+trim_P(["p"|L]) -> L;
+trim_P(L)       -> L.
+
+trim_erlang("erlang:"++X) -> X;
+trim_erlang(X) -> X.
+
+delim() ->
+  try erlang:system_info(otp_release), "-"
+  catch _:_ -> "/"
   end.
 
 %% --------------------------------------------------------------------------

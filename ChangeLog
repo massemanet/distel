@@ -1,3 +1,9 @@
+2008-04-15  Mats Cronqvist  <masse@kreditor.se>
+
+	* src/otp_doc.erl: 
+	handled the special case of the "erlang" module.
+	handling the F-A delimiter that changed between R11 and R12.
+
 2008-04-10  Mats Cronqvist  <masse@kreditor.se>
 
 	* elisp/erl-service.el: 
