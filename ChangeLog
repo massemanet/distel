@@ -1,6 +1,10 @@
 2008-04-15  Mats Cronqvist  <masse@kreditor.se>
 
 	* src/otp_doc.erl: 
+	added modules/1 and functions/2
+	fixed special case for the gen_server/gen_fsm callbacks
+
+	* src/otp_doc.erl: 
 	handled the special case of the "erlang" module.
 	handling the F-A delimiter that changed between R11 and R12.
 

@@ -17,7 +17,7 @@
 %% --------------------------------------------------------------------------
 % API - these run in the shell
 -export([start/0,stop/0]).
--export([emacs/4]).
+-export([distel/4,modules/1,functions/2,arguments/2]).
 -export([firefox/1,firefox/2,firefox/3]).
 -export([sig/1,sig/2,sig/3]).
 
@@ -30,34 +30,37 @@ stop() ->
 start() -> start([]).
 start(Props) -> assert(Props).
 
-emacs(link,M,F,A) when ?is_str(M),?is_str(F),is_integer(A) ->
-  get(link,M,F,to_list(A));
-emacs(sig,M,F,A) when ?is_str(M),?is_str(F),is_integer(A) ->
-  case get(sig,M,F,to_list(A)) of
+distel(link,M,F,A) when ?is_str(M),?is_str(F),is_integer(A) -> 
+  get(link,M,F,A);
+distel(sig,M,F,A) when ?is_str(M),?is_str(F),is_integer(A) ->
+  case get(sig,M,F,A) of
     [] -> [];
     Sigs -> {sig, str_join(Sigs,"\n")}
   end;
-emacs(A,B,C,D) ->
+distel(A,B,C,D) ->
   erlang:display({A,B,C,D}),
   [].
 
 sig(M) -> sig(M,'').
 sig(M,F) -> sig(M,F,-1).
-sig(M,F,A) when is_atom(M), is_atom(F), is_integer(A) -> 
-  get(sig,to_list(M),to_list(F),to_list(A)).
+sig(M,F,A) when is_atom(M), is_atom(F), is_integer(A) -> get(sig,M,F,A).
 
 firefox(M) -> firefox(M,'').
 firefox(M,F) -> firefox(M,F,-1).
 firefox(M,F,A) when is_atom(M), is_atom(F), is_integer(A) -> 
-  ffx(get(link,to_list(M),to_list(F),to_list(A))).
+  ffx(get(link,M,F,A)).
   
 ffx({link,Link}) -> os:cmd("firefox "++Link),ok;
 ffx({mfas,MFAs}) -> MFAs;
 ffx([]) -> no_doc.
 
-get(W,M,F,A) when W==sig;W==link, ?is_str(M), ?is_str(F), ?is_str(A) ->
+modules(Prefix) -> {ok,get(mods,Prefix,"","")}.
+functions(Mod,Prefix) -> {ok,get(funcs,Mod,Prefix,"")}.
+arguments(Mod,Fun) -> {ok,""}.
+
+get(W,M,F,A) when is_atom(W) ->
   assert([]),
-  gen_server:call(?MODULE,{W,M,F,A}).
+  gen_server:call(?MODULE,{W,to_list(M),to_list(F),to_list(A)}).
 
 assert(Props) ->
   case whereis(?MODULE) of
@@ -86,6 +89,10 @@ handle_call(stop,_From,State) ->
   {stop,normal,ok,State};
 handle_call({sig,M,F,A},_From,State) -> 
   {reply,handle_sig(M,F,A,State),State};
+handle_call({mods,M,_,_},_From,State) -> 
+  {reply,handle_mods(M,State),State};
+handle_call({funcs,M,F,_},_From,State) -> 
+  {reply,handle_funcs(M,F,State),State};
 handle_call({link,M,F,A},_From,State) -> 
   {reply,handle_link(M,F,A,State),State}.
 
@@ -96,6 +103,11 @@ handle_sig(Mo,Fu,Aa,_State) ->
   catch
     _:_ -> []
   end.
+
+handle_mods(Prefix,_State) ->
+  all_prefix_keys({file,Prefix}).
+handle_funcs(Mod,Prefix,_State) ->
+  [F || {_,F} <- all_fs(Mod,Prefix)].
 
 handle_link(Mo,Fu,Aa,State) ->
   try 
@@ -204,6 +216,7 @@ funcsf(Line,A,M) ->
       end
   end.
 
+a_line(_,["Module:"++_,_],_) -> ok;  %ignore the gen_server/gen_fsm callbacks
 a_line(M,[F,A],Sig) ->
   try e_bag({fs,M},F),
       e_bag({{as,M},F}, A),
@@ -281,4 +294,5 @@ str_join([Pref|Toks], Sep) ->
   lists:foldl(fun(Tok,O) -> O++Sep++Tok end, Pref, Toks).
 
 to_list(A) when is_atom(A) -> atom_to_list(A);
-to_list(I) when is_integer(I)-> integer_to_list(I).
+to_list(I) when is_integer(I)-> integer_to_list(I);
+to_list(S) when ?is_str(S) -> S.
