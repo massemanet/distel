@@ -819,7 +819,7 @@ function under point"
     (let ((node (or erl-nodename-cache (erl-target-node)))
 	  (arity (or ari -1)))
       (erl-spawn
-	(erl-send-rpc node 'otp_doc 'emacs (list what module function arity))
+	(erl-send-rpc node 'otp_doc 'distel (list what module function arity))
 	(erl-receive ()
 	    ((['rex nil]
 	      (message "No doc found."))
