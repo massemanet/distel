@@ -7,7 +7,7 @@
 -module('otp_doc').
 -author('Mats Cronqvist').
 
--define(is_str(S),is_integer(hd(S));S==[]).
+-define(is_str(S),(S==[] orelse is_integer(hd(S)))).
 %% --------------------------------------------------------------------------
 %% gen_server boilerplate
 -behaviour(gen_server).
@@ -35,6 +35,7 @@ distel(link,M,F,A) when ?is_str(M),?is_str(F),is_integer(A) ->
 distel(sig,M,F,A) when ?is_str(M),?is_str(F),is_integer(A) ->
   case get(sig,M,F,A) of
     [] -> [];
+    no_html -> no_html;
     Sigs -> {sig, str_join(Sigs,"\n")}
   end;
 distel(A,B,C,D) ->
@@ -48,15 +49,24 @@ sig(M,F,A) when is_atom(M), is_atom(F), is_integer(A) -> get(sig,M,F,A).
 firefox(M) -> firefox(M,'').
 firefox(M,F) -> firefox(M,F,-1).
 firefox(M,F,A) when is_atom(M), is_atom(F), is_integer(A) -> 
-  ffx(get(link,M,F,A)).
+  case get(link,M,F,A) of
+    no_html -> no_doc_installed;
+    Link -> ffx(Link)
+  end.
   
 ffx({link,Link}) -> os:cmd("firefox "++Link),ok;
 ffx({mfas,MFAs}) -> MFAs;
 ffx([]) -> no_doc.
 
-modules(Prefix) -> {ok,get(mods,Prefix,"","")}.
-functions(Mod,Prefix) -> {ok,get(funcs,Mod,Prefix,"")}.
+modules(Prefix) -> completions(mods,Prefix,"").
+functions(Mod,Prefix) -> completions(funcs,Mod,Prefix).
 arguments(Mod,Fun) -> {ok,""}.
+
+completions(What,M,F) ->
+  case get(What,M,F,"") of
+    no_html -> {error,no_html};
+    Ans -> {ok,Ans}
+  end.
 
 get(W,M,F,A) when is_atom(W) ->
   assert([]),
@@ -77,8 +87,11 @@ init(Props) ->
   Dir =  proplists:get_value(root_dir, Props, code:root_dir()),
   Prot = proplists:get_value(prot, Props, file),
   ets:new(?MODULE,[named_table,ordered_set]),
-  html_index(Prot,Dir),
-  {ok,#state{root_dir=Dir,prot=Prot}}.
+  try html_index(Prot,Dir) 
+      {ok,#state{root_dir=Dir,prot=Prot}}
+  catch _:_ -> 
+      {ok,no_html}
+  end.
 
 terminate(_,_) -> ok.
 code_change(_,State,_) -> {ok,State}.
@@ -87,6 +100,8 @@ handle_info(_In,State) -> {noreply,State}.
 
 handle_call(stop,_From,State) -> 
   {stop,normal,ok,State};
+handle_call(_In,_From,no_html) ->
+  {reply,no_html,no_html};
 handle_call({sig,M,F,A},_From,State) -> 
   {reply,handle_sig(M,F,A,State),State};
 handle_call({mods,M,_,_},_From,State) -> 
@@ -140,9 +155,15 @@ get_sig(M,F,A) ->
   io_str("~s:~s",[M,Sig]).
 
 matching_mfas(Mo, Fu, Aa) ->
-    Ms = all_prefix_keys({file,Mo}),
-    MFs = lists:append([all_fs(M,Fu) || M <- Ms]),
-    lists:append([[{M,F,A} || A <- which_a(M,F,Aa)] || {M,F} <- MFs]).
+  MFs = lists:append([all_fs(M,Fu) || M <- matching_ms(Mo)]),
+  lists:append([[{M,F,A} || A <- which_a(M,F,Aa)] || {M,F} <- MFs]).
+
+matching_ms(M) ->
+  Ms = all_prefix_keys({file,M}),
+  case lists:member(M,Ms) of 
+    true -> [M];
+    false-> Ms
+  end.
 
 all_fs(Mo,Fu) ->
   maybe_cache(Mo),

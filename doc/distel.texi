@@ -263,14 +263,14 @@ minibuffer. (@code{erl-eval-expression})
 @item C-c C-d L
 Read a module name from the minibuffer and reload that module in an
 Erlang node. (@code{erl-reload-module})
+
+@item C-c C-d r
+Reload all loaded modules that are out of date (i.e. the loaded beam is 
+compiled before the corresponding beam file.) (@code{erl-reload-modules})
 @end table
 
 @node Refactoring, Documentation, Evaluation, Programming Aids
 @section Refactoring
-
-@emph{The Refactoring feature requires the syntax-tools package to be
-in the Erlang node's code path. You can download syntax-tools from the
-erlang.org ``User Contributions'' area.}
 
 Expressions within functions can be automatically ``refactored'' into
 their own sub-functions by using the @code{erl-refactor-subfunction}
@@ -358,6 +358,35 @@ foo(X)
 
 @node Documentation,  , Refactoring, Programming Aids
 @section Documentation
+
+Browsing of the OTP documentation is provided by an Erlang program 
+called @code{otp_doc}. The OTP html docs are scanned on-the-fly, and
+for each M:F/A two pieces of data are extracted (and cached): the 
+@strong{signature} and the @strong{link}.
+
+The signature is a string describing the functions name, arguments 
+and return value;
+@code{lists:usort(List1) -> List2}
+Signature(s) are printed in the mini-buffer by the 
+@code{erl-find-sig} functions. Note that there is implicit 
+wildcarding; running @code{erl-find-sig} on @code{"li:fl"}
+will print this in the mini-buffer;
+@example
+lib:flush_receive() -> void()
+lists:flatlength(DeepList) -> int()
+lists:flatmap(Fun, List1) -> List2
+lists:flatten(DeepList, Tail) -> List
+lists:flatten(DeepList) -> List
+@end example
+
+The link is used by the @code{erl-find-doc} functions to display the 
+full documentation in Emacs (requires the @code{w3m} package.) If 
+there is more than one match (see above), a list of candidates will
+be written in the mini-buffer;
+@example
+candidates: lib:flush_receive/0, lists:flatlength/1, lists:flatmap/2, 
+lists:flatten/2, lists:flatten/1
+@end example
 
 Simple online Erlang documentation is provided via an Erlang program
 called @code{fdoc}. The documentation is automatically scanned out of

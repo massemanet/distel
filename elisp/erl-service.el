@@ -805,19 +805,38 @@ When FUNCTION is specified, the point is moved to its start."
   "Find the html documentation for the (possibly incomplete) OTP 
 function under point"
   (interactive)
-  (erl-find-doc 'link))
+  (erl-do-find-doc 'link 'point))
+
+(defun erl-find-doc ()
+  (interactive)
+  (erl-do-find-doc 'link nil))
 
 (defun erl-find-sig-under-point ()
   "Find the signatures for the (possibly incomplete) OTP function under point"
   (interactive)
-  (erl-find-doc 'sig))
+  (erl-do-find-doc 'sig 'point))
 
-(defun erl-find-doc (what)
-  "Find the documentation for the OTP function under point. if WHAT is 'link, tries to get a link to the html docs, and open it in a w3m buffer. if what is 'sig, prints the function signature in the mini-buffer."
-  (destructuring-bind (module function ari) 
-      (or (erl-read-call-mfa) (error "No call at point."))
+(defun erl-find-sig ()
+  (interactive)
+  (erl-do-find-doc 'sig nil))
+
+(defun erl-do-find-doc (what how &optional module function ari)
+  "Find the documentation for an OTP mfa. 
+if WHAT is 'link, tries to get a link to the html docs, and open 
+it in a w3m buffer. if WHAT is nil, prints the function signature 
+in the mini-buffer.
+If HOW is 'point, tries to find the mfa at point; if HOW is nil, 
+prompts for an mfa."
+  (destructuring-bind 
+      (mod fun ari)
+      (or (if (null how)
+	      (erl-parse-mfa (read-string "Function reference: ") "-")
+	    (erl-mfa-at-point))
+	  (error "No call at point."))
     (let ((node (or erl-nodename-cache (erl-target-node)))
-	  (arity (or ari -1)))
+	  (arity (or ari -1))
+	  (module (if (equal mod "-") fun mod))
+	  (function (if (equal mod "-") nil fun)))
       (erl-spawn
 	(erl-send-rpc node 'otp_doc 'distel (list what module function arity))
 	(erl-receive ()

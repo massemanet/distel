@@ -650,6 +650,18 @@ stack_pos(#attach{stack={Pos,_Max}}) -> Pos.
 %% ----------------------------------------------------------------------
 %% Completion support
 %% ----------------------------------------------------------------------
+
+modules(Prefix) ->
+  case otp_doc:modules(Prefix) of
+    {ok,Ans} -> {ok,Ans};
+    {error,_}-> xref_modules(Prefix)
+  end.
+functions(Mod, Prefix) -> 
+  case otp_doc:functions(Mod,Prefix) of
+    {ok,Ans} -> {ok,Ans};
+    {error,_}-> xref_functions(Mod,Prefix)
+  end.
+
 -define(COMPLETION_SERVER, distel_complete).
 -define(COMPLETION_SERVER_OPTS, {xref_mode, modules}).
 
@@ -658,7 +670,7 @@ rebuild_completions() ->
 
 %% Returns: [ModName] of all modules starting with Prefix.
 %% ModName = Prefix = string()
-modules(Prefix) ->
+xref_modules(Prefix) ->
     case  xref_q(?COMPLETION_SERVER, ?COMPLETION_SERVER_OPTS,
                  '"~s.*" : Mod', [Prefix]) of
 	{ok, Mods} ->
@@ -670,7 +682,7 @@ modules(Prefix) ->
 %% Returns: [FunName] of all exported functions of Mod starting with Prefix.
 %% Mod = atom()
 %% Prefix = string()
-functions(Mod, Prefix) ->
+xref_functions(Mod, Prefix) ->
     case  xref_q(?COMPLETION_SERVER, ?COMPLETION_SERVER_OPTS,
                  '(X+B) * ~p:"~s.*"/_', [Mod, Prefix]) of
 	{ok, Res} ->

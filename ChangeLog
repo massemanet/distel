@@ -1,3 +1,22 @@
+2008-05-13  Mats Cronqvist  <masse@kreditor.se>
+
+	* src/otp_doc.erl:
+	* src/distel.erl:
+	* elisp/erl-service.el:
+	
+	changed completion support (erl-complete) to try completions from
+	the html docs first, and fall back to xref if that fails. old
+	behaviour was to try xref only. not so great since;
+	
+	xref is annoyingly slow
+	xref also completes internal exports (arguably a feature?)
+	
+	elisp functions to browse the docs;
+	erl-find-doc
+	erl-find-sig
+	erl-find-sig-under-point
+	erl-find-doc-under-point
+
 2008-04-15  Mats Cronqvist  <masse@kreditor.se>
 
 	* src/otp_doc.erl: 
