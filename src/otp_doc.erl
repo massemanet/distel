@@ -60,7 +60,7 @@ ffx([]) -> no_doc.
 
 modules(Prefix) -> completions(mods,Prefix,"").
 functions(Mod,Prefix) -> completions(funcs,Mod,Prefix).
-arguments(Mod,Fun) -> {ok,""}.
+arguments(_Mod,_Fun) -> {ok,""}.
 
 completions(What,M,F) ->
   case get(What,M,F,"") of
@@ -87,7 +87,7 @@ init(Props) ->
   Dir =  proplists:get_value(root_dir, Props, code:root_dir()),
   Prot = proplists:get_value(prot, Props, file),
   ets:new(?MODULE,[named_table,ordered_set]),
-  try html_index(Prot,Dir) 
+  try html_index(Prot,Dir),
       {ok,#state{root_dir=Dir,prot=Prot}}
   catch _:_ -> 
       {ok,no_html}
