@@ -1,0 +1,112 @@
+<html lang="en">
+<head>
+<title>Refactoring - Distel User Manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Distel User Manual">
+<meta name="generator" content="makeinfo 4.11">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Programming-Aids.html#Programming-Aids" title="Programming Aids">
+<link rel="prev" href="Evaluation.html#Evaluation" title="Evaluation">
+<link rel="next" href="Documentation.html#Documentation" title="Documentation">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Refactoring"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Documentation.html#Documentation">Documentation</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Evaluation.html#Evaluation">Evaluation</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Programming-Aids.html#Programming-Aids">Programming Aids</a>
+<hr>
+</div>
+
+<h3 class="section">2.4 Refactoring</h3>
+
+<p>Expressions within functions can be automatically &ldquo;refactored&rdquo; into
+their own sub-functions by using the <code>erl-refactor-subfunction</code>
+command (<kbd>C-c C-d f</kbd>). The command takes the text of the
+expression, determines which variables it needs from the original
+function, and then generates the new function and puts it on the kill
+ring for insertion by hand (with <code>yank</code>, <kbd>C-y</kbd>). The original
+function is rewritten with a call to the subfunction where the
+refactored expression used to be.
+
+   <p>For example, suppose we want to refactor the following function:
+
+<pre class="example">     eval_expression(S) -&gt;
+         case parse_expr(S) of
+             {ok, Parse} -&gt;
+                 case catch erl_eval:exprs(Parse, []) of
+                     {value, V, _} -&gt;
+                         {ok, flatten(io_lib:format("~p", [V]))};
+                     {'EXIT', Reason} -&gt;
+                         {error, Reason}
+                 end;
+             {error, {_, erl_parse, Err}} -&gt;
+                 {error, Err}
+         end.
+</pre>
+   <p>In this example we will take the inner <code>case</code> expression and move
+it into a new function called <code>try_evaluation</code>. We do this by
+setting the Emacs region (using the mouse or <kbd>C-SPC</kbd>) from the
+word <code>case</code> until the end of the word <code>end</code> &ndash; marking
+exactly one whole expression. We then enter <kbd>C-c C-d f</kbd> to
+refactor, and when prompted for the function name we respond with
+&ldquo;<code>try_evaluation</code>&rdquo;. The original function is then rewritten to:
+
+<pre class="example">     eval_expression(S) -&gt;
+         case parse_expr(S) of
+            {ok, Parse} -&gt;
+                try_evaluation(Parse);
+            {error, {_, erl_parse, Err}} -&gt;
+                {error, Err}
+         end.
+</pre>
+   <p>And at the front of the kill ring we have the new function definition,
+which can be pasted into the buffer wherever we want. The actual
+definition we get is:
+
+<pre class="example">     try_evaluation(Parse) -&gt;
+         case catch erl_eval:exprs(Parse, []) of
+            {value, V, _} -&gt;
+                {ok, flatten(io_lib:format("~p", [V]))};
+            {'EXIT', Reason} -&gt;
+                {error, Reason}
+         end.
+</pre>
+   <p><strong>Important note:</strong> This command is not a &ldquo;pure&rdquo; refactoring,
+because although it will import variables from the parent function
+into the subfunction, it will not export new bindings created in the
+subfunction back to the parent. However, if you follow good
+programming practice and never &ldquo;export&rdquo; variables from inner
+expressions, this is not a problem. An example of <em>bad</em> code that
+will not refactor correctly is this <code>if</code> expression:
+
+<pre class="example">     if A &lt; B -&gt; X = true;
+        B &gt; A -&gt; X = false
+     end,
+     foo(X)
+</pre>
+   <p>This is in poor style &ndash; a variable created inside the <code>if</code> is
+used by code at an outer level of nesting. To work with refactoring,
+and to be in better style, it should be rewritten like this:
+
+<pre class="example">     X = if A &lt; B -&gt; true;
+            B &gt; A -&gt; false
+         end,
+     foo(X)
+</pre>
+   </body></html>
+

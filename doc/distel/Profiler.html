@@ -1,0 +1,64 @@
+<html lang="en">
+<head>
+<title>Profiler - Distel User Manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Distel User Manual">
+<meta name="generator" content="makeinfo 4.11">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Applications.html#Applications" title="Applications">
+<link rel="prev" href="Interactive-Sessions.html#Interactive-Sessions" title="Interactive Sessions">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Profiler"></a>
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Interactive-Sessions.html#Interactive-Sessions">Interactive Sessions</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Applications.html#Applications">Applications</a>
+<hr>
+</div>
+
+<h3 class="section">3.4 Profiler</h3>
+
+<p>Distel supports profiling function calls via the OTP <code>fprof</code>
+application. This is a very convenient profiler, in that it doesn't
+require any special compiler options or initialisation &ndash; you can use
+it whenever you want.
+
+     <dl>
+<dt><kbd>C-c C-d p</kbd><dd>Prompt for an Erlang expression, evaluate it with profiling, and then
+summarise the results. (<code>fprof</code>)
+<br><dt><kbd>C-c C-d P</kbd><dd>Load and display prerecorded profiler data, from a file created by
+<code>fprof:analyse/1</code>. (<code>fprof-analyse</code>)
+</dl>
+
+   <p>After an expression is profiled, the results are popped up in
+&ldquo;profiler results&rdquo; buffer. The buffer contains one line to describe
+each function that was called, with the following columns:
+
+     <dl>
+<dt><code>Calls</code><dd>The total number of times the function was called. 
+<br><dt><code>ACC</code><dd>The total time (ms) spent in the function, including its callees. 
+<br><dt><code>Own</code><dd>The total time (ms) spent by the function itself, excluding time spent
+in its callees. 
+</dl>
+
+   <p>Furthermore, pressing <kbd>RET</kbd> on a summary line in the results
+buffer will pop up another buffer showing more information about the
+function: how much time it spent on behalf of each of its callers, and
+how much time it spent in each of its subfunctions.
+
+</body></html>
+

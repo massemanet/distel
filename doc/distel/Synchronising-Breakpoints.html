@@ -1,0 +1,69 @@
+<html lang="en">
+<head>
+<title>Synchronising Breakpoints - Distel User Manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Distel User Manual">
+<meta name="generator" content="makeinfo 4.11">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Debugger.html#Debugger" title="Debugger">
+<link rel="prev" href="Attach-Buffer.html#Attach-Buffer" title="Attach Buffer">
+<link rel="next" href="Saving-and-Restoring.html#Saving-and-Restoring" title="Saving and Restoring">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Synchronising-Breakpoints"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Saving-and-Restoring.html#Saving-and-Restoring">Saving and Restoring</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Attach-Buffer.html#Attach-Buffer">Attach Buffer</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Debugger.html#Debugger">Debugger</a>
+<hr>
+</div>
+
+<h4 class="subsection">3.2.4 Synchronising Breakpoints</h4>
+
+<p>At any point in time the breakpoints in a particular buffer will be
+either &ldquo;fresh&rdquo; or &ldquo;stale,&rdquo; depending on whether the buffer has
+been modified. Breakpoints are fresh when, as far as Emacs knows, the
+buffer's source text (line numbers) correspond with the code in the
+Erlang node. After the buffer is modified, the breakpoints become
+stale, because edits may change line numbers so that the breakpoints
+in Emacs no longer correspond with the actual program. Stale
+breakpoints are made fresh by using the <code>edb-synch-breakpoints</code>
+(<kbd>C-c C-d s</kbd>) command to reassert that they are correct. This
+command is typically used after recompiling and reloading the module.
+
+   <p>Fresh breakpoints are marked in red, stale breakpoints are marked in
+purple.
+
+     <dl>
+<dt><kbd>C-c C-d s</kbd><dd>Synchronise breakpoints by discarding the ones in the Erlang node and
+then re-setting them from those in the Emacs buffer. 
+</dl>
+
+   <p>Care must be taken to only synchronise breakpoints when the Erlang
+node is actually running the same code that is in the Emacs
+buffer. Otherwise, the Erlang processes may break in unexpected
+places.
+
+   <p>When reloading modules during debugging, it is preferable to use the
+<code>erl-reload-module</code> command (<kbd>C-c C-d L</kbd>, see <a href="Evaluation.html#Evaluation">Evaluation</a>)
+than to call <code>l(mymodule)</code> directly in the Erlang shell. This is
+because the Distel command is specially coded to make sure reloading
+interpreted modules keeps them interpreted, but this doesn't appear to
+work correctly in the Erlang shell.
+
+   </body></html>
+

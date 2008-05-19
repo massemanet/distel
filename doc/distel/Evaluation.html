@@ -1,0 +1,55 @@
+<html lang="en">
+<head>
+<title>Evaluation - Distel User Manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Distel User Manual">
+<meta name="generator" content="makeinfo 4.11">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Programming-Aids.html#Programming-Aids" title="Programming Aids">
+<link rel="prev" href="Completion.html#Completion" title="Completion">
+<link rel="next" href="Refactoring.html#Refactoring" title="Refactoring">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Evaluation"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Refactoring.html#Refactoring">Refactoring</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Completion.html#Completion">Completion</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Programming-Aids.html#Programming-Aids">Programming Aids</a>
+<hr>
+</div>
+
+<h3 class="section">2.3 Evaluting Erlang Code</h3>
+
+<p>Distel includes some simple ways to evaluate Erlang code, described
+here. More elaborate interactive evaluation is provided by Interactive
+Sessions (see <a href="Interactive-Sessions.html#Interactive-Sessions">Interactive Sessions</a>).
+
+     <dl>
+<dt><kbd>C-c C-d :</kbd><dd>Read an Erlang expression from the minibuffer, evaluate it on an Erlang
+node, and show the result. If there is an active region in the source
+buffer, that region will be the default that is displayed in the
+minibuffer. (<code>erl-eval-expression</code>)
+
+     <br><dt><kbd>C-c C-d L</kbd><dd>Read a module name from the minibuffer and reload that module in an
+Erlang node. (<code>erl-reload-module</code>)
+
+     <br><dt><kbd>C-c C-d r</kbd><dd>Reload all loaded modules that are out of date (i.e. the loaded beam is
+compiled before the corresponding beam file.) (<code>erl-reload-modules</code>)
+</dl>
+
+   </body></html>
+

@@ -1,0 +1,65 @@
+<html lang="en">
+<head>
+<title>Process Manager - Distel User Manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Distel User Manual">
+<meta name="generator" content="makeinfo 4.11">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Applications.html#Applications" title="Applications">
+<link rel="prev" href="Applications.html#Applications" title="Applications">
+<link rel="next" href="Debugger.html#Debugger" title="Debugger">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Process-Manager"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Debugger.html#Debugger">Debugger</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Applications.html#Applications">Applications</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Applications.html#Applications">Applications</a>
+<hr>
+</div>
+
+<h3 class="section">3.1 Process Manager</h3>
+
+<p>The process manager displays a list of all the processes running on an
+Erlang node, and offers commands to manipulate them.
+
+     <dl>
+<dt><kbd>C-c C-d l</kbd><dd>Popup a process manager buffer. (<code>erl-process-list</code>)
+</dl>
+
+   <p>Within the process manager's buffer, the following commands are
+available:
+
+     <dl>
+<dt><kbd>q</kbd><dd>Quit the process manager, and restore the Emacs windows as they were
+before it popped up. 
+<br><dt><kbd>u</kbd><dd>Update the process list. 
+<br><dt><kbd>k</kbd><dd>Kill a process. 
+<br><dt><kbd>RET</kbd><dd>Pop up a buffer showing all the information about a process. The
+buffer also continuously traces the process by appending events to the
+buffer, until the buffer is killed with <kbd>q</kbd>. 
+<br><dt><kbd>i</kbd><dd>Show a piece of information about the process, specified by name. The
+name can be any key accepted by the <code>process_info/2</code> BIF. 
+<br><dt><kbd>b</kbd><dd>Show a backtrace for a process. The backtrace is a fairly low-level
+snapshot of the stack of a process, obtained from
+<code>process_info(P, backtrace)</code>. It may take a little pratice to
+learn how to read them. 
+<br><dt><kbd>m</kbd><dd>Show the contents of a process's mailbox. 
+</dl>
+
+   </body></html>
+

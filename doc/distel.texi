@@ -84,9 +84,12 @@ Integrated Development Environments.
 This manual describes Distel from the user's point of view. For
 details on how Distel works and how to write your own Distel-based
 programs, see the paper @cite{Distel: Distributed Emacs Lisp (for
-Erlang)} from the proceedings of the 2002 Erlang User Conference. The
-paper is also available from the Distel home page,
-@url{http://distel.sourceforge.net}
+Erlang)} from the proceedings of the 2002 Erlang User Conference. 
+
+The paper is available here;
+@url{http://cronqvi.st/distel/gorrie02distel.pdf}.
+
+The Distel home page is here; @url{http://code.google.com/p/distel}.
 
 @ifinfo
 The overall principles of Distel's operation and use are described in

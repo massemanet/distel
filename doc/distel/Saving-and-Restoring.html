@@ -1,0 +1,49 @@
+<html lang="en">
+<head>
+<title>Saving and Restoring - Distel User Manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Distel User Manual">
+<meta name="generator" content="makeinfo 4.11">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Debugger.html#Debugger" title="Debugger">
+<link rel="prev" href="Synchronising-Breakpoints.html#Synchronising-Breakpoints" title="Synchronising Breakpoints">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Saving-and-Restoring"></a>
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Synchronising-Breakpoints.html#Synchronising-Breakpoints">Synchronising Breakpoints</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Debugger.html#Debugger">Debugger</a>
+<hr>
+</div>
+
+<h4 class="subsection">3.2.5 Saving and Restoring Debugger State</h4>
+
+<p>The overall debugger state (set of breakpoints and interpreted
+modules) can be temporarily saved inside Emacs and then restored to
+the Erlang node. This is particularly useful when you want to restart
+the Erlang node and then continue debugging where you left off: you
+just save the debug state, restart the node, and then restore.
+
+     <dl>
+<dt><kbd>C-c C-d S</kbd><dd>Save the set of breakpoints and interpreted modules inside
+Emacs. (<code>edb-save-dbg-state</code>)
+<br><dt><kbd>C-c C-d R</kbd><dd>Restore Emacs's saved debugger state to the Erlang
+node. (<code>edb-restore-dbg-state</code>)
+</dl>
+
+   </body></html>
+

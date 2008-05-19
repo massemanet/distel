@@ -1,0 +1,58 @@
+<html lang="en">
+<head>
+<title>Interactive Sessions - Distel User Manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Distel User Manual">
+<meta name="generator" content="makeinfo 4.11">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Applications.html#Applications" title="Applications">
+<link rel="prev" href="Debugger.html#Debugger" title="Debugger">
+<link rel="next" href="Profiler.html#Profiler" title="Profiler">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Interactive-Sessions"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Profiler.html#Profiler">Profiler</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Debugger.html#Debugger">Debugger</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Applications.html#Applications">Applications</a>
+<hr>
+</div>
+
+<h3 class="section">3.3 Interactive Sessions</h3>
+
+<p>Interactive sessions are an Erlang version of the Emacs Lisp
+<samp><span class="file">*scratch*</span></samp> buffer. You can enter arbitrary Erlang expressions
+and function definitions in an interactive session buffer and evaluate
+them immediately, without creating any files.
+
+     <dl>
+<dt><kbd>C-c C-d e</kbd><dd>Display the Interactive Session buffer for an Erlang node, creating it
+if necessary. (<code>erl-ie-show-session</code>)
+</dl>
+
+   <p>Within the session buffer, these commands are available:
+
+     <dl>
+<dt><kbd>C-j</kbd><dd>Evaluate the Erlang expression on the current line, and insert the
+result in-line. (<code>erl-ie-eval-expression</code>)
+<br><dt><kbd>C-M-x</kbd><dd>Evaluate the function definition before the point. Once defined, the
+function can then be called from expressions in the session buffer,
+and can be redefined later. 
+</dl>
+
+   </body></html>
+

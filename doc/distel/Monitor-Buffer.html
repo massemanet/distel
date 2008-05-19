@@ -1,0 +1,55 @@
+<html lang="en">
+<head>
+<title>Monitor Buffer - Distel User Manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Distel User Manual">
+<meta name="generator" content="makeinfo 4.11">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Debugger.html#Debugger" title="Debugger">
+<link rel="prev" href="Basic-Commands.html#Basic-Commands" title="Basic Commands">
+<link rel="next" href="Attach-Buffer.html#Attach-Buffer" title="Attach Buffer">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Monitor-Buffer"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Attach-Buffer.html#Attach-Buffer">Attach Buffer</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Basic-Commands.html#Basic-Commands">Basic Commands</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Debugger.html#Debugger">Debugger</a>
+<hr>
+</div>
+
+<h4 class="subsection">3.2.2 Monitor Buffer</h4>
+
+<p>The monitor buffer displays all processes that the debugger knows
+about, line-by-line. This includes all processes that have run
+interpreted code, and all that are stopped in breakpoints. The current
+status of each process is shown &ndash; running, at breakpoint, or
+exited. You can attach to a debugged process by pressing <kbd>RET</kbd> on
+its summary line.
+
+     <dl>
+<dt><kbd>RET</kbd><dd>Popup an attach buffer for a process. 
+<br><dt><kbd>q</kbd><dd>Hide the Monitor buffer and restore Emacs' window configuration to the
+way it was before. 
+<br><dt><kbd>k</kbd><dd>Kill the monitor. This disconnects Emacs from the Erlang node's
+debugging state and deletes all the local debugging state
+(e.g. breakpoints in buffers.) The next debugger command will
+automatically re-attach the monitor. 
+</dl>
+
+   </body></html>
+

@@ -1,0 +1,50 @@
+<html lang="en">
+<head>
+<title>Principles - Distel User Manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Distel User Manual">
+<meta name="generator" content="makeinfo 4.11">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Introduction.html#Introduction" title="Introduction">
+<link rel="prev" href="Introduction.html#Introduction" title="Introduction">
+<link rel="next" href="Conventions.html#Conventions" title="Conventions">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Principles"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Conventions.html#Conventions">Conventions</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Introduction.html#Introduction">Introduction</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Introduction.html#Introduction">Introduction</a>
+<hr>
+</div>
+
+<h3 class="section">1.1 Principles of Operation</h3>
+
+<p>Distel works by talking to Erlang nodes using the Erlang distribution
+protocol. It creates an &ldquo;Emacs node,&rdquo; similar to the &ldquo;C nodes&rdquo; of
+<code>erl_interface</code>, and then talks directly to Erlang nodes with RPC
+and other forms of message-passing.
+
+   <p>Of course, this means that to use Distel you need to have an Erlang
+node running. The node should be able to load some supporting modules
+for Distel to make RPCs to &ndash; setting this up is simple, and described
+in the <samp><span class="file">INSTALL</span></samp> file in the distribution. Other aspects of the
+node's setup, such as which other modules it can find, will also
+affect Distel's operation. More on this in the relevant sections.
+
+   </body></html>
+
