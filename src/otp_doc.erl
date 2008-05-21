@@ -13,7 +13,6 @@
 -behaviour(gen_server).
 -export([handle_call/3, handle_cast/2, handle_info/2, 
          init/1, terminate/2, code_change/3]).
-
 %% --------------------------------------------------------------------------
 % API - these run in the shell
 -export([start/0,stop/0]).
@@ -223,11 +222,11 @@ cache_funcs(M) ->
   fold_file(curry(fun funcsf/3,M), [], e_get({file,M})).
 
 funcsf(Line,A,M) ->
-  case trim_P(string:tokens(Line++A,"<>\"")) of
+  case trim_P(string:tokens(A++Line,"<>\"")) of
     ["a name=",FA,"span class=","bold_code",Sig,"/span","/a","br/"|_] ->
-      a_line(M,fa(FA),trim_erlang(Sig)),[];	% R12-
+      a_line(M,fa(FA),Sig),[];			% R12-
     ["A NAME=",FA,"STRONG","CODE",Sig,"/CODE","/STRONG","/A","BR"|_] ->
-      a_line(M,fa(FA),trim_erlang(Sig)),[];	% -R11
+      a_line(M,fa(FA),Sig),[];			% -R11
     ["A NAME=",_,"STRONG","CODE"|_] ->
       Line;					% -R11, broken lines
     _ -> 
@@ -238,6 +237,7 @@ funcsf(Line,A,M) ->
   end.
 
 a_line(_,["Module:"++_,_],_) -> ok;  %ignore the gen_server/gen_fsm callbacks
+a_line("erlang",["erlang:"++F,A],"erlang:"++Sig) -> a_line("erlang",[F,A],Sig);
 a_line(M,[F,A],Sig) ->
   try e_bag({fs,M},F),
       e_bag({{as,M},F}, A),
@@ -245,14 +245,11 @@ a_line(M,[F,A],Sig) ->
   catch _:_ -> ok
   end.
 
-fa(FA) -> string:tokens(trim_erlang(FA),delim()).
+fa(FA) -> string:tokens(FA,delim()).
 
 trim_P(["P"|L]) -> L;
 trim_P(["p"|L]) -> L;
 trim_P(L)       -> L.
-
-trim_erlang("erlang:"++X) -> X;
-trim_erlang(X) -> X.
 
 delim() ->
   try erlang:system_info(otp_release), "-"
