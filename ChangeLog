@@ -1,7 +1,11 @@
 2008-05-23  Mats Cronqvist  <masse@kreditor.se>
 
-	* src/otp_doc.erl (handle_link): 
+	* src/otp_doc.erl (funcsf): 
+
+	yet another edge case in the broken line handling
 	
+	* src/otp_doc.erl (handle_link): 	
+
 	added code for the case where you are looking for links and have
 	several hits, but one is exact. e.g., when searching for
 	gen_server:start/4, you probably want that and not

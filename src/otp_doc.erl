@@ -19,7 +19,7 @@
 -export([distel/4,modules/1,functions/2,arguments/2]).
 -export([firefox/1,firefox/2,firefox/3]).
 -export([sig/1,sig/2,sig/3]).
-
+-export([funcsf/3]).
 stop() ->
   case whereis(?MODULE) of
     undefined -> ok;
@@ -233,7 +233,7 @@ funcsf(Line,A,M) ->
     ["A NAME=",FA,"STRONG","CODE",Sig,"/CODE","/STRONG","/A","BR"|_] ->
       a_line(M,fa(FA),Sig),[];			% -R11
     ["A NAME=",_,"STRONG","CODE"|_] ->
-      Line;					% -R11, broken lines
+      A++Line;					% -R11, broken lines
     _ -> 
       case A of
 	[] -> [];
@@ -243,7 +243,7 @@ funcsf(Line,A,M) ->
 
 a_line(_,["Module:"++_,_],_) -> ok;  %ignore the gen_server/gen_fsm callbacks
 a_line("erlang",["erlang:"++F,A],"erlang:"++Sig) -> a_line("erlang",[F,A],Sig);
-a_line(M,[F,A],Sig) ->
+a_line(M,[F,A],Sig) ->	    %io:fwrite("- ~p~n",[{M,F,A}]).
   try e_bag({fs,M},F),
       e_bag({{as,M},F}, A),
       e_set({{sig,M,F},A}, dehtml(Sig))
