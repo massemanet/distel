@@ -127,6 +127,7 @@ handle_link(Mo,Fu,Aa,State) ->
   try 
     MFAs = matching_mfas(Mo, Fu, Aa),
     until([fun()->link_with_anchor(MFAs,State) end,
+	   fun()->exact_match(Mo,Fu,MFAs,State) end,
 	   fun()->link_without_anchor(MFAs,State) end,
 	   fun()->mfa_multi(MFAs,State) end])
   catch
@@ -141,6 +142,10 @@ until([F|Fs]) ->
 link_with_anchor(MFAs,State) -> 
   [_] = lists:usort([{M,F}||{M,F,_A}<-MFAs]),
   {A,{M,F}} = lists:min([{A,{M,F}}||{M,F,A}<-MFAs]),
+  {link,io_str("~w://~s#~s~s~s",
+	 [State#state.prot,e_get({file,M}),F,State#state.delim,A])}.
+exact_match(M,F,MFAs,State) -> 
+  A = lists:min([A||{Mo,Fu,A}<-MFAs,M==Mo,F==Fu]),
   {link,io_str("~w://~s#~s~s~s",
 	 [State#state.prot,e_get({file,M}),F,State#state.delim,A])}.
 link_without_anchor(MFAs,State) -> 
