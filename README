@@ -16,32 +16,32 @@ find this description:
 
   Extensions to erlang-mode for communicating with a running Erlang node.
 
-  These commands generally communicate with an Erlang node. The first
-  time you use one, you will be prompted for the name of the node to
-  use. This name will be cached for future commands. To override the
-  cache, give a prefix argument with C-u before using the command.
+These commands generally communicate with an Erlang node. The first
+time you use one, you will be prompted for the name of the node to
+use.
 
-  C-c C-d l	- List all Erlang processes ("pman").
-  M-?		- Complete a module or remote function name.
-  M-.		- Jump from a function call to its definition.
-  M-*		- Jump back from a function definition (multi-level).
-  C-c C-d :	- Evaluate an erlang expression from the minibuffer.
-  C-c C-d L	- Reload an Erlang module.
-  C-c C-d p	- Profile (with fprof) an expression from the minibuffer.
-  C-c C-d P	- View profiler results from an "fprof:analyse" file.
-  C-c C-d i	- Toggle debug interpreting of the module.
-  C-c C-d b	- Toggle a debugger breakpoint at the current line.
-  C-c C-d S	- Synchronizes current breakpoints to erlang.
-  C-c C-d m	- Popup the debugger's process monitor buffer.
-  C-c C-d s	- Create an interactive "session" buffer.
+Here's a subset of the available commands. Use `describe-mode' (C-h m)
+on any Distel buffer when you want to know what commands are
+available.
 
-  Most commands that pop up new buffers will save your original window
-  configuration, so that you can restore it by pressing 'q'. Use
-  `describe-mode' (C-h m) on any Distel buffer when you want
-  to know what commands are available. To get more information about a
-  particular command, use "C-h k" followed by the command's key
-  sequence. For general information about Emacs' online help, use
-  "C-h ?".
+M-/	  - Complete a module or remote function name.
+M-.	  - Jump from a function call to its definition.
+M-,	  - Jump back from a function definition (multi-level).
+C-c C-d : - Evaluate an erlang expression from the minibuffer.
+C-c C-d f - Refactor expressions in the region as a new function.
+C-c C-d F - Find a module.
+C-c C-d i - Toggle debug interpretping of the module.
+C-c C-d b - Toggle a debugger breakpoint at the current line.
+C-c C-d p - Profile (with fprof) an expression from the minibuffer.
+C-c C-d L - Reload an Erlang module.
+C-c C-d r - Reload all Erlang modules that are out of date.
+C-c C-d w - Who calls function under point.
+C-c C-d H - Show the html documentation for a function.
+C-c C-d Z - Show the signature for a function.
+
+To get more information about a particular command, use "C-h k"
+followed by the command's key sequence. For general information about
+Emacs' online help, use "C-h ?".
 
 If you want to write new commands of your own, the programmer's manual
 tells you how. You can make a postscript copy with "make postscript",
@@ -50,9 +50,9 @@ or an Info version with "make info" and "make info_install".
 For more background about the "Session" commands, have a look in
 README.ie-session.
 
-Hope you enjoy, and please send hacks or feedback to luke@bluetail.com!
+Hope you enjoy, and please send hacks or feedback to luke@bluetail.com(*)!
 
-PS: The "dynamic TAGS" with M-. and M-* is the coolest bit to get
+PS: The "dynamic TAGS" with M-. and M-, is the coolest bit to get
 started with!
 
 Compatibility notes:
@@ -60,7 +60,15 @@ Compatibility notes:
   The profiler front end requires >= R8B (to get fprof)
   The debugger front end requires >= R8B-1
 
-  Distel itself is tested with Erlang R8 and R9, GNU Emacs 20.x and
-  21.x, and XEmacs 21.x. Snapshots from CVS may sometimes only work
-  with GNU Emacs 21 (or, of course, not work at all :-))
+  Distel itself is not formally tested, but it has enough savvy users
+that it'll typically run on the last 2 versions of Erlang and Emacs
+(as of 2008 OTP R11/R12 and Emacs 21/22).
 
+(*) Luke Gorrie is unfortunately no longer involved with Distel, and
+Blutail no longer exists... 
+
+  there is of course the distel-hackers mailing list;
+https://lists.sourceforge.net/lists/listinfo/distel-hackers
+
+  and the issue tracker at google;
+http://code.google.com/p/distel

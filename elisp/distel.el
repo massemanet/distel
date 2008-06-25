@@ -53,35 +53,53 @@ time you use one, you will be prompted for the name of the node to
 use. This name will be cached for future commands. To override the
 cache, give a prefix argument with C-u before using the command.
 \\<erlang-extended-mode-map>
-\\[erl-process-list]	- List all Erlang processes (\"pman\").
-\\[erl-complete]		- Complete a module or remote function name.
+
+\\[erl-choose-nodename]	- Set Erlang nodename.
+\\[erl-ping]	- Check connection between Emacs and Erlang.
+
 \\[erl-find-source-under-point]		- Jump from a function call to its definition.
 \\[erl-find-source-unwind]		- Jump back from a function definition (multi-level).
-\\[erl-eval-expression]	- Evaluate an erlang expression from the minibuffer.
-\\[erl-reload-module]	- Reload an Erlang module.
+
+\\[erl-reload-module]	- (Re)load an Erlang module.
 \\[erl-reload-modules]	- Reload all Erlang modules that are out of date.
-\\[fprof]	- Profile (with fprof) an expression from the minibuffer.
-\\[fprof-analyse]	- View profiler results from an \"fprof:analyse\" file.
-\\[erl-fdoc-describe]	- Describe a module or function with fdoc.
-\\[erl-fdoc-apropos]	- Describe all Erlang functions matching a regexp.
+\\[erl-find-module]	- Find a module.
+\\[erl-who-calls]	- Who calls function under point.
+
+\\[erl-process-list]	- List all Erlang processes (\"pman\").
 \\[edb-toggle-interpret]	- Toggle debug interpreting of the module.
-\\[edb-toggle-breakpoint]	- Toggle a debugger breakpoint at the current line.
-\\[edb-synch-breakpoints]	- Synchronizes current breakpoints to erlang.
-\\[edb-save-dbg-state]	- Save set of interpreted modules and breakpoints
-\\[edb-restore-dbg-state]	- Restore saved set of interpreted modules and breakpoints
+C-c C-d b/\\[edb-toggle-breakpoint]	- Toggle a debugger breakpoint at the current line.
 \\[edb-monitor]	- Popup the debugger's process monitor buffer.
+\\[edb-synch-breakpoints]	- Synchronizes current breakpoints to erlang.
+\\[edb-save-dbg-state]	- Save set of interpreted modules and breakpoints.
+\\[edb-restore-dbg-state]	- Restore saved set of interpreted modules and breakpoints.
+
+\\[erl-eval-expression]	- Evaluate an erlang expression from the minibuffer.
 \\[erl-ie-show-session]	- Create an interactive \"session\" buffer.
-\\[erl-ie-copy-buffer-to-session]	- Create an interactive \"session\" buffer from current buffer.
-\\[erl-ie-copy-region-to-session]	- Create an interactive \"session\" buffer from region.
+
+\\[erl-complete]		- Complete a module or remote function name.
 \\[erl-refactor-subfunction]	- Refactor expressions in the region as a new function.
 
-Most commands that pop up new buffers will save your original window
-configuration, so that you can restore it by pressing 'q'. Use
-`describe-mode' (\\[describe-mode]) on any Distel buffer when you want
-to know what commands are available. To get more information about a
-particular command, use \"\\[describe-key]\" followed by the command's key
-sequence. For general information about Emacs' online help, use
-\"\\[help-for-help]\".
+\\[erl-find-sig-under-point]	- Show the signature for the function under point.
+\\[erl-find-doc-under-point]	- Show the HTML documentation for the function under point.
+\\[erl-find-sig]	- Show the signature for a function.
+\\[erl-find-doc]	- Show the HTML documentation for a function.
+\\[erl-fdoc-describe]	- Describe a function with fdoc.
+\\[erl-fdoc-apropos]	- Describe functions matching a regexp with fdoc.
+
+\\[fprof]	- Profile (with fprof) an expression from the minibuffer.
+\\[fprof-analyse]	- View profiler results from an \"fprof:analyse\" file.
+
+ \"fdoc\" works by looking at the source code. The HTML doc functions
+needs the OTP HTML docs to be installed. who-calls makes use of
+xref, and can take quite some time to initialize.
+
+  Most commands that pop up new buffers will save your original
+window configuration, so that you can restore it by pressing
+'q'. Use `describe-mode' (\\[describe-mode]) on any Distel buffer
+when you want to know what commands are available. To get more
+information about a particular command, use \"\\[describe-key]\"
+followed by the command's key sequence. For general information
+about Emacs' online help, use \"\\[help-for-help]\".
 "
   nil
   nil
@@ -98,7 +116,7 @@ sequence. For general information about Emacs' online help, use
     ("\C-c\C-ds" edb-synch-breakpoints)
     ("\C-c\C-dS" edb-save-dbg-state)
     ("\C-c\C-dR" edb-restore-dbg-state)
-    ("\C-c\C-dm" edb-monitor)
+    ("\C-c\C-dm" edb-monitor)          
     ("\C-c\C-d:" erl-eval-expression)
     ("\C-c\C-dL" erl-reload-module)
     ("\C-c\C-dr" erl-reload-modules)
@@ -111,7 +129,12 @@ sequence. For general information about Emacs' online help, use
     ("\M-?"      erl-complete)	; Some windowmanagers hijack M-TAB..
     ("\C-c\C-de" erl-ie-show-session)
     ("\C-c\C-df" erl-refactor-subfunction)
+    ("\C-c\C-dF" erl-find-module)
     ("\C-c\C-dg" erl-ping)
+    ("\C-c\C-dh" erl-find-doc-under-point)
+    ("\C-c\C-dH" erl-find-doc)
+    ("\C-c\C-dz" erl-find-sig-under-point)
+    ("\C-c\C-dZ" erl-find-sig)
     ("\C-c\C-dd" erl-fdoc-describe)
     ("\C-c\C-da" erl-fdoc-apropos)
     ("\C-c\C-dw" erl-who-calls)
@@ -119,8 +142,9 @@ sequence. For general information about Emacs' online help, use
     ("("         erl-openparen)
     ;; Possibly "controversial" shorter keys
     ("\M-."      erl-find-source-under-point)	; usually `find-tag'
-    ("\M-,"      erl-find-source-unwind) ; usually `tags-loop-continue'
     ("\M-*"      erl-find-source-unwind) ; usually `pop-tag-mark'
+    ("\M-,"      erl-find-source-unwind) ; usually `tags-loop-continue'
+    ("\M-/"      erl-complete) ; usually `dabbrev-expand'
     )
   "Keys to bind in distel-mode-map.")
 

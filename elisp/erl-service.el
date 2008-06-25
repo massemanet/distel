@@ -805,11 +805,15 @@ When FUNCTION is specified, the point is moved to its start."
   "Find the html documentation for the (possibly incomplete) OTP 
 function under point"
   (interactive)
-  (erl-do-find-doc 'link 'point))
+  (if (require 'w3m nil t)
+      (erl-do-find-doc 'link 'point)
+    (erl-find-sig-under-point)))
 
 (defun erl-find-doc ()
   (interactive)
-  (erl-do-find-doc 'link nil))
+  (if (require 'w3m nil t)
+      (erl-do-find-doc 'link nil)
+    (erl-find-sig)))
 
 (defun erl-find-sig-under-point ()
   "Find the signatures for the (possibly incomplete) OTP function under point"
