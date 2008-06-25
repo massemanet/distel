@@ -3,11 +3,6 @@ Installation
 
 First compile Distel's Erlang modules with 'make'.
 
-Next add these modules to your code-path by adding a line to
-~/.erlang (substitute correct path):
-
-  code:add_pathz("/home/me/jungerl/lib/distel/ebin").
-
 Then add these lines to your ~/.emacs (again substitute correct path):
 
   (add-to-list 'load-path "/home/me/jungerl/lib/distel/elisp")

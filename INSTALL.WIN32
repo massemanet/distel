@@ -4,10 +4,18 @@ are sufficient but not necessarily optimal - if you know a better way,
 please send a note to the mailing list
 (distel-hackers@lists.sourceforge.net).
 
-Step 1: Install Erlang in a directory _without spaces_ in the
+Step 1: Some random windows hacker admonishes us:
+        Install Erlang in a directory _without spaces_ in the
         path. The default location in "C:\Program Files" won't
         work. Having a path without spaces is necessary to use erlc
         from cygwin's bash.
+
+	But to the rescue jacobg23! (http://code.google.com/u/jacobg23):
+	You can use Windows short paths (e.g., c:\progra~1\ instead of
+        c:\Program Files) - so edit your PATH environment variable so
+        that the path to the erlang executables looks like
+        c:\progra~1\erl5.5.4 (or whatever) instead.  (Ditto for any
+        config in your .emacs)
 
 Step 2: Edit your PATH environment variable via the System control
         panel: remove the quotes from the path to the Erlang
