@@ -53,9 +53,11 @@
 (defun erl-determine-hostname ()
   "Figure out the short-names hostname."
   (let ((fqdn (system-name)))
-    (if (string-match "[^\\.]+" fqdn)
-	(match-string 0 fqdn)
-      (error "erl: Can't determine hostname."))))
+    (if (string-match "\\.local$" fqdn)
+	fqdn
+      (if (string-match "[^\\.]+" fqdn)
+	  (match-string 0 fqdn)
+	(error "erl: Can't determine hostname.")))))
 
 (when (null erl-node-name)
   (setq erl-node-name

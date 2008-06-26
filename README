@@ -72,3 +72,15 @@ https://lists.sourceforge.net/lists/listinfo/distel-hackers
 
   and the issue tracker at google;
 http://code.google.com/p/distel
+
+FAQ
+1. Can't handle event closed in state  derl-recv-challenge-ack
+
+this is what you get if the erlang node and the distel node disagree
+one what cookie to use.
+
+Use (in erl)
+ erlang:get_cookie()
+and (in emacs)
+ M-x erl-get-cookie
+to check the cookies.

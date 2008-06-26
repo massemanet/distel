@@ -179,6 +179,9 @@ Use the distribution protocol's EXIT2 message."
 (defun derl-recv-challenge-ack (event data)
   "Receive and check challenge ack. If it's OK then the handshake is
 complete and we become live."
+  (if (equal event 'closed) 
+      (message "Distel thinks the cookie is %s. Erlang seems to disagree." 
+	       (erl-cookie)))
   (check-event event 'data)
   (when (derl-have-msg)
     (goto-char (point-min))
