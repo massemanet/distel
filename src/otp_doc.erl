@@ -143,14 +143,20 @@ link_with_anchor(MFAs,State) ->
   [_] = lists:usort([{M,F}||{M,F,_A}<-MFAs]),
   {A,{M,F}} = lists:min([{A,{M,F}}||{M,F,A}<-MFAs]),
   {link,io_str("~w://~s#~s~s~s",
-	 [State#state.prot,e_get({file,M}),F,State#state.delim,A])}.
+	 [State#state.prot,e_get({file,M}),linkmf(M,F),State#state.delim,A])}.
+
+linkmf("erlang",F) -> "erlang:"++F;
+linkmf(_,F) -> F.
+
 exact_match(M,F,MFAs,State) -> 
   A = lists:min([A||{Mo,Fu,A}<-MFAs,M==Mo,F==Fu]),
   {link,io_str("~w://~s#~s~s~s",
-	 [State#state.prot,e_get({file,M}),F,State#state.delim,A])}.
+	 [State#state.prot,e_get({file,M}),linkmf(M,F),State#state.delim,A])}.
+
 link_without_anchor(MFAs,State) -> 
   [M] = lists:usort([M || {M,_F,_A} <- MFAs]),
   {link,io_str("~w://~s",[State#state.prot, e_get({file,M})])}.
+
 mfa_multi(MFAs,_State) ->
   {mfas,str_join([io_str("~s:~s/~s",[M,F,A])||{M,F,A}<-MFAs],", ")}.
 
