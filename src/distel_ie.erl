@@ -1,4 +1,4 @@
-%%%
+%
 %%% distel_ie - an interactive erlang shell
 %%%
 %%% Some of the code has shamelessly been stolen from Luke Gorrie 
@@ -62,7 +62,7 @@ start(Options) ->
 %%
 %% init/1
 
-init(Options) ->
+init(_Options) ->
     register(distel_ie, self()),
     Defs = ets:new(definitions, [set]),
     Line = 12,
@@ -190,13 +190,13 @@ compile_load(Parse) ->
 %% lists (cons) and tuples ... +more
 
 add_remote_call_info([], _Defs) -> [] ;
-add_remote_call_info({var, L, Var}, Defs) ->
+add_remote_call_info({var, L, Var}, _Defs) ->
     {var, L, Var} ;
-add_remote_call_info({atom, L, Atom}, Defs) ->
+add_remote_call_info({atom, L, Atom}, _Defs) ->
     {atom, L, Atom} ;
-add_remote_call_info({integer, L, Value}, Defs) ->
+add_remote_call_info({integer, L, Value}, _Defs) ->
     {integer, L, Value} ;
-add_remote_call_info({string, L, String}, Defs) ->
+add_remote_call_info({string, L, String}, _Defs) ->
     {string, L, String} ;
 add_remote_call_info([{call, L, {atom, L2, Name}, Body} | Rs], Defs) ->
     B = add_remote_call_info(Body, Defs),
@@ -232,7 +232,7 @@ add_remote_call_info([{Type, L, Hd, Tl} | Rs], Defs) ->
 add_remote_call_info([R | Rs], Defs) ->
     [add_remote_call_info(R, Defs) | add_remote_call_info(Rs, Defs) ];
 
-add_remote_call_info(X, Defs) ->
+add_remote_call_info(X, _Defs) ->
     X.
 
 
@@ -267,7 +267,7 @@ is_exported(Function, Arity, Module) ->
 %%
 %% search_modules/3
 
-search_modules(Function, Arity, []) ->
+search_modules(_Function, _Arity, []) ->
     {error, not_found};
 search_modules(Function, Arity, [{M, _} | Ms]) ->
     case is_exported(Function, Arity, M) of

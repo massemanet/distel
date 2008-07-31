@@ -24,6 +24,9 @@ Here's a subset of the available commands. Use `describe-mode' (C-h m)
 on any Distel buffer when you want to know what commands are
 available.
 
+C-c C-d n - set the erlang node name
+C-c C-d g - upload the distel modules to the erlang node
+
 M-/	  - Complete a module or remote function name.
 M-.	  - Jump from a function call to its definition.
 M-,	  - Jump back from a function definition (multi-level).
@@ -66,7 +69,6 @@ that it'll typically run on the last 2 versions of Erlang and Emacs
 
 (*) Luke Gorrie is unfortunately no longer involved with Distel, and
 Blutail no longer exists... 
-
   there is of course the distel-hackers mailing list;
 https://lists.sourceforge.net/lists/listinfo/distel-hackers
 
