@@ -1,3 +1,7 @@
+2008-07-31  Mats Cronqvist  <masse@kreditor.se>
+
+	* various: fixed docs and compiler warnings, and made a 4.0 release.
+
 2008-05-23  Mats Cronqvist  <masse@kreditor.se>
 
 	* src/otp_doc.erl (funcsf): 
