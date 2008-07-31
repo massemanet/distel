@@ -410,13 +410,18 @@ debug_toggle(Mod, Filename) ->
             int:n(Mod),
             uninterpreted;
         false ->
-            code:ensure_loaded(Mod),
-            case int:i(Filename) of
-                {module, Mod} ->
-                    interpreted;
-                error ->
-                    error
-            end
+            case code:ensure_loaded(Mod) of
+	        {error,nofile} -> error;
+	        {module,Mod} -> 
+		    case int:i(Mod)  of
+		        {module, Mod} -> interpreted;
+		        error ->
+			    case int:i(Filename)  of
+			        {module, Mod} -> interpreted;
+			        error -> error
+			    end
+		    end
+	    end
     end.
 
 debug_add(Modules) ->

@@ -1,4 +1,4 @@
-distel 3.2 -- Distributed Emacs Lisp for Erlang.
+distel -- Distributed Emacs Lisp for Erlang.
 ------------------------------------------------------------
 
 Distel is a library for Emacs<->Erlang communication, plus a suite of
