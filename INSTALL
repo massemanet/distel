@@ -1,9 +1,14 @@
 Installation
 ------------
 
-First compile Distel's Erlang modules with 'make'.
+* Compile Distel's Erlang modules with 'make'.
 
-Then add these lines to your ~/.emacs (again substitute correct path):
+* Optionally, install like this;
+export prefix=~ ; make -e install
+the elisp file will wind up in $prefix/share/distel/elisp
+$prefix defaults to /usr/local, which is cool if you're on e.g. debian.
+
+* Add these lines to your ~/.emacs (again substitute correct path):
 
   (add-to-list 'load-path "/home/me/jungerl/lib/distel/elisp")
   (require 'distel)

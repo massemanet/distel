@@ -10,7 +10,7 @@ infodir     = ${prefix}/info
 erlc        = erlc
 emacs       = emacs
 
-ELISP_DIR = ${datadir}/${emacs}/site-lisp/distel
+ELISP_DIR = ${datadir}/distel/elisp
 EBIN_DIR = ${datadir}/distel/ebin
 ERL_SRC_DIR = ${datadir}/distel/src
 

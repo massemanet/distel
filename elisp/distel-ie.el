@@ -99,7 +99,8 @@
 
 (defun erl-ie-evaluate (start end node &optional inline)
   "Evaluate region START to END on NODE.
-The marked region can be a function definition, a function call or an expression."
+The marked region can be a function definition, a function 
+call or an expression."
   (interactive (list
 		(region-beginning)
 		(region-end)

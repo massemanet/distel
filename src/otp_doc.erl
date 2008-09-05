@@ -53,7 +53,7 @@ firefox(M,F,A) when is_atom(M), is_atom(F), is_integer(A) ->
     Link -> ffx(Link)
   end.
   
-ffx({link,Link}) -> os:cmd("firefox "++Link),ok;
+ffx({link,Link}) -> os:cmd("firefox "++Link),Link;
 ffx({mfas,MFAs}) -> MFAs;
 ffx([]) -> no_doc.
 
