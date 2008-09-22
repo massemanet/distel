@@ -1,6 +1,6 @@
 
 PACKAGE := distel
-VERSION := 4.0
+VERSION := 4.01
 
 prefix      = /usr/local
 exec_prefix = ${prefix}
