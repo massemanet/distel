@@ -4,7 +4,7 @@ Installation
 * Compile Distel's Erlang modules with 'make'.
 
 * Optionally, install like this;
-export prefix=~ ; make -e install
+export prefix=<some fine place> ; make -e install
 the elisp file will wind up in $prefix/share/distel/elisp
 $prefix defaults to /usr/local, which is cool if you're on e.g. debian.
 
@@ -21,6 +21,12 @@ You should now be in the air! If so you should see "Erlang EXT" in the
 Emacs modeline when you open an Erlang source file (meaning you're in
 the EXTended erlang mode). Check out the manual in doc/ to find out
 what you can do!
+
+============================================================
+Xemacs compatibility note;
+distel seems to work fine in Xemacs. 
+You will need to install ewoc.el from FSF emacs, e.g. from here;
+http://cvs.savannah.gnu.org/viewvc/*checkout*/emacs/emacs/lisp/emacs-lisp/ewoc.el
 
 ============================================================
 
