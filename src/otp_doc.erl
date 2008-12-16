@@ -20,6 +20,7 @@
 -export([firefox/1,firefox/2,firefox/3]).
 -export([sig/1,sig/2,sig/3]).
 -export([funcsf/3]).
+
 stop() ->
   case whereis(?MODULE) of
     undefined -> ok;
@@ -112,26 +113,27 @@ handle_call({link,M,F,A},_From,State) ->
 
 %% --------------------------------------------------------------------------
 handle_sig(Mo,Fu,Aa,_State) ->
-  try
-    [get_sig(M,F,A) || {M,F,A} <- matching_mfas(Mo, Fu, Aa)]
-  catch
-    _:_ -> []
+  try [get_sig(M,F,A) || {M,F,A} <- matching_mfas(Mo, Fu, Aa)]
+  catch _:_ -> []
   end.
 
 handle_mods(Prefix,_State) ->
-  all_prefix_keys({file,Prefix}).
+  try all_prefix_keys({file,Prefix})
+  catch _:_ -> []
+  end.
+
 handle_funcs(Mod,Prefix,_State) ->
-  [F || {_,F} <- all_fs(Mod,Prefix)].
+  try [F || {_,F} <- all_fs(Mod,Prefix)]
+  catch _:_ -> []
+  end.
 
 handle_link(Mo,Fu,Aa,State) ->
-  try 
-    MFAs = matching_mfas(Mo, Fu, Aa),
-    until([fun()->link_with_anchor(MFAs,State) end,
-	   fun()->exact_match(Mo,Fu,MFAs,State) end,
-	   fun()->link_without_anchor(MFAs,State) end,
-	   fun()->mfa_multi(MFAs,State) end])
-  catch
-    _C:_R -> []
+  try MFAs = matching_mfas(Mo, Fu, Aa),
+      until([fun()->link_with_anchor(MFAs,State) end,
+	     fun()->exact_match(Mo,Fu,MFAs,State) end,
+	     fun()->link_without_anchor(MFAs,State) end,
+	     fun()->mfa_multi(MFAs,State) end])
+  catch _:_ -> []
   end.
 
 until([F|Fs]) ->
