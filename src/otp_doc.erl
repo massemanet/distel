@@ -65,6 +65,7 @@ arguments(_Mod,_Fun) -> {ok,""}.
 completions(What,M,F) ->
   case get(What,M,F,"") of
     no_html -> {error,no_html};
+    [] -> {error,not_found};
     Ans -> {ok,Ans}
   end.
 
