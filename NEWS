@@ -1,3 +1,13 @@
+Version 4.03:
+
+        Completions (M-?) improved.
+	Added functions to show relevant documentation (C-c C-d h, C-c C-d z).
+	Better "who calls" (C-c C-d w).
+	Unicode fixes.
+	Added erl-find-module (C-c C-d F).
+	Added erl-set-cookie and erl-get-cookie.
+	The distel beam files can be loaded from Emacs over RPC (C-c C-d g).
+
 Version 4.0:
 
 	Moved to google code (code.google.com/p/distel)
