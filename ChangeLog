@@ -1,10 +1,29 @@
+2008-12-18  Mats Cronqvist  <masse@kreditor.se>
+
+	* otp_doc.erl : the strategy for completion is this; try otp_doc
+	first, since it's faster. if it comes up empty, xref should kick
+	in. alas, otp_doc was signalling failure to find by
+	returning {ok,[]} instead of {error,R}.
+
+2008-09-23  Mats Cronqvist  <masse@kreditor.se>
+
+	* doc: xemacs doesn't ship with ewoc.el. documented this, with a
+	pointer to savannah.
+
+	2008-09-05  Mats Cronqvist  <masse@kreditor.se>
+
+	* Makefile: the "make install" target and "erl-load-backend"
+	disagreed on where the beam files where supposed to live. changed
+	the makefile and updated the INSTALL file.
+
 2008-07-31  Mats Cronqvist  <masse@kreditor.se>
 
-	* various: fixed docs and compiler warnings, and made a 4.0 release.
+	* various: fixed docs and compiler warnings, and made a 4.0
+	release.
 
 2008-05-23  Mats Cronqvist  <masse@kreditor.se>
 
-	* src/otp_doc.erl (funcsf): 
+	* src/otp_doc.erl (funcsf):
 
 	yet another edge case in the broken line handling
 	
