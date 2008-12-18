@@ -1,5 +1,7 @@
 2008-12-18  Mats Cronqvist  <masse@kreditor.se>
 
+	* *: tagged and uploaded 4.03
+
 	* otp_doc.erl : the strategy for completion is this; try otp_doc
 	first, since it's faster. if it comes up empty, xref should kick
 	in. alas, otp_doc was signalling failure to find by
