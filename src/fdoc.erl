@@ -64,17 +64,15 @@ describe(M) ->
 describe(M, F) ->
     describe(M, F, '_').
 describe(M, F, A) ->
-    case description(M, F, A) of
-	{ok, Matches} ->
-	    print_matches(Matches);
-	Err ->
-	    Err
-    end.
+  {ok, Matches} = description(M, F, A),
+  print_matches(Matches).
 
 description(M) ->
     description(M, '_', '_').
+
 description(M, F) ->
     description(M, F, '_').
+
 description(M, F, A) ->
     ensure_started(),
     fdoc ! {describe, self(), M, F, A},

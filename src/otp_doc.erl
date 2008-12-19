@@ -208,11 +208,12 @@ which_a(M,F,A) ->
 %% read the index file
 %% store name of html file in {Mod,file}
 html_index(file,Dir) ->
-  fold_file(curry(fun lines/3,Dir),[],filename:join([Dir,doc,man_index.html])).
+  FN = filename:join([Dir,"doc","man_index.html"]),
+  fold_file(curry(fun lines/3,Dir),[],).
 
 lines(Line,_,Dir) ->
   case string:tokens(Line, "<> \"") of
-    ["TD", "A", "HREF=","../"++Href, M|_] -> 
+    ["TD", "A", "HREF=", "../"++Href, M|_] -> 
       case filename:basename(Href,".html") of
 	"index" -> ok;
 	M -> e_set({file,M}, filename:join([Dir,Href]))
@@ -309,10 +310,10 @@ trim_nl(Str) -> lists:reverse(tl(lists:reverse(Str))).
 %% Schönfinkelisation
 curry(F,Arg) ->
   case erlang:fun_info(F,arity) of
-    {_,1} -> fun() -> F(Arg) end;
-    {_,2} -> fun(A) -> F(A,Arg) end;
-    {_,3} -> fun(A,B) -> F(A,B,Arg) end;
-    {_,4} -> fun(A,B,C) -> F(A,B,C,Arg) end
+    %% {_,1} -> fun() -> F(Arg) end;
+    %% {_,2} -> fun(A) -> F(A,Arg) end;
+    {_,3} -> fun(A,B) -> F(A,B,Arg) end
+    %% {_,4} -> fun(A,B,C) -> F(A,B,C,Arg) end
   end.
 
 %% --------------------------------------------------------------------------

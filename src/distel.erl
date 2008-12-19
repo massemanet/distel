@@ -76,7 +76,7 @@ gl_proxy(GL) ->
 %%% reload all modules that are out of date
 %%% compare the compile time of the loaded beam and the beam on disk
 reload_modules() ->
-    T = fun(L) -> [X || X <- L, element(1,X)==time] end,
+    T = fun(L) -> [X || X <- L, element(1,X) =:= time] end,
     Tm = fun(M) -> T(M:module_info(compile)) end,
     Tf = fun(F) -> {ok,{_,[{_,I}]}}=beam_lib:chunks(F,[compile_info]),T(I) end,
     Load = fun(M) -> c:l(M),M end,
@@ -160,10 +160,10 @@ guess_source_file(Mod, BeamFName) ->
   DotDot = dirname(Dir),
   try_srcs([src_from_beam(Mod),
             join([Dir, Erl]),
-            join([DotDot, src, Erl]),
-            join([DotDot, src, "*", Erl]),
-            join([DotDot, esrc, Erl]),
-            join([DotDot, erl, Erl])]).
+            join([DotDot, "src", Erl]),
+            join([DotDot, "src", "*", Erl]),
+            join([DotDot, "esrc", Erl]),
+            join([DotDot, "erl", Erl])]).
 
 try_srcs([]) -> throw(nothing);
 try_srcs(["" | T]) -> try_srcs(T);
@@ -274,7 +274,7 @@ trace_flags() ->
 
 tracer_loop(Tracer, Tracee) ->
     receive
-        Trace when tuple(Trace),
+        Trace when is_tuple(Trace),
                    element(1, Trace) == trace,
                    element(2, Trace) == Tracee ->
             Msg = tracer_format(Trace),
@@ -381,7 +381,7 @@ fprof_beamfile({M,_,_}) ->
         _ ->
             undefined
     end;
-fprof_beamfile(_)                  -> undefined.
+fprof_beamfile(_) -> undefined.
 
 fmt(X, A) -> to_bin(io_lib:format(X, A)).
 
