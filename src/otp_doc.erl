@@ -209,7 +209,7 @@ which_a(M,F,A) ->
 %% store name of html file in {Mod,file}
 html_index(file,Dir) ->
   FN = filename:join([Dir,"doc","man_index.html"]),
-  fold_file(curry(fun lines/3,Dir),[],).
+  fold_file(curry(fun lines/3,Dir),[],FN).
 
 lines(Line,_,Dir) ->
   case string:tokens(Line, "<> \"") of
