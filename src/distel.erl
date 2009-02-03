@@ -1,3 +1,4 @@
+%% -*- erlang-indent-level: 4 -*-
 %%%-------------------------------------------------------------------
 %%% File    : distel.erl
 %%% Author  : Luke Gorrie <luke@bluetail.com>
@@ -11,24 +12,29 @@
 
 -include_lib("kernel/include/file.hrl").
 
--import(lists, [flatten/1, member/2, sort/1, map/2, foldl/3, foreach/2]).
--import(filename, [dirname/1,join/1,basename/2]).
+-import(lists, [any/2
+                , append/1
+                , duplicate/2
+                , filter/2
+                , flatten/1
+                , foldl/3
+                , foreach/2
+                , keysearch/3
+                , map/2
+                , member/2
+                , prefix/2
+                , reverse/1
+                , sort/1
+                , usort/1
+               ]).
 
--export([rpc_entry/3, eval_expression/1, find_source/1,
-         process_list/0, process_summary/1,
-         process_summary_and_trace/2, fprof/3, fprof_analyse/1,
-         debug_toggle/2, debug_subscribe/1, debug_add/1,
-         break_toggle/2, break_delete/2, break_add/2, break_restore/1,
-         modules/1, functions/2, who_calls/3,
-         rebuild_completions/0, rebuild_call_graph/0,
-         free_vars/1, free_vars/2,
-         apropos/1, apropos/2, describe/3, describe/4]).
-
--export([reload_module/2,reload_modules/0]).
-
--export([gl_proxy/1, tracer_init/2, null_gl/0]).
+-import(filename, [dirname/1
+                   , join/1
+                   , basename/2]).
 
 -compile(export_all).
+
+fmt(F, A) -> to_bin(io_lib:fwrite(F,A)).
 
 to_bin(X) -> list_to_binary(to_list(X)).
 to_atom(X) -> list_to_atom(to_list(X)).
@@ -56,7 +62,7 @@ rpc_entry(M, F, A) ->
     apply(M,F,A).
 
 gl_name(Pid) ->
-    to_atom(flatten(io_lib:format("distel_gl_for_~p", [Pid]))).
+    to_atom(fmt("distel_gl_for_~p", [Pid])).
 
 gl_proxy(GL) ->
     receive
@@ -100,7 +106,7 @@ reload_module(Mod, File) ->
 		true ->
 		    Beams = [join([dirname(File),Mod]),
 			     join([dirname(dirname(File)),ebin,Mod])],
-			case lists:filter(fun is_beam/1, Beams) of
+			case filter(fun is_beam/1, Beams) of
 			    [] -> {error, R};
 			    [Beam|_] -> 
 				code:add_patha(dirname(Beam)),
@@ -131,7 +137,7 @@ eval_expression(S) ->
 try_evaluation(Parse) ->
     case catch erl_eval:exprs(Parse, []) of
         {value, V, _} ->
-            {ok, flatten(io_lib:format("~p", [V]))};
+            {ok, fmt("~p", [V])};
         {'EXIT', Reason} ->
             {error, Reason}
     end.
@@ -182,7 +188,7 @@ src_from_beam(Mod) ->
   try 
     case Mod:module_info(compile) of
       [] -> int:file(Mod);
-      CompInfo -> {_,{_,Src}} = lists:keysearch(source,1,CompInfo), Src
+      CompInfo -> {_,{_,Src}} = keysearch(source,1,CompInfo), Src
     end
   catch _:_ -> ""
   end.
@@ -204,12 +210,12 @@ name(Pid) ->
         {registered_name, Regname} ->
             to_list(Regname);
         _ ->
-            io_lib:format("~p", [Pid])
+            to_list(fmt("~p", [Pid]))
     end.
 
 initial_call(Pid) ->
     {initial_call, {M, F, A}} = process_info(Pid, initial_call),
-    io_lib:format("~s:~s/~p", [M, F, A]).
+    to_list(fmt("~s:~s/~p", [M, F, A])).
 
 reductions(Pid) ->
     {reductions, NrReds} = process_info(Pid, reductions),
@@ -220,8 +226,7 @@ messages(Pid) ->
     to_list(length(MsgList)).
 
 iformat(A1, A2, A3, A4) ->
-    to_bin(io_lib:format("~-21s ~-33s ~12s ~8s~n",
-                                 [A1,A2,A3,A4])).
+    fmt("~-21s ~-33s ~12s ~8s~n",[A1,A2,A3,A4]).
 
 %% ----------------------------------------------------------------------
 %% Individual process summary and tracing.
@@ -244,7 +249,7 @@ process_info_item(Pid, Item) ->
 
 %% Returns: Summary : binary()
 process_summary(Pid) ->
-    Text = [io_lib:format("~-20w: ~w~n", [Key, Value])
+    Text = [fmt("~-20w: ~w~n", [Key, Value])
             || {Key, Value} <- [{pid, Pid} | process_info(Pid)]],
     to_bin(Text).
 
@@ -357,7 +362,7 @@ fprof_process_info(Info) ->
     fmt("  ???: ~p~n", [Info]).
 
 fprof_tag({M,F,A}) when integer(A) ->
-    to_atom(flatten(io_lib:format("~p:~p/~p", [M,F,A])));
+    to_atom(fmt("~p:~p/~p", [M,F,A]));
 fprof_tag({M,F,A}) when list(A) ->
     fprof_tag({M,F,length(A)});
 fprof_tag(Name) when  atom(Name) ->
@@ -366,7 +371,7 @@ fprof_tag(Name) when  atom(Name) ->
 fprof_mfa({M,F,A}) -> [M,F,A];
 fprof_mfa(_)       -> undefined.
 
-fprof_tag_name(X) -> flatten(io_lib:format("~s", [fprof_tag(X)])).
+fprof_tag_name(X) -> fmt("~s", [fprof_tag(X)]).
 
 fprof_text({Name, Cnt, Acc, Own}) ->
     fmt("~s~p\t~.3f\t~.3f\n",
@@ -383,12 +388,10 @@ fprof_beamfile({M,_,_}) ->
     end;
 fprof_beamfile(_) -> undefined.
 
-fmt(X, A) -> to_bin(io_lib:format(X, A)).
-
 pad(X, A) when atom(A) ->
     pad(X, to_list(A));
 pad(X, S) when length(S) < X ->
-    S ++ lists:duplicate(X - length(S), $ );
+    S ++ duplicate(X - length(S), $ );
 pad(_X, S) ->
     S.
 
@@ -436,7 +439,7 @@ debug_add(Modules) ->
     ok.
 
 break_toggle(Mod, Line) ->
-    case lists:any(fun({Point,_}) -> Point == {Mod,Line} end,
+    case any(fun({Point,_}) -> Point == {Mod,Line} end,
                    int:all_breaks()) of
         true ->
             ok = int:delete_break(Mod, Line),
@@ -447,7 +450,7 @@ break_toggle(Mod, Line) ->
     end.
 
 break_delete(Mod, Line) ->
-    case lists:any(fun({Point,_}) -> Point == {Mod,Line} end,
+    case any(fun({Point,_}) -> Point == {Mod,Line} end,
                    int:all_breaks()) of
         true ->
             ok = int:delete_break(Mod, Line);
@@ -456,7 +459,7 @@ break_delete(Mod, Line) ->
     end.
 
 break_add(Mod, Line) ->
-    case lists:any(fun({Point,_}) -> Point == {Mod,Line} end,
+    case any(fun({Point,_}) -> Point == {Mod,Line} end,
                    int:all_breaks()) of
         true ->
             ok;
@@ -483,7 +486,7 @@ debug_subscribe(Pid) ->
     %% NB: doing this before subscription to ensure that the debugger
     %% server is started (int:subscribe doesn't do this, probably a
     %% bug).
-    Interpreted = lists:map(fun(Mod) -> [Mod, fname(Mod)] end,
+    Interpreted = map(fun(Mod) -> [Mod, fname(Mod)] end,
                             int:interpreted()),
     spawn_link(?MODULE, debug_subscriber_init, [self(), Pid]),
     receive ready -> ok end,
@@ -520,10 +523,10 @@ debug_subscriber(Pid) ->
     debug_subscriber(Pid).
 
 debug_format(Pid, {M,F,A}, Status, Info) ->
-    debug_format_row(io_lib:format("~w", [Pid]),
-                     io_lib:format("~p:~p/~p", [M,F,length(A)]),
-                     io_lib:format("~w", [Status]),
-                     io_lib:format("~w", [Info])).
+    debug_format_row(to_list(fmt("~w", [Pid])),
+                     to_list(fmt("~p:~p/~p", [M,F,length(A)])),
+                     to_list(fmt("~w", [Status])),
+                     to_list(fmt("~w", [Info]))).
 
 debug_format_row(Pid, MFA, Status, Info) ->
     fmt("~-12s ~-21s ~-9s ~-21s~n", [Pid, MFA, Status, Info]).
@@ -631,7 +634,7 @@ attach_meta_cmd(down, Att = #attach{stack={Pos,Max}}) ->
     end;
 attach_meta_cmd({get_binding, Var}, Att = #attach{stack={Pos,_Max}}) ->
     Bs = int:meta(Att#attach.meta, bindings, Pos),
-    case lists:keysearch(Var, 1, Bs) of
+    case keysearch(Var, 1, Bs) of
 	{value, Val} ->
 	    Att#attach.emacs ! {show_variable, fmt("~p~n", [Val])};
 	false ->
@@ -667,33 +670,31 @@ functions(Mod, Prefix) ->
     {error,_}-> xref_functions(Mod,Prefix)
   end.
 
--define(COMPLETION_SERVER, distel_complete).
--define(COMPLETION_SERVER_OPTS, {xref_mode, modules}).
+xref_completions(F,A) -> 
+    fun(server) -> distel_completions;
+       (opts)   -> [{xref_mode, modules}];
+       (otp)    -> true;
+       (query_) -> to_list(fmt(F,A))
+    end.
 
 rebuild_completions() ->
-    rebuild(?COMPLETION_SERVER, ?COMPLETION_SERVER_OPTS).
+    xref_rebuild(xref_completions("",[])).
 
 %% Returns: [ModName] of all modules starting with Prefix.
 %% ModName = Prefix = string()
 xref_modules(Prefix) ->
-    case  xref_q(?COMPLETION_SERVER, ?COMPLETION_SERVER_OPTS,
-                 '"~s.*" : Mod', [Prefix]) of
-	{ok, Mods} ->
-	    {ok, [atom_to_list(Mod) || Mod <- Mods]};
-	_ ->
-	    {error, fmt("Can't find any matches for ~p", [Prefix])}
+    case xref_query(xref_completions('"~s.*" : Mod', [to_list(Prefix)])) of
+	{ok, Mods} -> {ok, [to_list(Mod) || Mod <- Mods]};
+	_          -> {error, fmt("Can't find any matches for ~p", [Prefix])}
     end.
 
 %% Returns: [FunName] of all exported functions of Mod starting with Prefix.
 %% Mod = atom()
 %% Prefix = string()
 xref_functions(Mod, Prefix) ->
-    case  xref_q(?COMPLETION_SERVER, ?COMPLETION_SERVER_OPTS,
-                 '(X+B) * ~p:"~s.*"/_', [Mod, Prefix]) of
-	{ok, Res} ->
-	    {ok,lists:usort([atom_to_list(Fun) || {_Mod, Fun, _Arity}<-Res])};
-	_ ->
-	    {error, fmt("Can't find module ~p", [Mod])}
+    case xref_query(xref_completions('(X+B) * ~p:"~s.*"/_', [Mod, Prefix])) of
+	{ok, Res} -> {ok,usort([to_list(F) || {_M, F, _A}<-Res])};
+	_         -> {error, fmt("Can't find module ~p", [Mod])}
     end.
 
 %% ----------------------------------------------------------------------
@@ -713,14 +714,13 @@ free_vars(Text) ->
 free_vars(Text, StartLine) ->
     %% StartLine/EndLine may be useful in error messages.
     {ok, Ts, EndLine} = erl_scan:string(Text, StartLine),
-    %%Ts1 = lists:reverse(strip(lists:reverse(Ts))),
+    %%Ts1 = reverse(strip(reverse(Ts))),
     Ts2 = [{'begin', 1}] ++ Ts ++ [{'end', EndLine}, {dot, EndLine}],
     case erl_parse:parse_exprs(Ts2) of
         {ok, Es} ->
             E = erl_syntax:block_expr(Es),
             E1 = erl_syntax_lib:annotate_bindings(E, ordsets:new()),
-            {value, {free, Vs}} = lists:keysearch(free, 1,
-                                                  erl_syntax:get_ann(E1)),
+            {value, {free, Vs}} = keysearch(free, 1, erl_syntax:get_ann(E1)),
             {ok, Vs};
         {error, {_Line, erl_parse, Reason}} ->
             {error, fmt("~s", [Reason])}
@@ -962,7 +962,7 @@ get_atom_name(Len,Xs) ->
 get_atom_name(N,[X|Xs],RevName) when N > 0 ->
     get_atom_name(N-1,Xs,[X|RevName]);
 get_atom_name(0,Xs,RevName) ->
-    { lists:reverse(RevName), Xs }.
+    { reverse(RevName), Xs }.
 
 beam_disasm_exports(none, _) -> none;
 beam_disasm_exports(ExpTabBin, Atoms) ->
@@ -1004,62 +1004,26 @@ get_int(B) ->
 %%-----------------------------------------------------------------
 %% Call graph
 %%-----------------------------------------------------------------
--define(CALL_GRAPH_SERVER, distel_call_graph).
--define(CALL_GRAPH_SERVER_OPTS, []).
+
+xref_callgraph(A) -> 
+    F = to_list(fmt("(XXL)(Lin)(E || ~p)",[A])),
+    fun(server)-> distel_call_graph;
+       (opts) -> [];
+       (otp) -> false;
+       (query_)-> F
+    end.
+
+%% Ret: [{M,F,A,Line}], M = F = list()
+who_calls(Mm, Fm, Am) ->
+    XREF=xref_callgraph({Mm,Fm,Am}),
+    {ok, Calls} = xref_query(XREF),
+    append([[xform(M,F,A,L) || L <- Ls] || {{{{M,F,A},_},_}, Ls} <- Calls]).
+
+xform(M, F, A, L) ->
+  {to_list(M),to_list(F),A,L}.
 
 rebuild_call_graph() ->
-    rebuild(?CALL_GRAPH_SERVER, ?CALL_GRAPH_SERVER_OPTS).
-
-%% Ret: [{M,F,A,Line}], M = F = binary()
-who_calls(M, F, A) ->
-    [{fmt("~p", [Mod]), fmt("~p", [Fun]), Aa, Line}
-     || {{Mod,Fun,Aa},Line} <- calls_to({M, F, A})].
-
-%% {M,F,A} -> [{{M,F,A},Line}]
-calls_to(MFA) ->
-    {ok, Calls} = xref_q(?CALL_GRAPH_SERVER, ?CALL_GRAPH_SERVER_OPTS,
-			 "(XXL)(Lin)(E || ~p)", [MFA]),
-    lists:flatten([[{Caller, Line} || Line <- Lines]
-		   || {{{Caller,_},_}, Lines} <- Calls]).
-
-string_format(S) -> S.
-string_format(S, A) -> lists:flatten(io_lib:fwrite(S, A)).
-
-%%-----------------------------------------------------------------
-%% Support code for completion and call graph
-%%-----------------------------------------------------------------
-
-rebuild(Server, Opts) ->
-    stop(Server),
-    ensure_started(Server, Opts).
-
-stop(Server) ->
-    case whereis(Server) of
-        undefined -> ok;
-        _ -> xref:stop(Server),
-             ok
-    end.
-
-xref_q(Server, Opts, Query, Args) ->
-    ensure_started(Server, Opts),
-    xref:q(Server, string_format(Query, Args)).
-
-ensure_started(Server, Opts) ->
-    case whereis(Server) of
-	undefined ->
-            xref:start(Server, Opts),
-	    xref:set_default(Server, builtins, true),
-            foreach(fun (Dir) -> xref:add_directory(Server, Dir) end,
-                    get_code_path());
-	_ ->
-	    xref:update(Server),
-            ok
-    end.
-
-%% FIXME: make pruning configurable, e.g. remove all otp apps
-get_code_path() ->
-    code:get_path().
-
+    xref_rebuild(xref_callgraph("")).
 %%-----------------------------------------------------------------
 %% Call graph mode:
 %% 
@@ -1075,3 +1039,39 @@ get_code_path() ->
 %%   'ret' on a '-' line collapses
 %%    ?? jump to definition in other buffer
 %%-----------------------------------------------------------------
+
+xref_query(XREF) ->
+    ensure_started(XREF),
+    xref:q(XREF(server), XREF(query_)).
+
+xref_rebuild(XREF) ->
+    stop(XREF),
+    ensure_started(XREF).
+
+ensure_started(XREF) ->
+    case whereis(XREF(server)) of
+	undefined -> start(XREF);
+	_         -> xref:update(XREF(server))
+    end.
+
+stop(XREF) ->
+    case whereis(XREF(server)) of
+        undefined -> ok;
+        _         -> xref:stop(XREF(server))
+    end.
+
+start(XREF) ->
+    xref:start(XREF(server), XREF(opts)),
+    xref:set_default(XREF(server), builtins, true),
+    F = fun(D) -> xref:add_directory(XREF(server), D) end,
+    foreach(F, get_code_path(XREF)).
+
+get_code_path(XREF) ->
+    case XREF(otp) of
+        false-> 
+            Root = code:root_dir(),
+            [Dir || Dir <- code:get_path(), not prefix(Root,Dir)];
+        true -> 
+            code:get_path()
+    end.
+
