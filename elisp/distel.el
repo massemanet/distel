@@ -144,7 +144,7 @@ about Emacs' online help, use \"\\[help-for-help]\".
     ("\M-."      erl-find-source-under-point)	; usually `find-tag'
     ("\M-*"      erl-find-source-unwind) ; usually `pop-tag-mark'
     ("\M-,"      erl-find-source-unwind) ; usually `tags-loop-continue'
-    ("\M-/"      erl-complete) ; usually `dabbrev-expand'
+    ;;("\M-/"      erl-complete) ; usually `dabbrev-expand'
     )
   "Keys to bind in distel-mode-map.")
 
