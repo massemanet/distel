@@ -172,15 +172,18 @@ If not then try to send the module over as a binary and load it in."
 	    (&erl-load-backend node))
 	   (_ t))))))
 
+(defvar distel-ebin-directory
+  (file-truename
+   (concat (file-name-directory 
+            (or (locate-library "distel") load-file-name)) "../ebin"))
+   "Directory where beam files are located.")
+
 (defun &erl-load-backend (node)
-  (let* ((elisp-directory
-	  (file-name-directory (or (locate-library "distel") load-file-name)))
-	 (ebin-directory (concat elisp-directory "../ebin"))
-	 (modules '()))
-    (dolist (file (directory-files ebin-directory))
+  (let ((modules '()))
+    (dolist (file (directory-files distel-ebin-directory))
       (when (string-match "^\\(.*\\)\\.beam$" file)
 	(let ((module (intern (match-string 1 file)))
-	      (filename (concat ebin-directory "/" file)))
+	      (filename (concat distel-ebin-directory "/" file)))
 	  (push (list module filename) modules))))
     (if (null modules)
 	(erl-warn-backend-problem "don't have beam files")
@@ -846,6 +849,8 @@ prompts for an mfa."
 	(erl-receive ()
 	    ((['rex nil]
 	      (message "No doc found."))
+	     (['rex 'no_html]
+	      (message "no html docs installed"))
 	     (['rex ['mfas string]]
 	      (message "candidates: %s" string))
 	     (['rex ['sig string]]
