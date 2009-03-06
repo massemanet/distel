@@ -76,7 +76,7 @@
   (erl-ie-read-nodename)
   (let ((end (point))
 	(beg (save-excursion
-	       (loop do (re-search-backward "\\(\\`\\|^\\<\\)")
+	       (loop do (re-search-backward "^$")
 		     while (looking-at "end"))
 	       (point))))
     (erl-ie-evaluate beg end node t)))
@@ -123,20 +123,22 @@ call or an expression."
 		  ;; Clear "Sent eval request.." message
 		  (message "")
 	      
-		  (unless (looking-at "^")
-		    (end-of-line)
-		    (insert "\n"))
+		  (let ((my-point (point)))
+                    (unless (looking-at "^")
+                      (end-of-line)
+                      (insert "\n"))
 
-		  (let ((beg (point)))
+                    (let ((beg (point)))
 		    ;; Insert value, indent all lines of it 4 places,
 		    ;; then draw a " => " at the start.
-		    (insert value)
-		    (save-excursion (indent-rigidly beg (point) 5)
-				    (goto-char beg)
-				    (delete-region (point) (+ (point) 5))
-				    (insert " --> ")))
-		  (insert "\n\n")
-		  (push-mark (point) t))
+                      (insert value)
+                      (save-excursion (indent-rigidly beg (point) 5)
+                                      (goto-char beg)
+                                      (delete-region (point) (+ (point) 5))
+                                      (insert " -:-> ")))
+                    (insert "\n")
+                    (goto-char my-point)
+                    (push-mark (point) t)))
 	      (display-message-or-view (format "Result: %s" value)
 				       "*Evaluation Result*")))
 	   
