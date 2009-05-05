@@ -113,7 +113,7 @@ reload_module(Mod, File) ->
 				c:l(to_atom(Mod))
 			end;
 		false ->
-		    {error,R}
+		    {error,modname_and_filename_differs}
 	    end;
 	R -> R
     end.
@@ -408,39 +408,18 @@ null_gl() ->
 %% Debugging
 %% ----------------------------------------------------------------------
 debug_toggle(Mod, Filename) ->
-    case member(Mod, int:interpreted()) of
-        true ->
-            int:n(Mod),
-            uninterpreted;
-        false ->
-            case code:ensure_loaded(Mod) of
-	        {error,nofile} -> error;
-	        {module,Mod} -> 
-		    case int:i(Mod)  of
-		        {module, Mod} -> interpreted;
-		        error ->
-			    case int:i(Filename)  of
-			        {module, Mod} -> interpreted;
-			        error -> error
-			    end
-		    end
-	    end
+    case is_interpreted(Mod) of
+        true -> int:n(Mod), uninterpreted;
+        false-> int_i(Mod, Filename), interpreted
     end.
 
 debug_add(Modules) ->
-    foreach(fun([_Mod, FileName]) ->
-		    %% FIXME: want to reliably detect whether
-		    %% the module is interpreted, but
-		    %% 'int:interpreted()' can give the wrong
-		    %% answer if code is reloaded behind its
-		    %% back.. -luke
-		    int:i(FileName)
-	    end, Modules),
+    foreach(fun([Mod, Filename]) -> assert_int(Mod, Filename) end, Modules),
     ok.
 
 break_toggle(Mod, Line) ->
     case any(fun({Point,_}) -> Point == {Mod,Line} end,
-                   int:all_breaks()) of
+             int:all_breaks()) of
         true ->
             ok = int:delete_break(Mod, Line),
             disabled;
@@ -475,10 +454,6 @@ break_restore(L) ->
       end, L),
     ok.
 
-
-fname(Mod) ->
-    filename:rootname(code:which(Mod), "beam") ++ "erl".
-
 %% Returns: {InterpretedMods, Breakpoints, [{Pid, Text}]}
 %%          InterpretedMods = [[Mod, File]]
 %%          Breakpoints     = [{Mod, Line}]
@@ -486,8 +461,7 @@ debug_subscribe(Pid) ->
     %% NB: doing this before subscription to ensure that the debugger
     %% server is started (int:subscribe doesn't do this, probably a
     %% bug).
-    Interpreted = map(fun(Mod) -> [Mod, fname(Mod)] end,
-                            int:interpreted()),
+    Interpreted = [[Mod, erl_from_mod(Mod)] || Mod <- int_interpreted()],
     spawn_link(?MODULE, debug_subscriber_init, [self(), Pid]),
     receive ready -> ok end,
     int:clear(),
@@ -516,7 +490,7 @@ debug_subscriber(Pid) ->
 			  Status,
 			  fmt("~w", [Info])]}};
 	{int, {interpret, Mod}} ->
-	    Pid ! {int, {interpret, Mod, fname(Mod)}};
+	    Pid ! {int, {interpret, Mod, erl_from_mod(Mod)}};
 	Msg ->
 	    Pid ! Msg
     end,
@@ -531,6 +505,53 @@ debug_format(Pid, {M,F,A}, Status, Info) ->
 debug_format_row(Pid, MFA, Status, Info) ->
     fmt("~-12s ~-21s ~-9s ~-21s~n", [Pid, MFA, Status, Info]).
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% re-implementation of some int.erl functions
+
+erl_from_mod(Mod) ->
+    try {ok,{Mod,[{_,Bin}]}} = beam_lib:chunks(code:which(Mod),["CInf"]),
+        {_,{_,ErlFile}} = lists:keysearch(source,1,binary_to_term(Bin)),
+        ErlFile
+    catch _:_ -> ""
+    end.
+           
+
+assert_int(Mod,Filename) ->
+    case is_interpreted(Mod) of
+        true -> ok;
+        false-> int_i(Mod,Filename)
+    end.
+
+int_i(Mod,Srcfile) ->
+    try Beamfile = code:which(Mod),
+        case beam_lib:chunks(Beamfile, [abstract_code,exports]) of
+            {ok,{Mod,[{abstract_code,no_abstract_code},_]}} ->
+                throw(no_debug_info);
+            {ok,{Mod,[{abstract_code,Abst},{exports,Exps}]}} ->
+                int_i(Mod, Exps, Abst, Srcfile, Beamfile)
+        end
+    catch _:R -> throw(R)
+    end.
+
+
+int_i(Mod, Exps, Abst, Srcfile, Beamfile) ->
+    code:purge(Mod),
+    erts_debug:breakpoint({Mod,'_','_'}, false),
+    {module,Mod} = code:load_abs(filename:rootname(Beamfile),Mod),
+    {ok, SrcBin} = file:read_file(Srcfile),
+    {ok, BeamBin} = file:read_file(Beamfile),
+    MD5 = code:module_md5(BeamBin),
+    Bin = term_to_binary({interpreter_module,Exps,Abst,SrcBin,MD5}),
+    {module, Mod} = dbg_iserver:safe_call({load, Mod, Srcfile, Bin}),
+    true = erts_debug:breakpoint({Mod,'_','_'}, true) > 0.
+
+is_interpreted(Mod) ->
+    Mod:module_info(compile) == [].
+
+int_interpreted() ->
+    [Mod || {Mod,Beamfile} <- code:all_loaded(), 
+            is_list(Beamfile), 
+            is_interpreted(Mod)].
 %% Attach the client process Emacs to the interpreted process Pid.
 %%
 %% spawn_link's a new process to proxy messages between Emacs and
