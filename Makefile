@@ -1,6 +1,5 @@
-
 PACKAGE := distel
-VERSION := 4.01
+VERSION := 4.02
 
 prefix      = /usr/local
 exec_prefix = ${prefix}
@@ -41,7 +40,7 @@ erl: ${ERL_OBJ}
 
 ## Erlang
 ebin/%.beam: src/%.erl
-	erlc -W -o ebin +debug_info $<
+	${erlc} -W -o ebin +debug_info $<
 
 ## Elisp
 elisp/%.elc: elisp/%.el
