@@ -1,15 +1,3 @@
-2009-08-02  Luke Gorrie  <luke@bup.co.nz>
-
-	* elisp/erl-service.el (erl-rpc): Ensure that the backend distel
-	module is loaded before issuing the RPC request. Upload the BEAM
-	files directly if necessary. This feature already existed, but
-	used to execute asynchronously, and not happen in time for the
-	initial RPC (which would fail).
-
-	* elisp/derl.el (derl-distel-available): Buffer-local variable to
-	keep track of whether the Distel backend code is available on the
-	remote node.
-
 2008-12-18  Mats Cronqvist  <masse@kreditor.se>
 
 	* *: tagged and uploaded 4.03

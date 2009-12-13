@@ -53,14 +53,6 @@ handshake, 4 when connected."))
   "Messages waiting to be sent to node."))
 
 (make-variable-buffer-local
- (defvar derl-backend-available nil
-   "True when the Distel backend erlang modules are available."))
-
-(make-variable-buffer-local
- (defvar derl-distel-rpc-queue nil
-   "Messages waiting to be sent to node after backend code is loaded."))
-
-(make-variable-buffer-local
  (defvar derl-remote-links '()
   "List of (LOCAL-PID . REMOTE-PID) for all distributed links (per-node.)
 Used for sending exit signals when the node goes down."))
@@ -350,10 +342,6 @@ modified."
 (defun derl-eat-msg ()
   (delete-region (point-min) (derl-msg-end)))
 
-(defun derl-connected-p (node)
-  (let ((buffer (get-buffer (derl-buffer-name node))))
-    (and buffer (with-current-buffer buffer derl-alive))))
-
 ;; ------------------------------------------------------------
 ;; Distributed erlang protocol requests
 ;; ------------------------------------------------------------
@@ -410,19 +398,6 @@ initiated if necessary and the request is queued."
        (fsm-encode1 121) ; type = pass-through (whatever that means..)
        (fsm-insert ctl)
        (fsm-insert msg)))))
-
-(defun derl-distel-available (node)
-  (let ((buffer (get-buffer (derl-buffer-name node))))
-    (when buffer
-      (with-current-buffer buffer
-	(setq derl-backend-available t)))))
-
-(defun derl-distel-available-p (node)
-  (let ((buffer (get-buffer (derl-buffer-name node))))
-    (when buffer
-      (with-current-buffer buffer
-	(setq derl-backend-available t)))))
-  
 
 ;; Tracing
 

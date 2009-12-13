@@ -222,7 +222,7 @@ add_remote_call_info([{tuple, L, Values} | Rs], Defs) ->
     [{tuple, L, lists:map(F, Values)} | add_remote_call_info(Rs, Defs)] ;
 
 
-add_remote_call_info([{Type, L, Hdr, Body} | Rs], Defs) when list(Body) ->
+add_remote_call_info([{Type, L, Hdr, Body} | Rs], Defs) when is_list(Body) ->
     B = add_remote_call_info(Body, Defs),
     [{Type, L, Hdr, B} | add_remote_call_info(Rs, Defs)] ;
 

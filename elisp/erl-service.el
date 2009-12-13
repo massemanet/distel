@@ -156,19 +156,21 @@ Should be called with point directly before the opening ( or /."
 
 ;;;; Backend code checking
 
-(defun erl-load-backend (node &optional rpc)
-  "Load the backend Erlang modules on NODE and then issue RPC.
-RPC is an apply'able argument list for `erl-rpc'."
+(add-hook 'erl-nodeup-hook 'erl-check-backend)
+
+(defun erl-check-backend (node _fsm)
+  "Check if we have the 'distel' module available on `node'.
+If not then try to send the module over as a binary and load it in."
   (unless distel-inhibit-backend-check
     (erl-spawn
       (erl-send `[rex ,node]
 		`[,erl-self [call
 			     code ensure_loaded (distel)
 			     ,(erl-group-leader)]])
-      (erl-receive (node rpc)
+      (erl-receive (node)
 	  ((['rex ['error _]]
-	    (&erl-load-backend node rpc))
-	   (_ (erl-backend-loaded node rpc)))))))
+	    (&erl-load-backend node))
+	   (_ t))))))
 
 (defvar distel-ebin-directory
   (file-truename
@@ -176,7 +178,7 @@ RPC is an apply'able argument list for `erl-rpc'."
             (or (locate-library "distel") load-file-name)) "../ebin"))
    "Directory where beam files are located.")
 
-(defun &erl-load-backend (node rpc)
+(defun &erl-load-backend (node)
   (let ((modules '()))
     (dolist (file (directory-files distel-ebin-directory))
       (when (string-match "^\\(.*\\)\\.beam$" file)
@@ -185,12 +187,12 @@ RPC is an apply'able argument list for `erl-rpc'."
 	  (push (list module filename) modules))))
     (if (null modules)
 	(erl-warn-backend-problem "don't have beam files")
-      (&erl-load-backend-modules node modules rpc))))
+      (&erl-load-backend-modules node modules))))
 
-(defun &erl-load-backend-modules (node modules rpc)
+(defun &erl-load-backend-modules (node modules)
+  (message "loading = %S" (car modules))
   (if (null modules)
-      (progn (message "(Successfully uploaded backend modules into node)")
-	     (erl-backend-loaded node rpc))
+      (message "(Successfully uploaded backend modules into node)")
     (let* ((module (caar modules))
 	   (filename (cadar modules))
 	   (content (erl-file-to-string filename))
@@ -199,15 +201,11 @@ RPC is an apply'able argument list for `erl-rpc'."
 		`[,erl-self [call
 			     code load_binary ,(list module filename binary)
 			     ,(erl-group-leader)]])
-      (erl-receive (node modules rpc)
+      (erl-receive (node modules)
 	  ((['rex ['error reason]]
 	    (erl-warn-backend-problem reason))
 	   (['rex _]
-	    (&erl-load-backend-modules node (rest modules) rpc)))))))
-
-(defun erl-backend-loaded (node rpc)
-  (derl-distel-available node)
-  (when rpc (apply 'erl-rpc rpc)))
+	    (&erl-load-backend-modules node (rest modules))))))))
 
 (defun erl-warn-backend-problem (reason)
   (with-current-buffer (get-buffer-create "*Distel Warning*")
@@ -245,12 +243,9 @@ To disable this warning in future, set `distel-inhibit-backend-check' to t.
   "Call {M,F,A} on NODE and deliver the result to the function K.
 The first argument to K is the result from the RPC, followed by the
 elements of KARGS."
-  (if (or (derl-distel-available-p node) distel-inhibit-backend-check)
-      (erl-spawn
-	(erl-send-rpc node m f a)
-	(erl-rpc-receive k kargs))
-    (let ((rpc (list k kargs node m f a)))
-      (erl-load-backend node rpc))))
+  (erl-spawn
+    (erl-send-rpc node m f a)
+    (erl-rpc-receive k kargs)))
 
 (defun erl-send-rpc (node mod fun args)
   "Send an RPC request on NODE to apply(MOD, FUN, ARGS).

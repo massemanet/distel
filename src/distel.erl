@@ -361,11 +361,11 @@ fprof_process_info({initial_calls, Calls}) ->
 fprof_process_info(Info) ->
     fmt("  ???: ~p~n", [Info]).
 
-fprof_tag({M,F,A}) when integer(A) ->
+fprof_tag({M,F,A}) when is_integer(A) ->
     to_atom(fmt("~p:~p/~p", [M,F,A]));
-fprof_tag({M,F,A}) when list(A) ->
+fprof_tag({M,F,A}) when is_list(A) ->
     fprof_tag({M,F,length(A)});
-fprof_tag(Name) when  atom(Name) ->
+fprof_tag(Name) when  is_atom(Name) ->
     Name.
 
 fprof_mfa({M,F,A}) -> [M,F,A];
@@ -381,14 +381,14 @@ fprof_tags(C) -> [fprof_tag(Name) || {Name,_,_,_} <- C].
 
 fprof_beamfile({M,_,_}) ->
     case code:which(M) of
-        Fname when list(Fname) ->
+        Fname when is_list(Fname) ->
             to_bin(Fname);
         _ ->
             undefined
     end;
 fprof_beamfile(_) -> undefined.
 
-pad(X, A) when atom(A) ->
+pad(X, A) when is_atom(A) ->
     pad(X, to_list(A));
 pad(X, S) when length(S) < X ->
     S ++ duplicate(X - length(S), $ );
@@ -586,7 +586,7 @@ attach_loop(Att = #attach{emacs=Emacs, meta=Meta}) ->
 			      where={Mod, Line},
 			      stack={Pos, Pos}},
 	    ?MODULE:attach_loop(attach_goto(Att1,Att1#attach.where));
-	{Meta, Status} when atom(Status) ->
+	{Meta, Status} when is_atom(Status) ->
 	    Emacs ! {status, Status},
 	    ?MODULE:attach_loop(Att#attach{status=Status,where=undefined});
 	{NewMeta, {exit_at,null,_R,Pos}} when is_pid(NewMeta) ->
@@ -801,7 +801,7 @@ fdoc_binaryify(Other) -> Other.
 %% Get the argument lists for a function in a module.
 %% Return: [Arglist]
 %% Arglist = [string()]
-get_arglists(ModName, FunName) when list(ModName), list(FunName) ->
+get_arglists(ModName, FunName) when is_list(ModName), is_list(FunName) ->
     arglists(to_atom(ModName), FunName).
 
 arglists(Mod, Fun) ->
@@ -867,7 +867,7 @@ get_forms_from_src(Mod) ->
 %% Return the name of the beamfile for Mod.
 beamfile(Mod) ->
     case code:which(Mod) of
-	File when list(File) ->
+	File when is_list(File) ->
 	    {ok, File};
 	_ ->
 	    error
@@ -919,13 +919,13 @@ best_arg(Args) ->
 %% 'unknown' useless, type description is better, variable name is best.
 best_arg(unknown, A2)          -> A2;
 best_arg(A1, unknown)          -> A1;
-best_arg(A1, A2) when atom(A1),atom(A2) ->
+best_arg(A1, A2) when is_atom(A1),is_atom(A2) ->
     %% ... and the longer the variable name the better
     case length(to_list(A2)) > length(to_list(A1)) of
 	true -> A2;
 	false -> A1
     end;
-best_arg(A1, _A2) when atom(A1) -> A1;
+best_arg(A1, _A2) when is_atom(A1) -> A1;
 best_arg(_A1, A2)               -> A2.
 
 %% transpose([[1,2],[3,4],[5,6]]) -> [[1,3,5],[2,4,6]]
