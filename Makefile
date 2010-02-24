@@ -28,10 +28,12 @@ PS_OBJ   := doc/distel.ps
 
 OBJECTS := ${ERL_OBJ} ${ELISP_OBJ} ${C_OBJ} ${INFO_OBJ} ${PS_OBJ}
 
-base: ${ERL_OBJ} ${ELISP_OBJ} ${C_OBJ}
+base: ebin ${ERL_OBJ} ${ELISP_OBJ} ${C_OBJ}
 info: ${INFO_OBJ}
 postscript: ${PS_OBJ}
 all: base info postscript
+ebin:
+	mkdir ebin
 
 erl: ${ERL_OBJ}
 
