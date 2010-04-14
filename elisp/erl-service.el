@@ -1247,7 +1247,9 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
                   (list (intern mod) (intern fun) arity))
     (message "Request sent..")
     (erl-receive ()
-        ((['rex calls]
+        ((['rex ['error reason]]
+          (message "Error: %s" reason))
+         (['rex calls]
           (with-current-buffer (get-buffer-create "*Erlang Calls*")
 	    (erl-who-calls-mode)
             (setq buffer-read-only t)
@@ -1266,7 +1268,8 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
 	      (delete-char 1))
             (goto-char (point-min))
             (message "")
-            (pop-to-buffer (current-buffer))))))))
+            (pop-to-buffer (current-buffer))))
+         ))))
 
 (define-derived-mode erl-who-calls-mode fundamental-mode
   "who-calls"

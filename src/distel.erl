@@ -72,6 +72,9 @@ gl_proxy(GL) ->
         {io_request, From, ReplyAs, {put_chars, M, F, A}} ->
             GL ! {put_chars, flatten(apply(M, F, A))},
             From ! {io_reply, ReplyAs, ok};
+        {io_request, From, ReplyAs, {put_chars,unicode,M,F,A}} ->
+            GL ! {put_chars, flatten(apply(M, F, A))},
+            From ! {io_reply, ReplyAs, ok};
         {io_request, From, ReplyAs, {get_until, _, _, _}} ->
             %% Input not supported, yet
             From ! {io_reply, ReplyAs, eof}
@@ -1036,9 +1039,12 @@ xref_callgraph(A) ->
 
 %% Ret: [{M,F,A,Line}], M = F = list()
 who_calls(Mm, Fm, Am) ->
-    XREF=xref_callgraph({Mm,Fm,Am}),
-    {ok, Calls} = xref_query(XREF),
-    append([[xform(M,F,A,L) || L <- Ls] || {{{{M,F,A},_},_}, Ls} <- Calls]).
+    try XREF=xref_callgraph({Mm,Fm,Am}),
+        {ok, Calls} = xref_query(XREF),
+        append([[xform(M,F,A,L) || L <- Ls] || {{{{M,F,A},_},_}, Ls} <- Calls])
+    catch _:_ ->
+        {error,not_found}
+    end.
 
 xform(M, F, A, L) ->
   {to_list(M),to_list(F),A,L}.
