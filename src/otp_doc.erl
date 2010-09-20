@@ -208,7 +208,7 @@ which_a(M,F,A) ->
 %% read the index file
 %% store name of html file in {Mod,file}
 html_index(file,Dir) ->
-  FN = filename:join([Dir,"doc","man_index.html"]),
+  FN = filename:join([Dir,"lib","doc","man_index.html"]),
   fold_file(curry(fun lines/3,Dir),[],FN).
 
 lines(Line,_,Dir) ->
@@ -238,9 +238,9 @@ cache_funcs(M) ->
 
 funcsf(Line,A,M) ->
   case trim_P(string:tokens(A++Line,"<>\"")) of
-    ["a name=",FA,"span class=","bold_code",Sig,"/span","/a","br/"|_] ->
+    ["a name=",FA,"span class=","bold_code",Sig,"/span","/a"|_] ->
       a_line(M,fa(FA),Sig),[];			% R12-
-    ["A NAME=",FA,"STRONG","CODE",Sig,"/CODE","/STRONG","/A","BR"|_] ->
+    ["A NAME=",FA,"STRONG","CODE",Sig,"/CODE","/STRONG","/A"|_] ->
       a_line(M,fa(FA),Sig),[];			% -R11
     ["A NAME=",_,"STRONG","CODE"|_] ->
       A++Line;					% -R11, broken lines
@@ -262,9 +262,11 @@ a_line(M,[F,A],Sig) ->	    %io:fwrite("- ~p~n",[{M,F,A}]).
 
 fa(FA) -> string:tokens(FA,delim()).
 
-trim_P(["P"|L]) -> L;
-trim_P(["p"|L]) -> L;
-trim_P(L)       -> L.
+trim_P([_,"P"|L]) -> L;
+trim_P([_,"p"|L]) -> L;
+trim_P(["P"|L])   -> L;
+trim_P(["p"|L])   -> L;
+trim_P(L)         -> L.
 
 delim() ->
   try erlang:system_info(otp_release), "-"
@@ -319,8 +321,11 @@ curry(F,Arg) ->
 %% --------------------------------------------------------------------------
 io_str(F,A) -> lists:flatten(io_lib:format(F,A)).
 
-dehtml(Str) ->
-  element(2,regexp:sub(Str,"&#62;",">")).
+%% dehtmlize right angle
+dehtml("&#62;"++Str) -> ">"++dehtml(Str);
+dehtml("&gt;"++Str)  -> ">"++dehtml(Str);
+dehtml([H|Str])      -> [H|dehtml(Str)];
+dehtml("")           -> "".
 
 str_join([], _Sep) -> "";
 str_join([Pref|Toks], Sep) ->
