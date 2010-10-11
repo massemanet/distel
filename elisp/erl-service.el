@@ -727,7 +727,7 @@ We also don't prompt for the module name.")
 (defvar erl-find-history-ring (make-ring 20)
   "History ring tracing for following functions to their definitions.")
 
-(defun erl-find-source-under-point ()
+(defun erl-find-function-under-point ()
   "Goto the source code that defines the function being called at point.
 For remote calls, contacts an Erlang node to determine which file to
 look in, with the following algorithm:
