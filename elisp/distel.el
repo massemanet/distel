@@ -142,7 +142,7 @@ about Emacs' online help, use \"\\[help-for-help]\".
     ("\C-c\C-dn" erl-choose-nodename)
     ("("         erl-openparen)
     ;; Possibly "controversial" shorter keys
-    ("\M-."      erl-find-source-under-point)	; usually `find-tag'
+    ("\M-."      meta-erl-find-source-under-point)	; usually `find-tag'
     ("\M-*"      erl-find-source-unwind) ; usually `pop-tag-mark'
     ("\M-,"      erl-find-source-unwind) ; usually `tags-loop-continue'
     ;;("\M-/"      erl-complete) ; usually `dabbrev-expand'

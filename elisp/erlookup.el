@@ -165,7 +165,7 @@ symbol."
      ;; ((and (looking-back "\\?") (looking-forward "(")) erl-inline-function-regex)
      (t nil))))
 
-(defun erl-find-source-under-point ()
+(defun meta-erl-find-source-under-point ()
   "When trying to find a function definition checks to see if we
   are standing on a macro instead."
   (interactive)
@@ -173,7 +173,7 @@ symbol."
       (let ((pattern (erl-is-pattern)))
         (if pattern
             (erl-find-source-pattern pattern (thing-at-point 'symbol))
-          (erl-find-function-under-point)))
-    (erl-find-function-under-point)))
+          (erl-find-source-under-point)))
+    (erl-find-source-under-point)))
 
 (provide 'erlookup)
