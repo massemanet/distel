@@ -97,7 +97,6 @@ symbol."
         (extra-paths nil)
         (already-open nil)
         (already-tried nil)
-        (found nil)
         (symbol (erl-find-pattern-in-file pattern arg)))
 
     ;; check open buffers first
@@ -138,12 +137,12 @@ symbol."
                 (unless symbol
                   (kill-this-buffer))))))))
     
-    (if (and (not found) extra-paths)
+    (if (and (not symbol) extra-paths)
         (progn
           (erl-find-source-pattern pattern arg extra-paths))
       
       (if symbol
-          symbol
+          (goto-char (cdr symbol))
         (goto-char origin)
         (message "Can't find definition of: %s" arg)
         (erl-find-source-unwind)))))
