@@ -86,6 +86,7 @@ symbol."
         (symbol nil))
     (goto-char (point-min))
     ;; (if (re-search-forward (concat pattern arg "\\(,\\|(\\)") nil t)
+    (set (make-local-variable 'case-fold-search) nil)
     (if (re-search-forward
          (concat pattern "\\(" arg "\\(,\\|(\\)\\|.*\\?" arg "\\)") nil t)
         (progn t (beginning-of-line) (search-forward "(") ;;(backward-word)
