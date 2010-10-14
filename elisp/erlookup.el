@@ -66,6 +66,7 @@ by `find-file'."
           do (if (string-equal ".." (first (split-string path "/")))
                  (push (expand-file-name (substring-no-properties path)) paths)
                (push (concat r "/" path) paths)))
+    (push (concat "./" path) paths)
     paths))
 
 (defun try-open-file (path)
