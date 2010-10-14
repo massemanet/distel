@@ -72,8 +72,6 @@ by `find-file'."
   (setq find-paths (find-file-paths path erlookup-roots))
   (dolist (find-path find-paths)
     (when (file-exists-p find-path)
-      (ring-insert-at-beginning erl-find-history-ring
-                                (copy-marker (point-marker)))
       (find-file find-path))))
 
 ;;; lookup related things
@@ -167,7 +165,7 @@ symbol."
     (beginning-of-thing 'symbol)
     (cond
      ;; ((looking-back "\\#?") erl-inline-record-regex)
-     ((looking-back erl-include-pattern) 'open-header)
+     ((looking-back (concat erl-include-pattern ".*")) 'open-header)
      ((looking-back "\\#") erl-record-regex)
      ((looking-back "\\?") erl-macro-regex)
      ;; ((and (looking-back "\\?") (looking-forward "(")) erl-inline-function-regex)
@@ -180,8 +178,11 @@ symbol."
   (if erlookup-roots
       (let ((pattern (erl-is-pattern)))
         (cond ((equal pattern 'open-header)
-               (try-open-file (thing-at-point 'filename)))
-              ((stringp pattern)
+               (progn
+                 (ring-insert-at-beginning erl-find-history-ring
+                                           (copy-marker (point-marker)))
+                 (try-open-file (save-excursion (end-of-thing 'filename) (thing-at-point 'filename)))))
+               ((stringp pattern)
                (erl-find-source-pattern pattern (thing-at-point 'symbol)))
               (t
                (erl-find-source-under-point))))
