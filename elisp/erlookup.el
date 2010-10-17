@@ -7,7 +7,13 @@
 ;;
 ;; NOTE: This is a work in progress and stuff change all the time. There are
 ;; also a couple of known bugs. Since it makes use of simple and dumb regexps
-;; for finding stuff it's easy finding definitions like '-defin
+;; for finding stuff it's easy finding definitions like '-define(foo, bar)' but
+;; a bit trickier finding other cases with lists of definitions, etc.
+
+;; To use this you need to specify a list of lookup roots:
+
+;; (setq erlookup-roots '("~/projects/foo/lib"
+;;                        "~/path/to/otp/headers"))
 
 ;; TODO: 'inline' lookups of macros to e.g. jump to record definitions when
 ;; standing on '#?name_of_record', and jump to function definitions when
