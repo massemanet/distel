@@ -93,7 +93,9 @@ symbol."
     ;; (if (re-search-forward (concat pattern arg "\\(,\\|(\\)") nil t)
     (set (make-local-variable 'case-fold-search) nil)
     (if (re-search-forward
-         (concat pattern "\\(" arg "\\(,\\|(\\)\\|.*\\?" arg "\\)") nil t)
+         ;; (concat pattern "\\(" arg "\\(,\\|(\\)\\|.*\\?" arg "\\)") nil t)
+         ;; (concat pattern arg "\\(,\\|(\\)") nil t)
+         (concat pattern "\\s *" arg "\\s *,") nil t)
         (progn t (beginning-of-line) (search-forward "(") ;;(backward-word)
                (setq symbol (cons (thing-at-point 'symbol) (copy-marker (point-marker))))))
     (goto-char origin)
