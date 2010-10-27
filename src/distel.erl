@@ -162,6 +162,13 @@ find_source(Mod) ->
       {error, fmt("Can't find module '~p' on ~p", [Mod, node()])}
   end.
 
+find_includes(Mod) ->
+  case Mod:module_info(compile) of
+    [] -> int:file(Mod);
+    CompInfo -> {_, OptionsList} = lists:keyfind(options, 1, CompInfo),
+                {ok, [Path || {i, Path} <- OptionsList]}
+  end.
+
 %% Ret: AbsName | throw(Reason)
 guess_source_file(Mod, BeamFName) ->
   Erl = to_list(Mod) ++ ".erl",
