@@ -12,6 +12,9 @@
 
 ;; To use this you need to specify a list of lookup roots:
 
+;; NOTE: THIS IS NOT NEEDED ANY MORE
+;; We now ask the distel node about the modules compile time includes.
+
 ;; (setq erlookup-roots '("~/projects/foo/lib"
 ;;                        "~/path/to/otp/headers"))
 
@@ -41,6 +44,18 @@
         (setq searching nil)))
     (goto-char origin)
     (reverse paths)))
+
+(defun erl-find-include-paths ()
+  (let ((module (erlang-get-module))
+        (node (or erl-nodename-cache (erl-target-node))))
+    (erl-spawn
+      (erl-send-rpc node 'distel 'find_includes (list (intern module)))
+      (erl-receive ()
+          ((['rex ['ok paths]]
+            (setq erlookup-roots paths))
+           (['rex ['error reason]]
+            (ring-remove erl-find-history-ring)
+            (message "Error: %s" reason)))))))
 
 ;; TODO: For some reason `remove-duplicates' didn't work. It was easier to
 ;; write one than finding out what went wrong with the original.
@@ -118,13 +133,13 @@ symbol."
     (dolist (path paths)
       (unless symbol
         (setq buffer-path (buffer-name-from-path path))
-        
+
         (when (get-buffer buffer-path)
           (set-buffer buffer-path)
           (setq extra-paths (remove-duplicates (append (erl-find-includes) extra-paths)))
           (push buffer-path already-tried)
           (push buffer-path already-open))
-        
+
         (when (setq symbol (erl-find-pattern-in-file pattern arg))
           (switch-to-buffer buffer-path)
           (goto-char (cdr symbol)))))
@@ -134,7 +149,7 @@ symbol."
       (unless symbol
         (setq buffer-path (buffer-name-from-path path))
         (setq find-paths (find-file-paths path erlookup-roots))
-        
+
         (unless (member buffer-path already-tried)
           
           (dolist (find-path find-paths)
@@ -184,6 +199,7 @@ symbol."
   "When trying to find a function definition checks to see if we
   are standing on a macro instead."
   (interactive)
+  (erl-find-include-paths)
   (if erlookup-roots
       (let ((pattern (erl-is-pattern)))
         (cond ((equal pattern 'open-header)
