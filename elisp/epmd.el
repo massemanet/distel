@@ -16,7 +16,7 @@
 			     arg)))
   (ecase (elt arg 0)
     ((?n) (fsm-change-state #'epmd-recv-names-resp))
-    ((?p) (fsm-change-state #'epmd-recv-port-resp))
+    ((?z) (fsm-change-state #'epmd-recv-port-resp))
     ((?a) (fsm-change-state #'epmd-recv-alive-resp))))
 
 (defun epmd-recv-names-resp (event data)
@@ -25,11 +25,15 @@
   (fsm-terminate (substring arg 4)))
 
 (defun epmd-recv-port-resp (event data)
+  (message "Event: %s" event)
+  (message "data: %s" data)
+  (message "arg: %s" arg)
   (ecase event
     ((data)
-     (assert (= (length arg) 2))
-     (fsm-terminate (+ (ash    (elt arg 0) 8)
-		       (logand (elt arg 1) 255))))
+     (assert (> (length arg) 2))
+     (assert (= 119 (elt data 0)))
+     (fsm-terminate (+ (ash    (elt arg 2) 8)
+		       (logand (elt arg 3) 255))))
     ((closed)
      (fsm-fail))))
 
@@ -74,7 +78,7 @@
 	(fsm-connect host epmd-port #'epmd-process "n" cont fail)))))
 
 (defun epmd-port-please (node host cont &optional fail-cont)
-  (fsm-connect host epmd-port #'epmd-process (concat "p" node) cont fail-cont))
+  (fsm-connect host epmd-port #'epmd-process (concat "z" node) cont fail-cont))
 
 ;; (defun epmd-login (nodename &optional cont fail-cont)
 ;;   (fsm-connect host epmd-port #'epmd-process (epmd-make-alive-req nodename)
