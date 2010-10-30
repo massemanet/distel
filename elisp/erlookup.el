@@ -70,15 +70,6 @@
 
 ;; utilities
 
-(defun last-from-path (path delim)
-  "Returns the last part of a string after being split at `delim'."
-  (first (last (split-string path delim))))
-
-(defun buffer-name-from-path (path)
-  "Returns the last part of a path, e.g. 'toto/tata/titi.erl' ->
-titi.erl"
-  (last-from-path path "/"))
-
 (defun find-file-paths (path roots)
   "Brokenly transforms a list of paths to paths that can be used
 by `find-file'."
@@ -86,7 +77,7 @@ by `find-file'."
     (loop for r in roots
           do (if (string-equal ".." (first (split-string path "/")))
                  (push (expand-file-name (substring-no-properties path)) paths)
-               (push (concat r "/" path) paths)))
+               (push (concat (file-name-as-directory r) path) paths)))
     (push (concat "./" path) paths)
     paths))
 
@@ -132,38 +123,38 @@ symbol."
     ;; check open buffers first
     (dolist (path paths)
       (unless symbol
-        (setq buffer-path (buffer-name-from-path path))
-
-        (when (get-buffer buffer-path)
-          (set-buffer buffer-path)
+        (setq buffer-name-of-path (file-name-nondirectory path))
+        
+        (when (get-buffer buffer-name-of-path)
+          (set-buffer buffer-name-of-path)
           (setq extra-paths (remove-duplicates (append (erl-find-includes) extra-paths)))
-          (push buffer-path already-tried)
-          (push buffer-path already-open))
+          (push buffer-name-of-path already-tried)
+          (push buffer-name-of-path already-open))
 
         (when (setq symbol (erl-find-pattern-in-file pattern arg))
-          (switch-to-buffer buffer-path)
+          (switch-to-buffer buffer-name-of-path)
           (goto-char (cdr symbol)))))
 
     ;; slowly read from disk to find stuff
     (dolist (path paths)
       (unless symbol
-        (setq buffer-path (buffer-name-from-path path))
+        (setq buffer-name-of-path (file-name-nondirectory path))
         (setq find-paths (find-file-paths path erlookup-roots))
 
-        (unless (member buffer-path already-tried)
+        (unless (member buffer-name-of-path already-tried)
           
           (dolist (find-path find-paths)
             (when (file-exists-p find-path)
               (find-file find-path)
-              (set-buffer buffer-path)
+              (set-buffer buffer-name-of-path)
               (setq extra-paths (append (erl-find-includes) extra-paths))
-              (push buffer-path already-tried)
+              (push buffer-name-of-path already-tried)
               
               (when (setq symbol (erl-find-pattern-in-file pattern arg))
-                (switch-to-buffer buffer-path)
+                (switch-to-buffer buffer-name-of-path)
                 (goto-char (cdr symbol)))
               
-              (unless (member buffer-path already-open)
+              (unless (member buffer-name-of-path already-open)
                 (unless symbol
                   (kill-this-buffer))))))))
     
