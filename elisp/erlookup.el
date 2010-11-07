@@ -2,32 +2,52 @@
 
 ;;; Commentary:
 ;;
-;; This module contains a naive, inefficient and buggy way to lookup macro and
-;; record definitions. Sort of like M-. for functions.
+;; This module contains a naive, inefficient and buggy way to lookup
+;; macro and record definitions. Sort of like M-. for functions.
 ;;
-;; NOTE: This is a work in progress and stuff change all the time. There are
-;; also a couple of known bugs. Since it makes use of simple and dumb regexps
-;; for finding stuff it's easy finding definitions like '-define(foo, bar)' but
-;; a bit trickier finding other cases with lists of definitions, etc.
+;; NOTE: This is a work in progress and stuff change all the time. There
+;; are also a couple of known bugs. Since it makes use of simple and
+;; dumb regexps for finding stuff it's easy finding definitions like
+;; '-define(foo, bar)' but a bit trickier finding other cases with lists
+;; of definitions, etc.
 
-;; To use this you need to specify a list of lookup roots:
+;; NOTE: We now try to ask a running distel node what include paths were
+;; used when compiling the current module. For this to work you will
+;; need to compile the module with +debug_info.
 
-;; NOTE: THIS IS NOT NEEDED ANY MORE
-;; We now ask the distel node about the modules compile time includes.
+;; The original `erlookup-roots' variable can still be set, but it is
+;; not needed if you have a distel node running. If it is set the paths
+;; will still be used.
+
+;; If you have `erlookup-roots' set you will also not need a running
+;; node for the lookup to work.
+
+;; `erlookup-roots' are set like this:
 
 ;; (setq erlookup-roots '("~/projects/foo/lib"
 ;;                        "~/path/to/otp/headers"))
 
-;; TODO: 'inline' lookups of macros to e.g. jump to record definitions when
-;; standing on '#?name_of_record', and jump to function definitions when
-;; standing on '?name_of_function(Foo, Bar)'.
+;; This is all a bit hackish for now, but it seems to work. Distel will
+;; however complain about the node being down if you do lookups
+;; "offline".
+
+;; NOTE: This offline lookup functionality might be ripped out to a
+;; separate elisp package altogether sooner or later. It would be a
+;; better fit in a new erlang-mode utilizing the a cedet parser for
+;; Erlang.
+
+;; TODO: 'inline' lookups of macros to e.g. jump to record definitions
+;; when standing on '#?name_of_record', and jump to function definitions
+;; when standing on '?name_of_function(Foo, Bar)'.
+
 ;; TODO: Make everything less side-effecty.
 
 (require 'thingatpt)
 
 ;;; Path related things
 (defvar erlookup-roots nil
-  "List of paths from which header files will try to be located.")
+  "List of manually added paths from which header files will try
+  to be located.")
 
 (defvar erl-include-pattern "-include\\(_lib(\\|(\\)\""
   "Regexp for matching '-include' and '-include_lib' entries in a file.")
@@ -45,20 +65,34 @@
     (goto-char origin)
     (reverse paths)))
 
+;; Yes, this is horribly horrible horribleness, but for now I can't
+;; figure out a nicer way of doing it.
+(defvar erlookup-roots-distel nil
+  "Scary global variable containing list of paths from which
+  header files will try to be located. Should only be set from
+  `erl-find-include-paths'.")
+
 (defun erl-find-include-paths ()
+  (erl-find-include-paths-distel)
+  (cond ((and erlookup-roots erlookup-roots-distel)
+         (append erlookup-roots erlookup-roots-distel))
+        (erlookup-roots-distel erlookup-roots-distel)
+        (t erlookup-roots)))
+
+(defun erl-find-include-paths-distel ()
   (let ((module (erlang-get-module))
         (node (or erl-nodename-cache (erl-target-node))))
     (erl-spawn
       (erl-send-rpc node 'distel 'find_includes (list (intern module)))
       (erl-receive ()
           ((['rex ['ok paths]]
-            (setq erlookup-roots paths))
+            (setq erlookup-roots-distel paths))
            (['rex ['error reason]]
             (ring-remove erl-find-history-ring)
             (message "Error: %s" reason)))))))
 
-;; TODO: For some reason `remove-duplicates' didn't work. It was easier to
-;; write one than finding out what went wrong with the original.
+;; TODO: For some reason `remove-duplicates' didn't work. It was easier
+;; to write one than finding out what went wrong with the original.
 (defun remove-dup-paths (dup-paths)
   "Removes duplicate paths."
   (let ((paths nil))
@@ -77,19 +111,13 @@ by `find-file'."
     (loop for r in roots
           do (if (string-equal ".." (first (split-string path "/")))
                  (push (expand-file-name (substring-no-properties path)) paths)
-               (push (concat (file-name-as-directory r) path) paths)))
+                 (push (concat (file-name-as-directory r) path) paths)))
     (push (concat "./" path) paths)
     paths))
 
-(defun try-open-file (path)
-  (setq find-paths (find-file-paths path erlookup-roots))
-  (dolist (find-path find-paths)
-    (when (file-exists-p find-path)
-      (find-file find-path))))
 
 ;;; lookup related things
 
-;; TODO: need to look for "pattern arg" before looking for pattern "(.*, arg"
 (defun erl-find-pattern-in-file (pattern arg)
   "Goto the definition of ARG in the current buffer and return
 symbol."
@@ -108,6 +136,21 @@ symbol."
     symbol))
 
 
+(defun erl-open-header-file-under-point ()
+  (ring-insert-at-beginning erl-find-history-ring (copy-marker (point-marker)))
+  (try-open-file (save-excursion
+                   (end-of-thing 'filename) (thing-at-point 'filename))))
+
+(defun try-open-file (path)
+  (let ((find-paths (find-file-paths path (erl-find-include-paths))))
+    (dolist (find-path find-paths)
+      (when (file-exists-p find-path)
+        (find-file find-path)))))
+
+
+(defun erl-find-source-pattern-under-point ()
+  (erl-find-source-pattern pattern (thing-at-point 'symbol)))
+
 ;; FIXME: This 50 loc monster just feels wrong
 (defun erl-find-source-pattern (pattern arg &optional include-paths)
   (unless include-paths
@@ -120,7 +163,12 @@ symbol."
         (already-tried nil)
         (symbol (erl-find-pattern-in-file pattern arg)))
 
-    ;; check open buffers first
+    ;; check open buffers first.
+    
+    ;; unless we've found what we're looking for, check open buffers to
+    ;; see if the header file we want to search in for our symbol is
+    ;; already open, if it can be found we record it as open so we don't
+    ;; close it later on, if we find the symbol we jump to it.
     (dolist (path paths)
       (unless symbol
         (setq buffer-name-of-path (file-name-nondirectory path))
@@ -136,10 +184,15 @@ symbol."
           (goto-char (cdr symbol)))))
 
     ;; slowly read from disk to find stuff
+
+    ;; if we didn't find the symbol in the open buffers, we try to open
+    ;; the header files from disk and search through them, we won't open
+    ;; files recorded in already-tried and we won't close buffers
+    ;; recorded in already-open.
     (dolist (path paths)
       (unless symbol
         (setq buffer-name-of-path (file-name-nondirectory path))
-        (setq find-paths (find-file-paths path erlookup-roots))
+        (setq find-paths (find-file-paths path (erl-find-include-paths)))
 
         (unless (member buffer-name-of-path already-tried)
           
@@ -157,7 +210,9 @@ symbol."
               (unless (member buffer-name-of-path already-open)
                 (unless symbol
                   (kill-this-buffer))))))))
-    
+
+    ;; do a recursive call if we found some extra include paths while
+    ;; searching through header files.
     (if (and (not symbol) extra-paths)
         (progn
           (erl-find-source-pattern pattern arg extra-paths))
@@ -186,22 +241,16 @@ symbol."
      ;; ((and (looking-back "\\?") (looking-forward "(")) erl-inline-function-regex)
      (t nil))))
 
-(defun meta-erl-find-source-under-point ()
+(defun erl-find-source-under-point ()
   "When trying to find a function definition checks to see if we
   are standing on a macro instead."
   (interactive)
-  (erl-find-include-paths)
-  (if erlookup-roots
-      (let ((pattern (erl-is-pattern)))
-        (cond ((equal pattern 'open-header)
-               (progn
-                 (ring-insert-at-beginning erl-find-history-ring
-                                           (copy-marker (point-marker)))
-                 (try-open-file (save-excursion (end-of-thing 'filename) (thing-at-point 'filename)))))
-               ((stringp pattern)
-               (erl-find-source-pattern pattern (thing-at-point 'symbol)))
-              (t
-               (erl-find-source-under-point))))
-    (erl-find-source-under-point)))
+  (let ((pattern (erl-is-pattern)))
+    (cond ((equal pattern 'open-header)
+           (erl-open-header-file-under-point))
+          ((stringp pattern)
+           (erl-find-source-pattern-under-point))
+          (t
+           (erl-find-function-under-point)))))
 
 (provide 'erlookup)
