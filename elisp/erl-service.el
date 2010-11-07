@@ -727,7 +727,7 @@ We also don't prompt for the module name.")
 (defvar erl-find-history-ring (make-ring 20)
   "History ring tracing for following functions to their definitions.")
 
-(defun erl-find-source-under-point ()
+(defun erl-find-function-under-point ()
   "Goto the source code that defines the function being called at point.
 For remote calls, contacts an Erlang node to determine which file to
 look in, with the following algorithm:
@@ -745,7 +745,7 @@ When `distel-tags-compliant' is non-nil, or a numeric prefix argument
 is given, the user is prompted for the function to lookup (with a
 default.)"
   (interactive)
-  (apply #'erl-find-source
+  (apply #'erl-find-function
          (or (erl-read-call-mfa) (error "No call at point."))))
 
 (defun erl-find-source-unwind ()
@@ -782,7 +782,7 @@ default.)"
   (interactive)
   (erl-find-source (read-string "module: ")))
  
-(defun erl-find-source (module &optional function arity)
+(defun erl-find-function (module &optional function arity)
   "Find the source code for MODULE in a buffer, loading it if necessary.
 When FUNCTION is specified, the point is moved to its start."
   ;; Add us to the history list
