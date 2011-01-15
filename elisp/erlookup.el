@@ -63,7 +63,7 @@
           (push (thing-at-point 'filename) paths)
         (setq searching nil)))
     (goto-char origin)
-    (reverse paths)))
+    (nreverse paths)))
 
 ;; Yes, this is horribly horrible horribleness, but for now I can't
 ;; figure out a nicer way of doing it.
