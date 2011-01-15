@@ -780,7 +780,7 @@ default.)"
 
 (defun erl-find-module ()
   (interactive)
-  (erl-find-source (read-string "module: ")))
+  (erl-find-function (read-string "module: ")))
  
 (defun erl-find-function (module &optional function arity)
   "Find the source code for MODULE in a buffer, loading it if necessary.
