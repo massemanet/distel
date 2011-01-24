@@ -259,8 +259,13 @@ Available commands:
 	(setq erl-old-window-configuration
 	      (current-window-configuration))))
     (pop-to-buffer edb-monitor-buffer)
-    (goto-char (point-max))
-    (forward-line -2)))
+    (condition-case nil
+        (progn 
+          (search-forward "break")
+          (move-beginning-of-line))
+      (error nil))))
+    ;;    (goto-char (point-max))
+    ;;   (forward-line -2)))
 
 (defun edb-ensure-monitoring (node)
   "Make sure the debug monitor is watching the node.
