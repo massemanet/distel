@@ -38,12 +38,12 @@ fmt(F, A) -> to_bin(io_lib:fwrite(F,A)).
 
 to_bin(X) -> list_to_binary(to_list(X)).
 to_atom(X) -> list_to_atom(to_list(X)).
-     
+
 to_list(X) when is_binary(X) -> binary_to_list(X);
 to_list(X) when is_integer(X)-> integer_to_list(X);
 to_list(X) when is_float(X)  -> float_to_list(X);
 to_list(X) when is_atom(X)   -> atom_to_list(X);
-to_list(X) when is_list(X)   -> X.		%Assumed to be a string
+to_list(X) when is_list(X)   -> X.              %Assumed to be a string
 
 %% ----------------------------------------------------------------------
 %% RPC entry point, adapting the group_leader protocol.
@@ -89,44 +89,44 @@ reload_modules() ->
     Tm = fun(M) -> T(M:module_info(compile)) end,
     Tf = fun(F) -> {ok,{_,[{_,I}]}}=beam_lib:chunks(F,[compile_info]),T(I) end,
     Load = fun(M) -> c:l(M),M end,
-    
+
     [Load(M) || {M,F} <- code:all_loaded(), is_beamfile(F), Tm(M)<Tf(F)].
 
-is_beamfile(F) -> 
+is_beamfile(F) ->
     ok == element(1,file:read_file_info(F)) andalso
-	".beam" == filename:extension(F).
+        ".beam" == filename:extension(F).
 
 %% ----------------------------------------------------------------------
-%% if c:l(Mod) doesn't work, we look for the beam file in 
-%% srcdir and srcdir/../ebin; add the first one that works to path and 
+%% if c:l(Mod) doesn't work, we look for the beam file in
+%% srcdir and srcdir/../ebin; add the first one that works to path and
 %% try c:l again.
 %% srcdir is dirname(EmacsBuffer); we check that the buffer contains Mod.erl
 %% emacs will set File = "" to indicate that we don't want to mess with path
 reload_module(Mod, File) ->
     case c:l(to_atom(Mod)) of
-	{error,R} ->
-	    case Mod == basename(File,".erl") of
-		true ->
-		    Beams = [join([dirname(File),Mod]),
-			     join([dirname(dirname(File)),ebin,Mod])],
-			case filter(fun is_beam/1, Beams) of
-			    [] -> {error, R};
-			    [Beam|_] -> 
-				code:add_patha(dirname(Beam)),
-				c:l(to_atom(Mod))
-			end;
-		false ->
-		    {error,modname_and_filename_differs}
-	    end;
-	R -> R
+        {error,R} ->
+            case Mod == basename(File,".erl") of
+                true ->
+                    Beams = [join([dirname(File),Mod]),
+                             join([dirname(dirname(File)),ebin,Mod])],
+                        case filter(fun is_beam/1, Beams) of
+                            [] -> {error, R};
+                            [Beam|_] ->
+                                code:add_patha(dirname(Beam)),
+                                c:l(to_atom(Mod))
+                        end;
+                false ->
+                    {error,modname_and_filename_differs}
+            end;
+        R -> R
     end.
 
 is_beam(Filename) ->
     case file:read_file_info(Filename++".beam") of
-	{ok,_} -> true;
-	{error,_} -> false
+        {ok,_} -> true;
+        {error,_} -> false
     end.
-	    
+
 %% ----------------------------------------------------------------------
 
 eval_expression(S) ->
@@ -156,7 +156,7 @@ find_source(Mod) ->
       catch
         nothing -> {error,fmt("Can't find source for ~p", [BeamFName])};
         several -> {error,fmt("Several possible sources for ~p", [BeamFName])};
-	_:R -> {error,fmt("Couldnt guess source ~p ~p",[BeamFName,R])}
+        _:R -> {error,fmt("Couldnt guess source ~p ~p",[BeamFName,R])}
       end;
     error ->
       {error, fmt("Can't find module '~p' on ~p", [Mod, node()])}
@@ -178,8 +178,8 @@ try_srcs([]) -> throw(nothing);
 try_srcs(["" | T]) -> try_srcs(T);
 try_srcs([H | T]) ->
   case filelib:wildcard(H) of
-    [File] -> 
-      case filelib:is_regular(File) of 
+    [File] ->
+      case filelib:is_regular(File) of
         true -> File;
         false-> try_srcs(T)
       end;
@@ -188,7 +188,7 @@ try_srcs([H | T]) ->
   end.
 
 src_from_beam(Mod) ->
-  try 
+  try
     case Mod:module_info(compile) of
       [] -> int:file(Mod);
       CompInfo -> {_,{_,Src}} = keysearch(source,1,CompInfo), Src
@@ -332,7 +332,7 @@ fprof_analyse(Filename) ->
      fprof_preamble(Totals),
      fprof_header(),
      [fprof_entry(Entry) || Entry <- Fns]}.
-    
+
 fprof_preamble({totals, Cnt, Acc, Own}) ->
     fmt("Totals: ~p calls, ~.3f real, ~.3f CPU\n\n", [Cnt, Acc, Own]).
 
@@ -484,18 +484,18 @@ debug_subscriber_init(Parent, Pid) ->
 
 debug_subscriber(Pid) ->
     receive
-	{int, {new_status, P, Status, Info}} ->
-	    Pid ! {int, {new_status, P, Status, fmt("~w",[Info])}};
-	{int, {new_process, {P, {M,F,A}, Status, Info}}} ->
-	    Pid ! {int, {new_process,
-			 [P,
-			  fmt("~p:~p/~p", [M,F,length(A)]),
-			  Status,
-			  fmt("~w", [Info])]}};
-	{int, {interpret, Mod}} ->
-	    Pid ! {int, {interpret, Mod, erl_from_mod(Mod)}};
-	Msg ->
-	    Pid ! Msg
+        {int, {new_status, P, Status, Info}} ->
+            Pid ! {int, {new_status, P, Status, fmt("~w",[Info])}};
+        {int, {new_process, {P, {M,F,A}, Status, Info}}} ->
+            Pid ! {int, {new_process,
+                         [P,
+                          fmt("~p:~p/~p", [M,F,length(A)]),
+                          Status,
+                          fmt("~w", [Info])]}};
+        {int, {interpret, Mod}} ->
+            Pid ! {int, {interpret, Mod, erl_from_mod(Mod)}};
+        Msg ->
+            Pid ! Msg
     end,
     debug_subscriber(Pid).
 
@@ -517,7 +517,7 @@ erl_from_mod(Mod) ->
         ErlFile
     catch _:_ -> ""
     end.
-           
+
 
 assert_int(Mod,Filename) ->
     case is_interpreted(Mod) of
@@ -552,8 +552,8 @@ is_interpreted(Mod) ->
     Mod:module_info(compile) == [].
 
 int_interpreted() ->
-    [Mod || {Mod,Beamfile} <- code:all_loaded(), 
-            is_list(Beamfile), 
+    [Mod || {Mod,Beamfile} <- code:all_loaded(),
+            is_list(Beamfile),
             is_interpreted(Mod)].
 %% Attach the client process Emacs to the interpreted process Pid.
 %%
@@ -575,94 +575,94 @@ attach_init(Emacs, Pid) ->
     case int:attached(Pid) of
         {ok, Meta} ->
             attach_loop(#attach{emacs=Emacs,
-				meta=Meta,
-				status=idle,
-				stack={undefined,undefined}});
+                                meta=Meta,
+                                status=idle,
+                                stack={undefined,undefined}});
         error ->
             exit({error, {unable_to_attach, Pid}})
     end.
 
 attach_loop(Att = #attach{emacs=Emacs, meta=Meta}) ->
-    receive 
-	{Meta, {break_at, Mod, Line, Pos}} ->
-	    Att1 = Att#attach{status=break,
-			      where={Mod, Line},
-			      stack={Pos, Pos}},
-	    ?MODULE:attach_loop(attach_goto(Att1,Att1#attach.where));
-	{Meta, Status} when is_atom(Status) ->
-	    Emacs ! {status, Status},
-	    ?MODULE:attach_loop(Att#attach{status=Status,where=undefined});
-	{NewMeta, {exit_at,null,_R,Pos}} when is_pid(NewMeta) ->
-	    %% exit, no stack info
-	    Att1 = Att#attach{status=exit,
-			      where=undefined,
-			      meta=NewMeta,
-			      stack={Pos, Pos}},
-	    ?MODULE:attach_loop(Att1);
-	{NewMeta, {exit_at,{Mod,Line},_R,Pos}} when is_pid(NewMeta) ->
-	    %% exit on error, there is stack info
-	    Att1 = Att#attach{meta = NewMeta,
-			      status=break,
-			      where={Mod,Line},
-			      stack={Pos+1, Pos+1}},
-	    ?MODULE:attach_loop(attach_goto(Att1,Att1#attach.where));
-	{Meta, {attached,_Mod,_Lin,_Flag}} ->
-	    %% happens first time we attach, presumably because we (or
-	    %% someone else) set a break here
-	    ?MODULE:attach_loop(Att);
-	{Meta,{re_entry, Mod, Func}} -> 
-	    Msg = "re_entry "++to_list(Mod)++to_list(Func),
-	    Emacs ! {message, to_bin(Msg)},
-	    ?MODULE:attach_loop(Att);
-	{Meta, _X} ->
-	    %%io:fwrite("distel:attach_loop OTHER meta: ~p~n", [_X]),
-	    %% FIXME: there are more messages to handle, like re_entry
-	    ?MODULE:attach_loop(Att);
-	{emacs, meta, Cmd} when Att#attach.status == break ->
-	    attach_loop(attach_meta_cmd(Cmd, Att));
-	{emacs, meta, _Cmd} ->
-	    Emacs ! {message, <<"Not in break">>},
-	    ?MODULE:attach_loop(Att);
-	_X ->
-	    %%io:fwrite("distel:attach_loop OTHER: ~p~n", [_X]),
-	    ?MODULE:attach_loop(Att)
+    receive
+        {Meta, {break_at, Mod, Line, Pos}} ->
+            Att1 = Att#attach{status=break,
+                              where={Mod, Line},
+                              stack={Pos, Pos}},
+            ?MODULE:attach_loop(attach_goto(Att1,Att1#attach.where));
+        {Meta, Status} when is_atom(Status) ->
+            Emacs ! {status, Status},
+            ?MODULE:attach_loop(Att#attach{status=Status,where=undefined});
+        {NewMeta, {exit_at,null,_R,Pos}} when is_pid(NewMeta) ->
+            %% exit, no stack info
+            Att1 = Att#attach{status=exit,
+                              where=undefined,
+                              meta=NewMeta,
+                              stack={Pos, Pos}},
+            ?MODULE:attach_loop(Att1);
+        {NewMeta, {exit_at,{Mod,Line},_R,Pos}} when is_pid(NewMeta) ->
+            %% exit on error, there is stack info
+            Att1 = Att#attach{meta = NewMeta,
+                              status=break,
+                              where={Mod,Line},
+                              stack={Pos+1, Pos+1}},
+            ?MODULE:attach_loop(attach_goto(Att1,Att1#attach.where));
+        {Meta, {attached,_Mod,_Lin,_Flag}} ->
+            %% happens first time we attach, presumably because we (or
+            %% someone else) set a break here
+            ?MODULE:attach_loop(Att);
+        {Meta,{re_entry, Mod, Func}} ->
+            Msg = "re_entry "++to_list(Mod)++to_list(Func),
+            Emacs ! {message, to_bin(Msg)},
+            ?MODULE:attach_loop(Att);
+        {Meta, _X} ->
+            %%io:fwrite("distel:attach_loop OTHER meta: ~p~n", [_X]),
+            %% FIXME: there are more messages to handle, like re_entry
+            ?MODULE:attach_loop(Att);
+        {emacs, meta, Cmd} when Att#attach.status == break ->
+            attach_loop(attach_meta_cmd(Cmd, Att));
+        {emacs, meta, _Cmd} ->
+            Emacs ! {message, <<"Not in break">>},
+            ?MODULE:attach_loop(Att);
+        _X ->
+            %%io:fwrite("distel:attach_loop OTHER: ~p~n", [_X]),
+            ?MODULE:attach_loop(Att)
     end.
 
 attach_meta_cmd(up, Att = #attach{stack={Pos,Max}}) ->
     case int:meta(Att#attach.meta, stack_frame, {up, Pos}) of
-	{NPos, {undefined, -1},[]} ->  %OTP R10
-	    Att#attach.emacs ! {message, <<"uninterpreted code.">>},
-	    Att#attach{stack={NPos,Max}};
-	{NPos, {Mod, Line},Binds} ->  %OTP R10
-	    attach_goto(Att#attach{stack={NPos,Max}},{Mod,Line},Binds);
-	{NPos, Mod, Line} ->		   %OTP R9
-	    attach_goto(Att#attach{stack={NPos,Max}},{Mod,Line});
-	top ->
-	    Att#attach.emacs ! {message, <<"already at top.">>},
-	    Att
+        {NPos, {undefined, -1},[]} ->  %OTP R10
+            Att#attach.emacs ! {message, <<"uninterpreted code.">>},
+            Att#attach{stack={NPos,Max}};
+        {NPos, {Mod, Line},Binds} ->  %OTP R10
+            attach_goto(Att#attach{stack={NPos,Max}},{Mod,Line},Binds);
+        {NPos, Mod, Line} ->               %OTP R9
+            attach_goto(Att#attach{stack={NPos,Max}},{Mod,Line});
+        top ->
+            Att#attach.emacs ! {message, <<"already at top.">>},
+            Att
     end;
 attach_meta_cmd(down, Att = #attach{stack={_Max,_Max}}) ->
     Att#attach.emacs ! {message, <<"already at bottom">>},
     Att;
 attach_meta_cmd(down, Att = #attach{stack={Pos,Max}}) ->
     case int:meta(Att#attach.meta, stack_frame, {down, Pos}) of
-	{NPos, {undefined, -1},[]} ->  %OTP R10
-	    Att#attach.emacs ! {message, <<"uninterpreted code.">>},
-	    Att#attach{stack={NPos,Max}};
-	{NPos, {Mod, Line},Binds} ->  %OTP R10
-	    attach_goto(Att#attach{stack={NPos,Max}},{Mod,Line},Binds);
-	{NPos, Mod, Line} ->		   %OTP R9
-	    attach_goto(Att#attach{stack={NPos,Max}},{Mod,Line});
-	bottom ->
-	    attach_goto(Att#attach{stack={Max, Max}},Att#attach.where)
+        {NPos, {undefined, -1},[]} ->  %OTP R10
+            Att#attach.emacs ! {message, <<"uninterpreted code.">>},
+            Att#attach{stack={NPos,Max}};
+        {NPos, {Mod, Line},Binds} ->  %OTP R10
+            attach_goto(Att#attach{stack={NPos,Max}},{Mod,Line},Binds);
+        {NPos, Mod, Line} ->               %OTP R9
+            attach_goto(Att#attach{stack={NPos,Max}},{Mod,Line});
+        bottom ->
+            attach_goto(Att#attach{stack={Max, Max}},Att#attach.where)
     end;
 attach_meta_cmd({get_binding, Var}, Att = #attach{stack={Pos,_Max}}) ->
     Bs = int:meta(Att#attach.meta, bindings, Pos),
     case keysearch(Var, 1, Bs) of
-	{value, Val} ->
-	    Att#attach.emacs ! {show_variable, fmt("~p~n", [Val])};
-	false ->
-	    Att#attach.emacs ! {message, fmt("No such variable: ~p",[Var])}
+        {value, Val} ->
+            Att#attach.emacs ! {show_variable, fmt("~p~n", [Val])};
+        false ->
+            Att#attach.emacs ! {message, fmt("No such variable: ~p",[Var])}
     end,
     Att;
 attach_meta_cmd(Cmd, Att) ->
@@ -678,7 +678,7 @@ attach_goto(A = #attach{stack={Pos,Max}},{Mod,Line},Bs) ->
     A.
 stack_pos(#attach{stack={_X,_X}}) -> nostack;
 stack_pos(#attach{stack={Pos,_Max}}) -> Pos.
-    
+
 %% ----------------------------------------------------------------------
 %% Completion support
 %% ----------------------------------------------------------------------
@@ -688,13 +688,13 @@ modules(Prefix) ->
     {ok,Ans} -> {ok,Ans};
     {error,_}-> xref_modules(Prefix)
   end.
-functions(Mod, Prefix) -> 
+functions(Mod, Prefix) ->
   case otp_doc:functions(Mod,Prefix) of
     {ok,Ans} -> {ok,Ans};
     {error,_}-> xref_functions(Mod,Prefix)
   end.
 
-xref_completions(F,A) -> 
+xref_completions(F,A) ->
     fun(server) -> distel_completions;
        (opts)   -> [{xref_mode, modules}];
        (otp)    -> true;
@@ -708,8 +708,8 @@ rebuild_completions() ->
 %% ModName = Prefix = string()
 xref_modules(Prefix) ->
     case xref_query(xref_completions('"~s.*" : Mod', [to_list(Prefix)])) of
-	{ok, Mods} -> {ok, [to_list(Mod) || Mod <- Mods]};
-	_          -> {error, fmt("Can't find any matches for ~p", [Prefix])}
+        {ok, Mods} -> {ok, [to_list(Mod) || Mod <- Mods]};
+        _          -> {error, fmt("Can't find any matches for ~p", [Prefix])}
     end.
 
 %% Returns: [FunName] of all exported functions of Mod starting with Prefix.
@@ -717,8 +717,8 @@ xref_modules(Prefix) ->
 %% Prefix = string()
 xref_functions(Mod, Prefix) ->
     case xref_query(xref_completions('(X+B) * ~p:"~s.*"/_', [Mod, Prefix])) of
-	{ok, Res} -> {ok,usort([to_list(F) || {_M, F, _A}<-Res])};
-	_         -> {error, fmt("Can't find module ~p", [Mod])}
+        {ok, Res} -> {ok,usort([to_list(F) || {_M, F, _A}<-Res])};
+        _         -> {error, fmt("Can't find module ~p", [Mod])}
     end.
 
 %% ----------------------------------------------------------------------
@@ -809,30 +809,30 @@ get_arglists(ModName, FunName) when is_list(ModName), is_list(FunName) ->
 
 arglists(Mod, Fun) ->
     case get_abst_from_debuginfo(Mod) of
-	{ok, Abst} ->
-	    case fdecls(to_atom(Fun), Abst) of
-		[] -> error;
-		Fdecls -> map(fun derive_arglist/1, Fdecls)
-	    end;
-	error ->
-	    case beamfile(Mod) of
-		{ok, BeamFile} ->
-		    case get_exports(BeamFile) of
-			{ok, Exports} ->
-			    Funs = [{Fun0, Arity0} || {Fun0, Arity0} <- Exports,
-						      Fun0 == Fun],
-			    case get_forms_from_src(Mod) of
-				{ok, Forms} ->
-				    get_arglist_from_forms(Funs, Forms);
-				_ ->
-				    error
-			    end;
-			_ ->
-			    error
-		    end;
-		_ ->
-		    error
-	    end
+        {ok, Abst} ->
+            case fdecls(to_atom(Fun), Abst) of
+                [] -> error;
+                Fdecls -> map(fun derive_arglist/1, Fdecls)
+            end;
+        error ->
+            case beamfile(Mod) of
+                {ok, BeamFile} ->
+                    case get_exports(BeamFile) of
+                        {ok, Exports} ->
+                            Funs = [{Fun0, Arity0} || {Fun0, Arity0} <- Exports,
+                                                      Fun0 == Fun],
+                            case get_forms_from_src(Mod) of
+                                {ok, Forms} ->
+                                    get_arglist_from_forms(Funs, Forms);
+                                _ ->
+                                    error
+                            end;
+                        _ ->
+                            error
+                    end;
+                _ ->
+                    error
+            end
     end.
 
 %% Find the {function, ...} entry for the named function in the
@@ -841,47 +841,47 @@ arglists(Mod, Fun) ->
 fdecls(Name, Abst) ->
     {_Exports,Forms} = Abst,
     [Fdecl || Fdecl <- Forms,
-	      element(1, Fdecl) == function,
-	      element(3, Fdecl) == Name].
+              element(1, Fdecl) == function,
+              element(3, Fdecl) == Name].
 
 %% Get the abstrct syntax tree for `Mod' from beam debug info.
 %% Return: {ok, Abst} | error
 get_abst_from_debuginfo(Mod) ->
     case beamfile(Mod) of
-	{ok, Filename} ->
-	    case read_abst(Filename) of
-		{ok, Abst} ->
-		    {ok, binary_to_term(Abst)};
-		error ->
-		    error
-	    end;
-	error ->
-	    error
+        {ok, Filename} ->
+            case read_abst(Filename) of
+                {ok, Abst} ->
+                    {ok, binary_to_term(Abst)};
+                error ->
+                    error
+            end;
+        error ->
+            error
     end.
 
 get_forms_from_src(Mod) ->
     case find_source(Mod) of
-	{ok, SrcFName} ->
-	    epp_dodger:parse_file(SrcFName);
-	_ ->
-	    error
+        {ok, SrcFName} ->
+            epp_dodger:parse_file(SrcFName);
+        _ ->
+            error
     end.
 
 %% Return the name of the beamfile for Mod.
 beamfile(Mod) ->
     case code:which(Mod) of
-	File when is_list(File) ->
-	    {ok, File};
-	_ ->
-	    error
+        File when is_list(File) ->
+            {ok, File};
+        _ ->
+            error
     end.
 
 %% Read the abstract syntax tree from a debug info in a beamfile.
 read_abst(Beam) ->
     case beam_lib:chunks(Beam, ["Abst"]) of
-	{ok, {_Mod, [{"Abst", Abst}]}} when Abst /= <<>> ->
-	    {ok, Abst};
-	_ -> error
+        {ok, {_Mod, [{"Abst", Abst}]}} when Abst /= <<>> ->
+            {ok, Abst};
+        _ -> error
     end.
 
 %% Derive a good argument list from a function declaration.
@@ -900,8 +900,8 @@ clause_args({clause, _Line, Args, _Guard, _Body}) ->
 %% variable name).
 argname({var, _Line, V}) ->
     case to_list(V) of
-	"_"++_ -> unknown;
-	_      -> V
+        "_"++_ -> unknown;
+        _      -> V
     end;
 argname({Type, _Line, _})          -> to_list(Type)++"()";
 argname({nil, _Line})              -> "list()";
@@ -925,8 +925,8 @@ best_arg(A1, unknown)          -> A1;
 best_arg(A1, A2) when is_atom(A1),is_atom(A2) ->
     %% ... and the longer the variable name the better
     case length(to_list(A2)) > length(to_list(A1)) of
-	true -> A2;
-	false -> A1
+        true -> A2;
+        false -> A1
     end;
 best_arg(A1, _A2) when is_atom(A1) -> A1;
 best_arg(_A1, A2)               -> A2.
@@ -942,15 +942,15 @@ get_arglist_from_forms(Funs, Forms) ->
 
 src_args(_, _, 0) -> [];
 src_args([{tree,function,_,{function,{tree,atom,_,Func}, Clauses}} = H | T],
-	 Func, Arity) ->
+         Func, Arity) ->
     case erl_syntax_lib:analyze_function(H) of
-	{_, Arity} ->
-	    ArgsL0 = [Args || {tree, clause, _, {clause,Args,_,_}} <- Clauses],
-	    ArgsL1 = [map(fun argname/1, Args) || Args <- ArgsL0],
-	    Args = merge_args(ArgsL1),
-	    map(fun to_list/1, Args);
-	_ ->
-	    src_args(T, Func, Arity)
+        {_, Arity} ->
+            ArgsL0 = [Args || {tree, clause, _, {clause,Args,_,_}} <- Clauses],
+            ArgsL1 = [map(fun argname/1, Args) || Args <- ArgsL0],
+            Args = merge_args(ArgsL1),
+            map(fun to_list/1, Args);
+        _ ->
+            src_args(T, Func, Arity)
     end;
 src_args([_ |T], Func, Arity) ->
     src_args(T, Func, Arity).
@@ -958,11 +958,11 @@ src_args([_ |T], Func, Arity) ->
 
 get_exports(BeamFile) ->
     case beam_lib:chunks(BeamFile, ["Atom", "ExpT"]) of
-	{ok, {_, [{"Atom", AtomBin}, {"ExpT", ExpBin}]}} ->
-	    Atoms = beam_disasm_atoms(AtomBin),
-	    {ok, beam_disasm_exports(ExpBin, Atoms)};
-	_ ->
-	    error
+        {ok, {_, [{"Atom", AtomBin}, {"ExpT", ExpBin}]}} ->
+            Atoms = beam_disasm_atoms(AtomBin),
+            {ok, beam_disasm_exports(ExpBin, Atoms)};
+        _ ->
+            error
     end.
 %%-----------------------------------------------------------------------
 %% BEGIN Code snitched from beam_disasm.erl; slightly modified
@@ -1029,7 +1029,7 @@ get_int(B) ->
 %% Call graph
 %%-----------------------------------------------------------------
 
-xref_callgraph(A) -> 
+xref_callgraph(A) ->
     F = to_list(fmt("(XXL)(Lin)(E || ~p)",[A])),
     fun(server)-> distel_call_graph;
        (opts) -> [];
@@ -1053,7 +1053,7 @@ rebuild_call_graph() ->
     xref_rebuild(xref_callgraph("")).
 %%-----------------------------------------------------------------
 %% Call graph mode:
-%% 
+%%
 %% Callers of foo:bar/2
 %%   + baz:doit/3
 %%     foo:baz/0
@@ -1077,8 +1077,8 @@ xref_rebuild(XREF) ->
 
 ensure_started(XREF) ->
     case whereis(XREF(server)) of
-	undefined -> start(XREF);
-	_         -> xref:update(XREF(server))
+        undefined -> start(XREF);
+        _         -> xref:update(XREF(server))
     end.
 
 stop(XREF) ->
@@ -1095,10 +1095,9 @@ start(XREF) ->
 
 get_code_path(XREF) ->
     case XREF(otp) of
-        false-> 
+        false->
             Root = code:root_dir(),
             [Dir || Dir <- code:get_path(), not prefix(Root,Dir)];
-        true -> 
+        true ->
             code:get_path()
     end.
-
