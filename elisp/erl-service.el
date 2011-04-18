@@ -1260,6 +1260,7 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
 
 \\{erl-who-calls-mode-map}")
 
+(define-key erl-who-calls-mode-map (kbd "q") 'kill-this-buffer)
 (define-key erl-who-calls-mode-map (kbd "RET") 'erl-goto-caller)
 (define-key erl-who-calls-mode-map (kbd "M-.") 'erl-goto-caller)
 (define-key erl-who-calls-mode-map (kbd "M-,") 'erl-find-source-unwind)
