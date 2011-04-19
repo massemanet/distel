@@ -106,21 +106,17 @@
 
 ;;; lookup related things
 
-(defun erl-find-pattern-in-file (pattern arg)
-  "Goto the definition of ARG in the current buffer and return
-symbol."
+(defun erl-find-pattern-in-buffer (buffer pattern arg)
+  "Goto the definition of ARG in the current buffer and return symbol."
   (let ((origin (point))
         (symbol nil))
     (goto-char (point-min))
-    ;; (if (re-search-forward (concat pattern arg "\\(,\\|(\\)") nil t)
     (set (make-local-variable 'case-fold-search) nil)
     (if (re-search-forward
-         ;; (concat pattern "\\(" arg "\\(,\\|(\\)\\|.*\\?" arg "\\)") nil t)
-         ;; (concat pattern arg "\\(,\\|(\\)") nil t)
          (concat pattern "\\s *" arg "\\s *\\(,\\|(\\)") nil t)
         (progn t (beginning-of-line) (search-forward "(") ;;(backward-word)
-               (setq symbol (cons (thing-at-point 'symbol) (copy-marker (point-marker))))))
-    (goto-char origin)
+               (setq symbol (cons (thing-at-point 'symbol)
+                                  (copy-marker (point-marker))))))
     symbol))
 
 
@@ -149,7 +145,7 @@ symbol."
         (extra-paths nil)
         (already-open nil)
         (already-tried nil)
-        (symbol (erl-find-pattern-in-file pattern arg)))
+        (symbol (erl-find-pattern-in-buffer (file-name-nondirectory buffer-file-name) pattern arg)))
 
     ;; check open buffers first.
     
@@ -167,7 +163,7 @@ symbol."
           (push buffer-name-of-path already-tried)
           (push buffer-name-of-path already-open))
 
-        (when (setq symbol (erl-find-pattern-in-file pattern arg))
+        (when (setq symbol (erl-find-pattern-in-buffer buffer-name-of-path pattern arg))
           (switch-to-buffer buffer-name-of-path)
           (goto-char (cdr symbol)))))
 
@@ -191,7 +187,7 @@ symbol."
               (setq extra-paths (append (erl-extract-include-paths-from-buffer buffer-name-of-path) extra-paths))
               (push buffer-name-of-path already-tried)
               
-              (when (setq symbol (erl-find-pattern-in-file pattern arg))
+              (when (setq symbol (erl-find-pattern-in-buffer buffer-name-of-path pattern arg))
                 (switch-to-buffer buffer-name-of-path)
                 (goto-char (cdr symbol)))
               
