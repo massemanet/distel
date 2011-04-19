@@ -93,14 +93,13 @@
 
 ;; utilities
 
-(defun find-file-paths (path roots)
-  "Brokenly transforms a list of paths to paths that can be used
-by `find-file'."
+(defun compose-include-file-paths (path roots)
+  "Brokenly transforms a list of paths to paths that can be used by `find-file'."
   (let ((paths))
     (loop for r in roots
           do (if (string-equal ".." (first (split-string path "/")))
                  (push (expand-file-name (substring-no-properties path)) paths)
-                 (push (concat (file-name-as-directory r) path) paths)))
+               (push (concat (file-name-as-directory r) path) paths)))
     (push (concat "./" path) paths)
     paths))
 
@@ -131,7 +130,7 @@ symbol."
                    (end-of-thing 'filename) (thing-at-point 'filename))))
 
 (defun try-open-file (path)
-  (let ((find-paths (find-file-paths path (erl-find-include-paths))))
+  (let ((find-paths (compose-include-file-paths path (erl-find-include-paths))))
     (dolist (find-path find-paths)
       (when (file-exists-p find-path)
         (find-file find-path)))))
@@ -181,7 +180,7 @@ symbol."
     (dolist (path paths)
       (unless symbol
         (setq buffer-name-of-path (file-name-nondirectory path))
-        (setq find-paths (find-file-paths path (erl-find-include-paths)))
+        (setq find-paths (compose-include-file-paths path (erl-find-include-paths)))
 
         (unless (member buffer-name-of-path already-tried)
           
