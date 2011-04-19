@@ -212,7 +212,7 @@
   "regex to search for when looking up records")
 
 (defvar erl-macro-regex "-define("
-  "regex to search for when looking up records")
+  "regex to search for when looking up macros")
 
 (defun erl-is-pattern ()
   (save-excursion
