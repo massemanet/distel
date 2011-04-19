@@ -43,6 +43,8 @@
 ;; TODO: Make everything less side-effecty.
 
 (require 'thingatpt)
+(require 'erlang)
+(require 'distel)
 
 ;;; Path related things
 (defvar erlookup-roots nil
