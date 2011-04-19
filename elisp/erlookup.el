@@ -93,16 +93,6 @@
             (ring-remove erl-find-history-ring)
             (message "Error: %s" reason)))))))
 
-;; TODO: For some reason `remove-duplicates' didn't work. It was easier
-;; to write one than finding out what went wrong with the original.
-(defun remove-dup-paths (dup-paths)
-  "Removes duplicate paths."
-  (let ((paths nil))
-    (dolist (dp dup-paths)
-      (unless (member dp paths)
-        (push dp paths)))
-    paths))
-
 
 ;; utilities
 
