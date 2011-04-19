@@ -132,7 +132,7 @@
         (find-file find-path)))))
 
 
-(defun erl-find-source-pattern-under-point ()
+(defun erl-find-source-pattern-under-point (pattern)
   (erl-find-source-pattern pattern (thing-at-point 'symbol)))
 
 ;; FIXME: This 50 loc monster just feels wrong
@@ -233,7 +233,7 @@
     (cond ((equal pattern 'open-header)
            (erl-open-header-file-under-point))
           ((stringp pattern)
-           (erl-find-source-pattern-under-point))
+           (erl-find-source-pattern-under-point pattern))
           (t
            (erl-find-function-under-point)))))
 
