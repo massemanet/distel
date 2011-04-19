@@ -135,7 +135,36 @@
 (defun erl-find-source-pattern-under-point (pattern)
   (erl-find-source-pattern pattern (thing-at-point 'symbol)))
 
-;; FIXME: This 50 loc monster just feels wrong
+(defun erl-find-source-pattern-in-open-buffers (pattern arg paths)
+  (let ((symbol) (buffer-name) (extra-paths) (tried) (open))
+    (dolist (path paths)
+      (unless symbol
+        (setq buffer-name (file-name-nondirectory path))
+        (when (get-buffer buffer-name)
+          (setq extra-paths (remove-duplicates (append (erl-extract-include-paths-from-buffer buffer-name) extra-paths)))
+          (push buffer-name tried)
+          (push buffer-name open)
+          (setq symbol (erl-find-pattern-in-buffer buffer-name pattern arg)))))
+    (list symbol buffer-name extra-paths tried open)))
+
+(defun erl-find-source-pattern-in-files-on-disk (pattern arg paths open tried)
+  (let ((symbol) (buffer-name) (extra-paths) (tried) (open))
+    (dolist (path paths)
+      (unless symbol
+        (setq buffer-name (file-name-nondirectory path))
+        (setq find-paths (compose-include-file-paths path (erl-find-include-paths)))
+        (unless (member buffer-name tried)
+          (dolist (find-path find-paths)
+            (when (file-exists-p find-path)
+              (find-file find-path)
+              (setq extra-paths (append (erl-extract-include-paths-from-buffer buffer-name) extra-paths))
+              (push buffer-name tried)
+              (setq symbol (erl-find-pattern-in-buffer buffer-name pattern arg))
+              (unless (member buffer-name open)
+                (unless symbol
+                  (kill-this-buffer))))))))
+    (list symbol buffer-name extra-paths tried open)))
+
 (defun erl-find-source-pattern (pattern arg &optional include-paths)
   (unless include-paths
     (ring-insert-at-beginning erl-find-history-ring
@@ -143,9 +172,13 @@
   (let ((origin (point))
         (paths (if include-paths include-paths (erl-extract-include-paths-from-buffer (file-name-nondirectory buffer-file-name))))
         (extra-paths nil)
-        (already-open nil)
-        (already-tried nil)
-        (symbol (erl-find-pattern-in-buffer (file-name-nondirectory buffer-file-name) pattern arg)))
+        (open nil)
+        (tried nil)
+        (buffer-name nil)
+        (find-paths nil)
+        (symbol (erl-find-pattern-in-buffer (file-name-nondirectory buffer-file-name) pattern arg))
+        (open-buffers-pass nil)
+        (disk-buffers-pass nil))
 
     ;; check open buffers first.
     
@@ -153,19 +186,13 @@
     ;; see if the header file we want to search in for our symbol is
     ;; already open, if it can be found we record it as open so we don't
     ;; close it later on, if we find the symbol we jump to it.
-    (dolist (path paths)
-      (unless symbol
-        (setq buffer-name-of-path (file-name-nondirectory path))
-        
-        (when (get-buffer buffer-name-of-path)
-          (set-buffer buffer-name-of-path)
-          (setq extra-paths (remove-duplicates (append (erl-extract-include-paths-from-buffer buffer-name-of-path) extra-paths)))
-          (push buffer-name-of-path already-tried)
-          (push buffer-name-of-path already-open))
-
-        (when (setq symbol (erl-find-pattern-in-buffer buffer-name-of-path pattern arg))
-          (switch-to-buffer buffer-name-of-path)
-          (goto-char (cdr symbol)))))
+    (unless symbol
+      (when (setq open-buffers-pass (erl-find-source-pattern-in-open-buffers pattern arg paths))
+        (setq symbol (nth 0 open-buffers-pass))
+        (setq buffer-name (nth 1 open-buffers-pass))
+        (setq extra-paths (nconc (nth 2 open-buffers-pass)))
+        (setq open (nconc (nth 3 open-buffers-pass)))
+        (setq tried (nconc (nth 4 open-buffers-pass)))))
 
     ;; slowly read from disk to find stuff
 
@@ -173,39 +200,25 @@
     ;; the header files from disk and search through them, we won't open
     ;; files recorded in already-tried and we won't close buffers
     ;; recorded in already-open.
-    (dolist (path paths)
-      (unless symbol
-        (setq buffer-name-of-path (file-name-nondirectory path))
-        (setq find-paths (compose-include-file-paths path (erl-find-include-paths)))
-
-        (unless (member buffer-name-of-path already-tried)
-          
-          (dolist (find-path find-paths)
-            (when (file-exists-p find-path)
-              (find-file find-path)
-              (set-buffer buffer-name-of-path)
-              (setq extra-paths (append (erl-extract-include-paths-from-buffer buffer-name-of-path) extra-paths))
-              (push buffer-name-of-path already-tried)
-              
-              (when (setq symbol (erl-find-pattern-in-buffer buffer-name-of-path pattern arg))
-                (switch-to-buffer buffer-name-of-path)
-                (goto-char (cdr symbol)))
-              
-              (unless (member buffer-name-of-path already-open)
-                (unless symbol
-                  (kill-this-buffer))))))))
+    (unless symbol
+      (when (setq disk-buffers-pass (erl-find-source-pattern-in-files-on-disk pattern arg paths open tried))
+        (setq symbol (nth 0 disk-buffers-pass))
+        (setq buffer-name (nth 1 disk-buffers-pass))
+        (setq extra-paths (nconc (nth 2 disk-buffers-pass)))
+        (setq open (nconc (nth 3 disk-buffers-pass)))
+        (setq tried (nconc (nth 4 disk-buffers-pass)))))
 
     ;; do a recursive call if we found some extra include paths while
     ;; searching through header files.
-    (if (and (not symbol) extra-paths)
-        (progn
-          (erl-find-source-pattern pattern arg extra-paths))
-      
-      (if symbol
-          (goto-char (cdr symbol))
-        (goto-char origin)
-        (message "Can't find definition of: %s" arg)
-        (erl-find-source-unwind)))))
+    (unless (and symbol buffer-name)
+      (if extra-paths
+          (erl-find-source-pattern pattern arg extra-paths)
+        (message "Can't find definition for: %s" arg)
+        (erl-find-source-unwind)))
+
+    (when (and symbol buffer-name)
+      (switch-to-buffer buffer-name)
+      (goto-char (cdr symbol)))))
 
 
 (defvar erl-record-regex "-record("
