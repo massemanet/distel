@@ -54,7 +54,7 @@
 (defvar erl-include-pattern "-include\\(_lib(\\|(\\)\""
   "Regexp for matching '-include' and '-include_lib' entries in a file.")
 
-(defun erl-find-includes (buffer)
+(defun erl-extract-include-paths-from-buffer (buffer)
   "Collects included paths from a file and returns them in a list."
   (let ((paths nil))
     (save-excursion
@@ -146,7 +146,7 @@ symbol."
     (ring-insert-at-beginning erl-find-history-ring
                               (copy-marker (point-marker))))
   (let ((origin (point))
-        (paths (if include-paths include-paths (erl-find-includes (file-name-nondirectory buffer-file-name))))
+        (paths (if include-paths include-paths (erl-extract-include-paths-from-buffer (file-name-nondirectory buffer-file-name))))
         (extra-paths nil)
         (already-open nil)
         (already-tried nil)
@@ -164,7 +164,7 @@ symbol."
         
         (when (get-buffer buffer-name-of-path)
           (set-buffer buffer-name-of-path)
-          (setq extra-paths (remove-duplicates (append (erl-find-includes buffer-name-of-path) extra-paths)))
+          (setq extra-paths (remove-duplicates (append (erl-extract-include-paths-from-buffer buffer-name-of-path) extra-paths)))
           (push buffer-name-of-path already-tried)
           (push buffer-name-of-path already-open))
 
@@ -189,7 +189,7 @@ symbol."
             (when (file-exists-p find-path)
               (find-file find-path)
               (set-buffer buffer-name-of-path)
-              (setq extra-paths (append (erl-find-includes buffer-name-of-path) extra-paths))
+              (setq extra-paths (append (erl-extract-include-paths-from-buffer buffer-name-of-path) extra-paths))
               (push buffer-name-of-path already-tried)
               
               (when (setq symbol (erl-find-pattern-in-file pattern arg))
