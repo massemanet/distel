@@ -90,6 +90,20 @@
             (ring-remove erl-find-history-ring)
             (message "Error: %s" reason)))))))
 
+(defun erl-find-variable-binding ()
+  (ring-insert-at-beginning erl-find-history-ring (copy-marker (point-marker)))
+  (let ((sym (thing-at-point 'symbol))
+        (origin nil))
+    (beginning-of-thing 'symbol)
+    (setq origin (point))
+    (erlang-beginning-of-clause)
+    (set (make-local-variable 'case-fold-search) nil)
+    (re-search-forward sym)
+    (beginning-of-thing 'symbol)
+    (when (eq origin (point))
+      (erl-find-source-unwind)
+      (message "Already standing on first occurance of: %s" sym))))
+
 
 ;; utilities
 
@@ -256,6 +270,8 @@ we are standing on a variable"
            (erl-open-header-file-under-point))
           ((stringp pattern)
            (erl-find-source-pattern-under-point pattern))
+          ((erlang-at-variable-p)
+           (erl-find-variable-binding))
           (t
            (erl-find-function-under-point)))))
 
