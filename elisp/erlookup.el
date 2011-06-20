@@ -92,8 +92,13 @@
 
 (defun erl-find-variable-binding ()
   (ring-insert-at-beginning erl-find-history-ring (copy-marker (point-marker)))
-  (let ((sym (thing-at-point 'symbol))
-        (origin nil))
+  (let ((sym (thing-at-point 'symbol)))
+    (if (erlang-in-arglist-p)
+        (message "To be continued")
+      (erl-search-local-variable-binding sym))))
+
+(defun erl-search-local-variable-binding (sym)
+  (let ((origin nil))
     (beginning-of-thing 'symbol)
     (setq origin (point))
     (erlang-beginning-of-clause)
@@ -125,6 +130,24 @@ Rely on syntax highlighting of erlang-mode to determine whether
 we are standing on a variable"
   (if (eq 'font-lock-variable-name-face (get-text-property (point) 'face))
       t nil))
+
+(defvar erl-function-definition-regex
+  (concat "^" erlang-atom-regexp "\\s *(")
+  "Regex for finding function definitions")
+
+(defun erlang-in-arglist-p ()
+  (if (erlang-stop-when-inside-argument-list)
+      (save-excursion
+        (re-search-backward "(")
+        (forward-char)
+        (if (looking-back erl-function-definition-regex)
+            t nil))
+    nil))
+
+(defun erlang-on-function-definition-p ()
+  (save-excursion
+    (beginning-of-line)
+    (looking-at erl-function-definition-regex)))
 
 
 ;;; lookup related things
@@ -272,6 +295,8 @@ we are standing on a variable"
            (erl-find-source-pattern-under-point pattern))
           ((erlang-at-variable-p)
            (erl-find-variable-binding))
+          ((erlang-on-function-definition-p)
+           (erl-who-calls (erl-target-node)))
           (t
            (erl-find-function-under-point)))))
 
