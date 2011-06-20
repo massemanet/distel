@@ -104,6 +104,15 @@
     paths))
 
 
+(defun erlang-at-variable ()
+  "Possibly the ugliest hack ever :)
+
+Rely on syntax highlighting of erlang-mode to determine whether
+we are standing on a variable"
+  (if (eq 'font-lock-variable-name-face (get-text-property (point) 'face))
+      t nil))
+
+
 ;;; lookup related things
 
 (defun erl-find-pattern-in-buffer (buffer pattern arg)
