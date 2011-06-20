@@ -104,7 +104,7 @@
     paths))
 
 
-(defun erlang-at-variable ()
+(defun erlang-at-variable-p ()
   "Possibly the ugliest hack ever :)
 
 Rely on syntax highlighting of erlang-mode to determine whether
