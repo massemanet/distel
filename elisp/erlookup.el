@@ -98,16 +98,25 @@
       (erl-search-local-variable-binding sym))))
 
 (defun erl-search-local-variable-binding (sym)
-  (let ((origin nil))
+  (let ((origin nil)
+        (sympos nil))
     (beginning-of-thing 'symbol)
     (setq origin (point))
     (erlang-beginning-of-clause)
-    (set (make-local-variable 'case-fold-search) nil)
-    (re-search-forward sym)
-    (beginning-of-thing 'symbol)
-    (when (eq origin (point))
-      (erl-find-source-unwind)
-      (message "Already standing on first occurance of: %s" sym))))
+    (setq sympos (erl-search-variable sym))
+    (if (eq origin sympos)
+        (progn (erl-find-source-unwind)
+               (message "Already standing on first occurance of: %s" sym))
+      (goto-char sympos))))
+
+(defun erl-search-variable (sym)
+  (set (make-local-variable 'case-fold-search) nil)
+  (re-search-forward sym)
+  (backward-char)
+  (if (equal (thing-at-point 'symbol) sym)
+      (progn (beginning-of-thing 'symbol)
+             (point))
+    (erl-search-variable sym)))
 
 
 ;; utilities
