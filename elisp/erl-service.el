@@ -782,7 +782,9 @@ default.)"
 
 (defun erl-find-module ()
   (interactive)
-  (erl-find-function (read-string "module: ")))
+  (if distel-ido-completion
+      (erl-find-function (ido-completing-read "module: " (erl-loaded-modules)))
+    (erl-find-function (read-string "module: "))))
  
 (defun erl-find-function (module &optional function arity)
   "Find the source code for MODULE in a buffer, loading it if necessary.

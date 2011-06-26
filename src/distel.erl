@@ -698,6 +698,10 @@ stack_pos(#attach{stack={Pos,_Max}}) -> Pos.
 %% Completion support
 %% ----------------------------------------------------------------------
 
+loaded_modules() ->
+  Mods = erlang:loaded(),
+  {ok, Mods}.
+
 modules(Prefix) ->
   case otp_doc:modules(Prefix) of
     {ok,Ans} -> {ok,Ans};

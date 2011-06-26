@@ -118,6 +118,34 @@
     (erl-search-variable sym)))
 
 
+;; ido completion
+
+(defvar distel-ido-completion nil
+  "Decides whether to use ido completion where available.")
+
+(defvar erl-loaded-modules nil
+  "Scary global variable containing a list of the modules
+loaded on the Erlang node. Should only be set from
+`erl-loaded-modules'.")
+
+(defun erl-loaded-modules-helper ()
+  (let ((module (erlang-get-module))
+        (node (or erl-nodename-cache (erl-target-node))))
+    (erl-spawn
+      (erl-send-rpc node 'distel 'loaded_modules '())
+      (erl-receive ()
+          ((['rex ['ok modules]]
+            (setq erl-loaded-modules modules))
+           (['rex ['error reason]]
+            (ring-remove erl-find-history-ring)
+            (message "Error: %s" reason)))))))
+
+(defun erl-loaded-modules ()
+  (interactive)
+  (erl-loaded-modules-helper)
+  (mapcar (lambda (S) (symbol-name S)) erl-loaded-modules))
+
+
 ;; utilities
 
 (defun compose-include-file-paths (path roots)
