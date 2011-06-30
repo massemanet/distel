@@ -357,7 +357,9 @@ When BURY is non-nil, buries the buffer instead of killing it."
   (define-key process-list-mode-map [(control m)] 'erl-show-process-info)
   (define-key process-list-mode-map [?i] 'erl-show-process-info-item)
   (define-key process-list-mode-map [?b] 'erl-show-process-backtrace)
-  (define-key process-list-mode-map [?m] 'erl-show-process-messages))
+  (define-key process-list-mode-map [?m] 'erl-show-process-messages)
+  (define-key process-list-mode-map [?n] 'next-line)
+  (define-key process-list-mode-map [?p] 'previous-line))
 
 (defun process-list-mode ()
   "Major mode for viewing Erlang process listings.
