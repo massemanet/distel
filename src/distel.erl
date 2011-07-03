@@ -162,11 +162,22 @@ find_source(Mod) ->
       {error, fmt("Can't find module '~p' on ~p", [Mod, node()])}
   end.
 
+find_includes(all) ->
+  Mods = erlang:loaded(),
+  RawPaths = usort([find_include_paths(Mod) || Mod <- Mods]),
+  FilteredPaths = [Paths || Paths <- RawPaths,
+                            is_list(Paths) andalso Paths =/= []],
+  Paths = lists:append(FilteredPaths),
+  {ok, Paths};
 find_includes(Mod) ->
+  Paths = find_include_paths(Mod),
+  {ok, Paths}.
+
+find_include_paths(Mod) ->
   case Mod:module_info(compile) of
     [] -> int:file(Mod);
     CompInfo -> {_, OptionsList} = lists:keyfind(options, 1, CompInfo),
-                {ok, [Path || {i, Path} <- OptionsList]}
+                [Path || {i, Path} <- OptionsList]
   end.
 
 %% Ret: AbsName | throw(Reason)

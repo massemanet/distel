@@ -72,15 +72,14 @@
   `erl-find-include-paths'.")
 
 (defun erl-find-include-paths ()
-  (erl-find-include-paths-distel)
+  (erl-find-include-paths-distel (erlang-get-module))
   (cond ((and erlookup-roots erlookup-roots-distel)
          (append erlookup-roots erlookup-roots-distel))
         (erlookup-roots-distel erlookup-roots-distel)
         (t erlookup-roots)))
 
-(defun erl-find-include-paths-distel ()
-  (let ((module (erlang-get-module))
-        (node (or erl-nodename-cache (erl-target-node))))
+(defun erl-find-include-paths-distel (module)
+  (let ((node (or erl-nodename-cache (erl-target-node))))
     (erl-spawn
       (erl-send-rpc node 'distel 'find_includes (list (intern module)))
       (erl-receive ()
