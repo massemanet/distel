@@ -160,17 +160,20 @@ we are standing on a variable"
 
 ;;; lookup related things
 
-(defun erl-find-pattern-in-buffer (buffer pattern arg)
+(defun erl-find-pattern-in-buffer (buffer patterns)
   "Goto the definition of ARG in the current buffer and return symbol."
   (let ((origin (point))
         (symbol nil))
     (goto-char (point-min))
     (set (make-local-variable 'case-fold-search) nil)
-    (if (re-search-forward
-         (concat pattern "\\s *" arg "\\s *\\(,\\|(\\)") nil t)
-        (progn t (beginning-of-line) (search-forward "(") ;;(backward-word)
-               (setq symbol (cons (thing-at-point 'symbol)
-                                  (copy-marker (point-marker))))))
+    (when (re-search-forward
+           (nth 0 patterns) nil t)
+      (if (= 2 (length patterns))
+          (progn t (beginning-of-line) (search-forward "("))
+        (progn t (beginning-of-line) (search-forward (nth 2 patterns))
+               (backward-word)))
+      (setq symbol (cons (thing-at-point 'symbol)
+                         (copy-marker (point-marker)))))
     symbol))
 
 
@@ -186,10 +189,10 @@ we are standing on a variable"
         (find-file find-path)))))
 
 
-(defun erl-find-source-pattern-under-point (pattern)
-  (erl-find-source-pattern pattern (thing-at-point 'symbol)))
+(defun erl-find-source-pattern-under-point (patterns)
+  (erl-find-source-pattern (add-to-list 'patterns (thing-at-point 'symbol))))
 
-(defun erl-find-source-pattern-in-open-buffers (pattern arg paths)
+(defun erl-find-source-pattern-in-open-buffers (patterns paths)
   (let ((symbol) (buffer-name) (extra-paths) (tried) (open))
     (dolist (path paths)
       (unless symbol
@@ -198,10 +201,10 @@ we are standing on a variable"
           (setq extra-paths (remove-duplicates (append (erl-extract-include-paths-from-buffer buffer-name) extra-paths)))
           (push buffer-name tried)
           (push buffer-name open)
-          (setq symbol (erl-find-pattern-in-buffer buffer-name pattern arg)))))
+          (setq symbol (erl-find-pattern-in-buffer buffer-name patterns)))))
     (list symbol buffer-name extra-paths tried open)))
 
-(defun erl-find-source-pattern-in-files-on-disk (pattern arg paths open tried)
+(defun erl-find-source-pattern-in-files-on-disk (patterns paths open tried)
   (let ((symbol) (buffer-name) (extra-paths) (tried) (open))
     (dolist (path paths)
       (unless symbol
@@ -213,13 +216,13 @@ we are standing on a variable"
               (find-file find-path)
               (setq extra-paths (append (erl-extract-include-paths-from-buffer buffer-name) extra-paths))
               (push buffer-name tried)
-              (setq symbol (erl-find-pattern-in-buffer buffer-name pattern arg))
+              (setq symbol (erl-find-pattern-in-buffer buffer-name patterns))
               (unless (member buffer-name open)
                 (unless symbol
                   (kill-this-buffer))))))))
     (list symbol buffer-name extra-paths tried open)))
 
-(defun erl-find-source-pattern (pattern arg &optional include-paths)
+(defun erl-find-source-pattern (patterns &optional include-paths)
   (unless include-paths
     (ring-insert-at-beginning erl-find-history-ring
                               (copy-marker (point-marker))))
@@ -230,7 +233,7 @@ we are standing on a variable"
         (tried nil)
         (buffer-name nil)
         (find-paths nil)
-        (symbol (erl-find-pattern-in-buffer (file-name-nondirectory buffer-file-name) pattern arg))
+        (symbol (erl-find-pattern-in-buffer (file-name-nondirectory buffer-file-name) patterns))
         (open-buffers-pass nil)
         (disk-buffers-pass nil))
 
@@ -241,7 +244,7 @@ we are standing on a variable"
     ;; already open, if it can be found we record it as open so we don't
     ;; close it later on, if we find the symbol we jump to it.
     (unless symbol
-      (when (setq open-buffers-pass (erl-find-source-pattern-in-open-buffers pattern arg paths))
+      (when (setq open-buffers-pass (erl-find-source-pattern-in-open-buffers patterns paths))
         (setq symbol (nth 0 open-buffers-pass))
         (setq buffer-name (nth 1 open-buffers-pass))
         (setq extra-paths (nconc (nth 2 open-buffers-pass)))
@@ -255,7 +258,7 @@ we are standing on a variable"
     ;; files recorded in already-tried and we won't close buffers
     ;; recorded in already-open.
     (unless symbol
-      (when (setq disk-buffers-pass (erl-find-source-pattern-in-files-on-disk pattern arg paths open tried))
+      (when (setq disk-buffers-pass (erl-find-source-pattern-in-files-on-disk patterns paths open tried))
         (setq symbol (nth 0 disk-buffers-pass))
         (setq buffer-name (nth 1 disk-buffers-pass))
         (setq extra-paths (nconc (nth 2 disk-buffers-pass)))
@@ -266,31 +269,38 @@ we are standing on a variable"
     ;; searching through header files.
     (unless (and symbol buffer-name)
       (if extra-paths
-          (erl-find-source-pattern pattern arg extra-paths)
-        (message "Can't find definition for: %s" arg)
+          (erl-find-source-pattern patterns extra-paths)
+        (message "Can't find definition for: %s" (nth 1 patterns))
         (erl-find-source-unwind)))
 
     (when (and symbol buffer-name)
       (switch-to-buffer buffer-name)
       (goto-char (cdr symbol)))))
 
+(defun erl-macro-regex ()
+  (let ((macro (thing-at-point 'symbol)))
+    (list (format "-define(\\s *%s\\(,\\|(\\)" macro) macro)))
 
-(defvar erl-record-regex "-record("
-  "regex to search for when looking up records")
+(defun erl-record-regex ()
+  (let ((record (thing-at-point 'symbol)))
+    (list (format "-record(\\s *%s\\(,\\|(\\)" record) record)))
 
-(defvar erl-macro-regex "-define("
-  "regex to search for when looking up macros")
+(defun erl-record-field-regex ()
+  (let ((field (thing-at-point 'symbol))
+        (record nil))
+    (backward-char 2)
+    (setq record (thing-at-point 'symbol))
+    (list (format "-record(\\s *%s\\s *[^*]+%s" record field) record field)))
 
 (defun erl-is-pattern ()
   (save-excursion
     (beginning-of-thing 'symbol)
     (cond
-     ;; ((looking-back "\\#?") erl-inline-record-regex)
      ((looking-back (concat erl-include-pattern ".*")) 'open-header)
-     ((looking-back "\\#") erl-record-regex)
-     ((looking-back "\\?") erl-macro-regex)
-     ;; ((and (looking-back "\\?") (looking-forward "(")) erl-inline-function-regex)
-     (t nil))))
+     ((looking-back "\\#") (erl-record-regex))
+     ((looking-back "#[a-z_]+\\.") (erl-record-field-regex))
+     ((looking-back "\\?") (erl-macro-regex))
+     (t t))))
 
 (defun erl-find-source-under-point ()
   "When trying to find a function definition checks to see if we
@@ -299,7 +309,7 @@ we are standing on a variable"
   (let ((pattern (erl-is-pattern)))
     (cond ((equal pattern 'open-header)
            (erl-open-header-file-under-point))
-          ((stringp pattern)
+          ((listp pattern)
            (erl-find-source-pattern-under-point pattern))
           ((erlang-at-variable-p)
            (erl-find-variable-binding))
