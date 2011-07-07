@@ -162,8 +162,10 @@ find_source(Mod) ->
       {error, fmt("Can't find module '~p' on ~p", [Mod, node()])}
   end.
 
-find_includes(all) ->
+find_includes([all]) ->
   Mods = erlang:loaded(),
+  find_includes(Mods);
+find_includes([Mods]) ->
   RawPaths = usort([find_include_paths(Mod) || Mod <- Mods]),
   FilteredPaths = [Paths || Paths <- RawPaths,
                             is_list(Paths) andalso Paths =/= []],
