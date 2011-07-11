@@ -74,19 +74,19 @@
 (defun erlext-binary-to-term (string)
   "Decode and return the elisp representation of `string'."
   (assert (stringp string))
-  (let (default-enable-multibyte-characters)
-    (with-temp-buffer
-      (insert string)
-      (goto-char (point-min))
-      (erlext-read-whole-obj))))
+  (with-temp-buffer
+    (set-buffer-multibyte nil)
+    (insert string)
+    (goto-char (point-min))
+    (erlext-read-whole-obj)))
 
 (defun erlext-term-to-binary (term)
   "Encode `term' as erlext and return the result as a string."
-  (let (default-enable-multibyte-characters)
-    (with-temp-buffer
-      (insert erlext-protocol-version)
-      (erlext-write-obj term)
-      (buffer-string))))
+  (with-temp-buffer
+    (set-buffer-multibyte nil)
+    (insert erlext-protocol-version)
+    (erlext-write-obj term)
+    (buffer-string)))
 
 ;; Tuple datatype: (tuple X Y Z) => [X Y Z]
 
