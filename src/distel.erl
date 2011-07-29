@@ -368,7 +368,7 @@ fprof_tag({M,F,A}) when is_integer(A) ->
     to_atom(fmt("~p:~p/~p", [M,F,A]));
 fprof_tag({M,F,A}) when is_list(A) ->
     fprof_tag({M,F,length(A)});
-fprof_tag(Name) when  is_atom(Name) ->
+fprof_tag(Name) when is_atom(Name) ->
     Name.
 
 fprof_mfa({M,F,A}) -> [M,F,A];
@@ -394,7 +394,7 @@ fprof_beamfile(_) -> undefined.
 pad(X, A) when is_atom(A) ->
     pad(X, to_list(A));
 pad(X, S) when length(S) < X ->
-    S ++ duplicate(X - length(S), $ );
+    S ++ duplicate(X - length(S), $\s);
 pad(_X, S) ->
     S.
 
@@ -922,7 +922,7 @@ best_arg(Args) ->
 %% 'unknown' useless, type description is better, variable name is best.
 best_arg(unknown, A2)          -> A2;
 best_arg(A1, unknown)          -> A1;
-best_arg(A1, A2) when is_atom(A1),is_atom(A2) ->
+best_arg(A1, A2) when is_atom(A1), is_atom(A2) ->
     %% ... and the longer the variable name the better
     case length(to_list(A2)) > length(to_list(A1)) of
         true -> A2;

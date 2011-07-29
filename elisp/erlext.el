@@ -268,6 +268,7 @@
       ((string)     (erlext-read-string))
       ((bin)        (erlext-read-binary))
       ((null)       nil)
+      ((nil)        nil)
       ((pid)        (vector erl-tag
 			    'erl-pid
 			    (erlext-read-obj) ; node
