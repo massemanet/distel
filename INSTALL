@@ -1,6 +1,15 @@
 Installation
 ------------
 
+* distel is an extension to erlang-mode, so erlang-mode must be
+  present. erlang-node is distributed with OTP, here;
+$OTP_PATH/lib/tools-*/emacs/erlang.el
+
+  So you must have something like this in you .emacs;
+(add-to-list
+   'load-path
+       (car (file-expand-wildcards "/usr/lib/erlang/lib/tools-*/emacs")))
+
 * Compile Distel's Erlang modules with 'make'.
 
 * Optionally, install like this;
@@ -24,14 +33,13 @@ what you can do!
 
 ============================================================
 Xemacs compatibility note;
-distel seems to work fine in Xemacs. 
+distel seems to work fine in Xemacs.
 You will need to install ewoc.el from FSF emacs, e.g. from here;
 http://cvs.savannah.gnu.org/viewvc/*checkout*/emacs/emacs/lisp/emacs-lisp/ewoc.el
 
 ============================================================
 
 Special notes for Mac OSX:
-
 David Wallin reports the following procedure to setup Distel to work
 on an OSX machine with no network connection:
 

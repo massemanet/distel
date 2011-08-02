@@ -208,7 +208,7 @@ which_a(M,F,A) ->
 %% read the index file
 %% store name of html file in {Mod,file}
 html_index(file,Dir) ->
-  FN = filename:join([Dir,"lib","doc","man_index.html"]),
+  FN = filename:join([Dir,"doc","man_index.html"]),
   fold_file(curry(fun lines/3,Dir),[],FN).
 
 lines(Line,_,Dir) ->
