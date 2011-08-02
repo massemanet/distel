@@ -131,6 +131,7 @@ about Emacs' online help, use \"\\[help-for-help]\".
     ("\C-c\C-df" erl-refactor-subfunction)
     ("\C-c\C-dF" erl-find-module)
     ("\C-c\C-dg" erl-ping)
+    ("\C-c\C-dA" erl-show-arglist)
     ("\C-c\C-dh" erl-find-doc-under-point)
     ("\C-c\C-dH" erl-find-doc)
     ("\C-c\C-dz" erl-find-sig-under-point)
