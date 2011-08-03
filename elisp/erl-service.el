@@ -43,28 +43,32 @@ invoked with a prefix argument."
   (interactive)
   (message "Cookie: %s" derl-cookie))
 
-(defun erl-choose-nodename ()
-  "Prompt the user for the nodename to connect to in future."
-  (interactive)
-  (let* ((nodename-string (if erl-nodename-cache
-			      (symbol-name erl-nodename-cache)
-			    nil))
-	 (name-string (read-string (if nodename-string
-				       (format "Node (default %s): "
-					       nodename-string)
-				     "Node: ")
-				   nil
-				   'erl-nodename-history
-				   nodename-string))
-         (name (intern (if (string-match "@" name-string)
-                           name-string
-			 (concat name-string
-				 "@" (erl-determine-hostname))))))
-    (when (string= name-string "")
-      (error "No node name given"))
+(defun erl-choose-nodename (name-string)
+  "Change the value of the nodename in `erl-nodename-cache'.
+NAME-STRING can be a fully qualified or short name."
+  (interactive
+   (let* ((nodename-string (if erl-nodename-cache
+                               (symbol-name erl-nodename-cache)
+                             nil))
+          (name-string (read-string (if nodename-string
+                                        (format "Node (default %s): "
+                                                nodename-string)
+                                      "Node: ")
+                                    nil
+                                    'erl-nodename-history
+                                    nodename-string)))
+     (list name-string)))
+  ;; sanity check the nodename
+  (when (string= name-string "")
+    (error "No node name given"))
+  (let ((name (intern (if (string-match "@" name-string)
+                          name-string
+                        (concat name-string
+                                "@" (erl-determine-hostname))))))
     (setq erl-nodename-cache name)
     (setq distel-modeline-node name-string)
-    (force-mode-line-update))
+    (when (called-interactively-p)
+      (force-mode-line-update)))
   erl-nodename-cache)
 
 ;;;;; Call MFA lookup
