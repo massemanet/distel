@@ -518,6 +518,11 @@ erl_from_mod(Mod) ->
     catch _:_ -> ""
     end.
 
+includes_from_mod(Mod) ->
+    try {ok,{_,Abst}} = get_abst_from_debuginfo(Mod),
+         [File || {_,_,file,{File,_}} <- Abst, File =/= erl_from_mod(Mod)]
+    catch _:_ -> ""
+    end.
 
 assert_int(Mod,Filename) ->
     case is_interpreted(Mod) of
