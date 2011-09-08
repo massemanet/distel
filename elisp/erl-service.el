@@ -727,7 +727,79 @@ We also don't prompt for the module name.")
 (defvar erl-find-history-ring (make-ring 20)
   "History ring tracing for following functions to their definitions.")
 
+(defun erl-macro-regex ()
+  (let ((macro (thing-at-point 'symbol)))
+    (list 'macro macro (format "-define(\\s *%s\\(,\\|(\\)" macro))))
+
+(defun erl-record-regex ()
+  (let ((record (thing-at-point 'symbol)))
+    (list 'record record (format "-record(\\s *%s\\(,\\|(\\)" record))))
+
+(defun erl-is-pattern ()
+  (save-excursion
+    (beginning-of-thing 'symbol)
+    (cond ((looking-back "\\#") (erl-record-regex))
+          ((looking-back "#[a-z_]+\\.") (erl-record-field-regex))
+          ((looking-back "\\?") (erl-macro-regex))
+          (t t))))
+
 (defun erl-find-source-under-point ()
+  "When trying to find a function definition checks to see if we
+  are standing on a macro instead."
+  (interactive)
+  (let ((patterns (erl-is-pattern)))
+    (cond ((equal patterns 'open-header)
+           (erl-open-header-file-under-point))
+          ((listp patterns)
+           (erl-find-source-pattern-under-point patterns))
+          (t
+           (erl-find-function-under-point)))))
+
+(defun erl-find-source-pattern-under-point (patterns)
+  (erl-find-source-pattern patterns))
+
+(defun erl-find-source-pattern (patterns)
+  (ring-insert-at-beginning erl-find-history-ring
+                            (copy-marker (point-marker)))
+  (destructuring-bind (type thing regex) patterns
+    (let ((module (intern (erlang-get-module)))
+          (node (or erl-nodename-cache (erl-target-node)))
+          (remote_function (intern (concat "find_" (symbol-name type)))))
+      (unless (erl-search-source-pattern patterns 'local)
+        (erl-spawn
+          (erl-send-rpc node 'distel remote_function (list module thing))
+          (erl-receive (patterns)
+              ((['rex ['ok file]]
+                (find-file file)
+                (erl-search-source-pattern patterns))
+               (['rex ['error reason]]
+                (ring-remove erl-find-history-ring)
+                (message "Error: %s" reason)))))))))
+
+(defun erl-search-source-pattern (patterns &optional local)
+  "Goto the definition of ARG in the current buffer and return symbol."
+  (destructuring-bind (type thing regex) patterns
+    (let ((origin (point))
+          (searching t)
+          (found nil))
+      (goto-char (point-min))
+      (set (make-local-variable 'case-fold-search) nil)
+      (when searching
+        (cond ((re-search-forward regex nil t)
+               (beginning-of-line)
+               (search-forward "(")
+               (setq searching nil)
+               (setq found t))
+              (local
+               (setq searching nil)
+               (goto-char origin))
+              (t
+               (setq searching nil)
+               (goto-char origin)
+               (message "Can't find %s definition for: %s" type thing))))
+      found)))
+
+(defun erl-find-function-under-point ()
   "Goto the source code that defines the function being called at point.
 For remote calls, contacts an Erlang node to determine which file to
 look in, with the following algorithm:
@@ -745,7 +817,7 @@ When `distel-tags-compliant' is non-nil, or a numeric prefix argument
 is given, the user is prompted for the function to lookup (with a
 default.)"
   (interactive)
-  (apply #'erl-find-source
+  (apply #'erl-find-function
          (or (erl-read-call-mfa) (error "No call at point."))))
 
 (defun erl-find-source-unwind ()
@@ -780,9 +852,9 @@ default.)"
 
 (defun erl-find-module ()
   (interactive)
-  (erl-find-source (read-string "module: ")))
+  (erl-find-function (read-string "module: ")))
  
-(defun erl-find-source (module &optional function arity)
+(defun erl-find-function (module &optional function arity)
   "Find the source code for MODULE in a buffer, loading it if necessary.
 When FUNCTION is specified, the point is moved to its start."
   ;; Add us to the history list
