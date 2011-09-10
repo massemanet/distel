@@ -214,12 +214,19 @@ find_thing(Mod, Type, Thing) ->
 
 thing_in_file(File, Type, Thing) ->
   {ok, Forms} = epp_dodger:parse_file(File),
-  proplists:is_defined(Thing, [element(size(T),T)
-                              || {tree,attribute,
-                                  {attr,_L,_,_},
-                                  {attribute,X,[T|_]}} <- Forms,
-                                 Type==element(3,X) orelse
-                                 Type==element(4,X)]).
+  Things = [begin
+              R = element(size(T),T),
+              case is_atom(R) of
+                true -> R;
+                false -> element(3,element(2,R))
+              end
+            end || {tree,attribute,
+                    {attr,_L,_,_},
+                    {attribute,X,[T|_]}} <- Forms,
+                   Type==element(3,X) orelse
+                   Type==element(4,X)],
+  proplists:is_defined(Thing, Things).
+
 
 %% ----------------------------------------------------------------------
 %% Summarise all processes in the system.
