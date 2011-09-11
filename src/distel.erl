@@ -552,7 +552,8 @@ erl_from_mod(Mod) ->
 
 includes_from_mod(Mod) ->
     try {ok,{_,Abst}} = get_abst_from_debuginfo(Mod),
-         [File || {_,_,file,{File,_}} <- Abst, File =/= erl_from_mod(Mod)]
+         [File || {_,_,file,{File,_}} <- Abst,
+                  File =/= erl_from_mod(Mod) andalso File =/= []]
     catch _:_ -> ""
     end.
 
