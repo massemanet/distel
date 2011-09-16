@@ -238,6 +238,8 @@ cache_funcs(M) ->
 
 funcsf(Line,A,M) ->
   case trim_P(string:tokens(A++Line,"<>\"")) of
+    ["a name=",FA,"/a","span class=","bold_code",Sig,"/span"|_] ->  % R14
+      a_line(M,fa(FA),Sig),[];			% R12-
     ["a name=",FA,"span class=","bold_code",Sig,"/span","/a"|_] ->
       a_line(M,fa(FA),Sig),[];			% R12-
     ["A NAME=",FA,"STRONG","CODE",Sig,"/CODE","/STRONG","/A"|_] ->
