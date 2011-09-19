@@ -743,6 +743,15 @@ We also don't prompt for the module name.")
           ((looking-back "\\?") (erl-macro-regex))
           (t t))))
 
+(defvar erl-function-definition-regex
+  (concat "^" erlang-atom-regexp "\\s *(")
+  "Regex for finding function definitions")
+
+(defun erlang-at-function-definition-p ()
+  (save-excursion
+    (beginning-of-line)
+    (looking-at erl-function-definition-regex)))
+
 (defun erl-find-source-under-point ()
   "When trying to find a function definition checks to see if we
   are standing on a macro instead."
@@ -752,6 +761,8 @@ We also don't prompt for the module name.")
            (erl-open-header-file-under-point))
           ((listp patterns)
            (erl-find-source-pattern-under-point patterns))
+          ((erlang-at-function-definition-p)
+           (erl-who-calls (erl-target-node)))
           (t
            (erl-find-function-under-point)))))
 
