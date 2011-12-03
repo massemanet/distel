@@ -892,8 +892,6 @@ prompts for an mfa."
 (defun erl-complete (node)
   "Complete the module or remote function name at point."
   (interactive (list (erl-target-node)))
-  (let ((win (get-buffer-window "*Completions*" 0)))
-    (if win (with-selected-window win (bury-buffer))))
   (let ((end (point))
 	(beg (ignore-errors 
 	       (save-excursion (backward-sexp 1)
@@ -903,37 +901,38 @@ prompts for an mfa."
 			       (point)))))
     (when beg
       (let* ((str (buffer-substring-no-properties beg end))
-	     (buf (current-buffer))
-	     (continuing (equal last-command (cons 'erl-complete str))))
-	(setq this-command (cons 'erl-complete str))
-	(if (string-match "^\\(.*\\):\\(.*\\)$" str)
-	    ;; completing function in module:function
-	    (let ((mod (intern (match-string 1 str)))
-		  (pref (match-string 2 str))
-		  (beg (+ beg (match-beginning 2))))
-	      (erl-spawn
-		(erl-send-rpc node 'distel 'functions (list mod pref))
-		(&erl-receive-completions "function" beg end pref buf
-					  continuing
-					  #'erl-complete-sole-function)))
-	  ;; completing just a module
-	  (erl-spawn
-	    (erl-send-rpc node 'distel 'modules (list str))
-	    (&erl-receive-completions "module" beg end str buf continuing
-				      #'erl-complete-sole-module)))))))
+             (buf (current-buffer))
+             )
+        (setq this-command (cons 'erl-complete str))
+        (if (string-match "^\\(.*\\):\\(.*\\)$" str)
+            ;; completing function in module:function
+            (let ((mod (intern (match-string 1 str)))
+                  (pref (match-string 2 str))
+                  (beg (+ beg (match-beginning 2))))
+              (erl-spawn
+                (erl-send-rpc node 'distel 'functions (list mod pref))
+                (&erl-receive-completions "function" beg end pref buf
+                                          #'erl-complete-sole-function)))
+          ;; completing just a module
+          (erl-spawn
+            (erl-send-rpc node 'distel 'modules (list str))
+            (&erl-receive-completions "module" beg end str buf
+                                      #'erl-complete-sole-module)))))))
 
-(defun &erl-receive-completions (what beg end prefix buf continuing sole)
-  (let ((state (erl-async-state buf)))
-    (erl-receive (what state beg end prefix buf continuing sole)
-	((['rex ['ok completions]]
-	  (when (equal state (erl-async-state buf))
-	    (with-current-buffer buf
-	      (erl-complete-thing what continuing beg end prefix
-				  completions sole))))
-	 (['rex ['error reason]]
-	  (message "Error: %s" reason))
-	 (other
-	  (message "Unexpected reply: %S" other))))))
+(defun &erl-receive-completions (what beg end prefix buf sole)
+  (let ((state (erl-async-state buf))
+        continue
+        )
+    (erl-receive (what state beg end prefix buf  continue sole)
+        ((['rex ['ok completions]]
+          (when (equal state (erl-async-state buf))
+            (with-current-buffer buf
+              (erl-complete-thing what  beg end prefix
+                                  completions sole))))
+         (['rex ['error reason]]
+          (message "Error: %s" reason))
+         (other
+          (message "Unexpected reply: %S" other))))))
 
 (defun erl-async-state (buffer)
   "Return an opaque state for BUFFER.
@@ -945,7 +944,7 @@ want to cancel the operation."
     (cons (buffer-modified-tick)
 	  (point))))
 
-(defun erl-complete-thing (what scrollable beg end pattern completions sole)
+(defun erl-complete-thing (what  beg end pattern completions sole)
   "Complete a string in the buffer.
 WHAT is a string that says what we're completing.
 SCROLLABLE is a flag saying whether this is a repeated command that
@@ -958,27 +957,28 @@ SOLE is a function which is called when a single completion is selected."
   ;; cut and paste programming from `lisp-complete-symbol'. The fancy
   ;; Emacs completion packages (hippie and pcomplete) looked too
   ;; scary.
-  (or (and scrollable (erl-maybe-scroll-completions))
-      (let* ((completions (erl-make-completion-alist completions))
-	     (completion (try-completion pattern completions)))
-	(cond ((eq completion t)
-	       (message "Sole completion")
-	       (apply sole '()))
-	      ((null completion))
-;	       (message "Can't find completion for %s \"%s\"" what pattern)
-;	       (ding))
-	      ((not (string= pattern completion))
-	       (delete-region beg end)
-	       (insert completion)
-	       (if (eq t (try-completion completion completions))
-		   (apply sole '())))
-	      (t
+  (let* ((completions (erl-make-completion-alist completions))
+         (completion (try-completion pattern completions)))
+    (cond ((eq completion t)
+           (message "Sole completion")
+           (apply sole '()))
+          ((null completion))
+                                        ;	       (message "Can't find completion for %s \"%s\"" what pattern)
+                                        ;	       (ding))
+          ((not (string= pattern completion))
+           (delete-region beg end)
+           (insert completion)
+           (if (eq t (try-completion completion completions))
+               (apply sole '())))
+          (t
 	       (message "Making completion list...")
-	       (let ((list (all-completions pattern completions)))
-		 (setq list (sort list 'string<))
-		 (with-output-to-temp-buffer "*Completions*"
-		   (display-completion-list list)))
-	       (message "Making completion list...%s" "done"))))))
+	       (let ((list (all-completions pattern completions))
+                 (init-input (buffer-substring beg end))
+                 )
+             (setq list (sort list 'string<))
+             (insert (substring  (completing-read "complete:" list nil nil init-input ) (length init-input)))
+             )
+	       (message "Making completion list...%s" "done")))))
 
 (defun erl-complete-sole-module ()
   (insert ":"))
@@ -995,23 +995,6 @@ The same elements go in the CAR, and nil in the CDR. To support the
 apparently very stupid `try-completions' interface, that wants an
 alist but ignores CDRs."
   (mapcar (lambda (x) (cons x nil)) list))
-
-(defun erl-maybe-scroll-completions ()
-  "Scroll the completions buffer if it is visible.
-Returns non-nil iff the window was scrolled."
-  (let ((window (get-buffer-window "*Completions*")))
-    (when (and window (window-live-p window) (window-buffer window)
-	       (buffer-name (window-buffer window)))
-      ;; If this command was repeated, and
-      ;; there's a fresh completion window with a live buffer,
-      ;; and this command is repeated, scroll that window.
-      (with-current-buffer (window-buffer window)
-	(if (pos-visible-in-window-p (point-max) window)
-	    (set-window-start window (point-min))
-	  (save-selected-window
-	    (select-window window)
-	    (scroll-up))))
-      t)))
 
 ;;;; Refactoring
 
@@ -1301,4 +1284,3 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
 	 (add-text-properties ,start (point) ,props)))))
 
 (provide 'erl-service)
-
