@@ -74,19 +74,19 @@
 (defun erlext-binary-to-term (string)
   "Decode and return the elisp representation of `string'."
   (assert (stringp string))
-  (let (default-enable-multibyte-characters)
-    (with-temp-buffer
-      (insert string)
-      (goto-char (point-min))
-      (erlext-read-whole-obj))))
+  (with-temp-buffer
+    (set-buffer-multibyte nil)
+    (insert string)
+    (goto-char (point-min))
+    (erlext-read-whole-obj)))
 
 (defun erlext-term-to-binary (term)
   "Encode `term' as erlext and return the result as a string."
-  (let (default-enable-multibyte-characters)
-    (with-temp-buffer
-      (insert erlext-protocol-version)
-      (erlext-write-obj term)
-      (buffer-string))))
+  (with-temp-buffer
+    (set-buffer-multibyte nil)
+    (insert erlext-protocol-version)
+    (erlext-write-obj term)
+    (buffer-string)))
 
 ;; Tuple datatype: (tuple X Y Z) => [X Y Z]
 
@@ -100,7 +100,7 @@
 (defun tuplep (x)
   (and (vectorp x)
        (or (zerop (length x))
-	   (not (eq (elt x 0) erl-tag)))))
+           (not (eq (elt x 0) erl-tag)))))
 
 (defun tuple-arity (tuple)
   (1- (length tuple)))
@@ -116,32 +116,32 @@
 
 (defun erlext-write-obj (obj)
   (cond ((listp obj)                    ; lists at top since (symbolp '()) => t
-	 (erlext-write-list obj))
-	((stringp obj)
-	 (erlext-write-string obj))
-	((symbolp obj)
-	 (erlext-write-atom obj))
-	((vectorp obj)
-	 (if (tuplep obj)
-	     (erlext-write-tuple (tuple-to-list obj))
-	   (let* ((list (mapcar #'identity obj))
-		  (type (cadr list))
-		  (elts (cddr list)))
-	     (ecase type
-	       ((erl-pid)
-		(apply #'erlext-write-pid elts))
-	       ((erl-port)
-		(apply #'erlext-write-port elts))
-	       ((erl-ref)
-		(apply #'erlext-write-ref elts))
-	       ((erl-new-ref)
-		(apply #'erlext-write-new-ref elts))
-	       ((erl-binary)
-		(erlext-write-binary (car elts)))))))
-	((integerp obj)
-	 (erlext-write-int obj))
-	(t
-	 (error "erlext can't marshal %S" obj))))
+         (erlext-write-list obj))
+        ((stringp obj)
+         (erlext-write-string obj))
+        ((symbolp obj)
+         (erlext-write-atom obj))
+        ((vectorp obj)
+         (if (tuplep obj)
+             (erlext-write-tuple (tuple-to-list obj))
+           (let* ((list (mapcar #'identity obj))
+                  (type (cadr list))
+                  (elts (cddr list)))
+             (ecase type
+               ((erl-pid)
+                (apply #'erlext-write-pid elts))
+               ((erl-port)
+                (apply #'erlext-write-port elts))
+               ((erl-ref)
+                (apply #'erlext-write-ref elts))
+               ((erl-new-ref)
+                (apply #'erlext-write-new-ref elts))
+               ((erl-binary)
+                (erlext-write-binary (car elts)))))))
+        ((integerp obj)
+         (erlext-write-int obj))
+        (t
+         (error "erlext can't marshal %S" obj))))
 
 (defun erlext-write1 (n)
   (assert (integerp n))
@@ -149,13 +149,13 @@
 (defun erlext-write2 (n)
   (assert (integerp n))
   (insert (logand (ash n -8) 255)
-	  (logand n 255)))
+          (logand n 255)))
 (defun erlext-write4 (n)
   (assert (integerp n))
   (insert (logand (ash n -24) 255)
-	  (logand (ash n -16) 255)
-	  (logand (ash n -8) 255)
-	  (logand n 255)))
+          (logand (ash n -16) 255)
+          (logand (ash n -8) 255)
+          (logand n 255)))
 (defun erlext-writen (bytes)
   (assert (stringp bytes))
   (insert bytes))
@@ -167,7 +167,7 @@
 (defun erlext-write-atom (atom)
   (assert (symbolp atom))
   (let* ((string (symbol-name atom))
-	 (len    (length string)))
+         (len    (length string)))
     (assert (<= len erlext-max-atom-length))
     (erlext-write1 (erlext-get-code 'atom))
     (erlext-write2 (length string))
@@ -175,20 +175,20 @@
 (defun erlext-write-int (n)
   (assert (integerp n))
   (cond ((= n (logand n 255))
-	 (erlext-write1 (erlext-get-code 'smallInt))
-	 (erlext-write1 n))
-	;; elisp has small numbers so 32bit on the wire is as far as
-	;; we need bother supporting
-	(t
-	 (erlext-write1 (erlext-get-code 'int))
-	 (erlext-write4 n))))
+         (erlext-write1 (erlext-get-code 'smallInt))
+         (erlext-write1 n))
+        ;; elisp has small numbers so 32bit on the wire is as far as
+        ;; we need bother supporting
+        (t
+         (erlext-write1 (erlext-get-code 'int))
+         (erlext-write4 n))))
 (defun erlext-write-list (lst)
   (assert (listp lst))
   (if (null lst)
       (erlext-write-null)
     (progn (erlext-write-list-head (length lst))
-	   (mapc 'erlext-write-obj lst)
-	   (erlext-write-null))))
+           (mapc 'erlext-write-obj lst)
+           (erlext-write-null))))
 (defun erlext-write-string (str)
   (assert (stringp str))
   (erlext-write1 (erlext-get-code 'string))
@@ -209,10 +209,10 @@
   (assert (listp elts))
   (let ((arity (length elts)))
     (if (< arity 256)
-	(progn (erlext-write1 (erlext-get-code 'smallTuple))
-	       (erlext-write1 arity))
+        (progn (erlext-write1 (erlext-get-code 'smallTuple))
+               (erlext-write1 arity))
       (progn (erlext-write1 (erlext-get-code 'largeTuple))
-	     (erlext-write4 arity))))
+             (erlext-write4 arity))))
   (mapc 'erlext-write-obj elts))
 (defun erlext-write-pid (node id serial creation)
   (erlext-write1 (erlext-get-code 'pid))
@@ -245,11 +245,11 @@
   (if (fboundp 'char-int)
       ;; convert character to string
       (defsubst erlext-read1 ()
-	(prog1 (char-int (following-char))
-	  (forward-char 1)))
+        (prog1 (char-int (following-char))
+          (forward-char 1)))
     (defsubst erlext-read1 ()
       (prog1 (following-char)
-	(forward-char 1)))))
+        (forward-char 1)))))
 
 (defun erlext-read-whole-obj ()
   (let ((version (erlext-read1)))
@@ -270,21 +270,21 @@
       ((null)       nil)
       ((nil)        nil)
       ((pid)        (vector erl-tag
-			    'erl-pid
-			    (erlext-read-obj) ; node
-			    (erlext-read4) ; id
-			    (erlext-read4) ; serial
-			    (erlext-read1))); creation
+                            'erl-pid
+                            (erlext-read-obj) ; node
+                            (erlext-read4) ; id
+                            (erlext-read4) ; serial
+                            (erlext-read1))); creation
       ((port)       (vector erl-tag
-			    'erl-port
-			    (erlext-read-obj) ; node
-			    (erlext-read4) ; id
-			    (erlext-read1))) ; creation
+                            'erl-port
+                            (erlext-read-obj) ; node
+                            (erlext-read4) ; id
+                            (erlext-read1))) ; creation
       ((ref)        (vector erl-tag
-			    'erl-ref
-			    (erlext-read-obj) ; node
-			    (erlext-read4) ;id
-			    (erlext-read1))) ; creation
+                            'erl-ref
+                            (erlext-read-obj) ; node
+                            (erlext-read4) ;id
+                            (erlext-read1))) ; creation
       ((newRef)     (erlext-read-newref))
       ((smallBig)   (erlext-read-small-bignum))
       ((largeBig)   (erlext-read-large-bignum))
@@ -299,23 +299,23 @@
 ;; read1 moved above so that it can be inlined
 (defun erlext-read2 ()
   (logior (ash (erlext-read1) 8)
-	  (erlext-read1)))
+          (erlext-read1)))
 (defun erlext-read4 ()
   (logior (ash (erlext-read1) 24)
-	  (ash (erlext-read1) 16)
-	  (ash (erlext-read1) 8)
-	  (erlext-read1)))
+          (ash (erlext-read1) 16)
+          (ash (erlext-read1) 8)
+          (erlext-read1)))
 (defun erlext-readn (n)
   (assert (integerp n))
   (let ((start (point))
-	(end   (+ (point) n)))
+        (end   (+ (point) n)))
     (prog1 (let ((string (buffer-substring start end)))
-	     (if (featurep 'xemacs)
-		 string
-	       (string-as-unibyte string))) ; fixme: should be
-					    ; string-make-unibyte?
-					    ; Why is it necessary
-					    ; anyhow?
+             (if (featurep 'xemacs)
+                 string
+               (string-as-unibyte string))) ; fixme: should be
+                                            ; string-make-unibyte?
+                                            ; Why is it necessary
+                                            ; anyhow?
       (goto-char end))))
 (defun erlext-read-atom ()
   (let ((length (erlext-read2)))
@@ -327,14 +327,14 @@
 (defun erlext-read-list ()
   (let ((arity (erlext-read4)))
     (prog1 (loop for x from 1 to arity
-		 collect (erlext-read-obj))
+                 collect (erlext-read-obj))
       ;; This seems fishy, I find nil's at the end of lists, not
       ;; included as elements, and no mention of how it works in the
       ;; erl_ext_dist.txt
       (assert (eq (erlext-get-code 'null) (erlext-read1))))))
 (defun erlext-read-tuple (arity)
   (apply #'vector (loop for x from 1 to arity
-			collect (erlext-read-obj))))
+                        collect (erlext-read-obj))))
 
 (defun erlext-read-string ()
   (erlext-readn (erlext-read2)))
@@ -344,9 +344,9 @@
 
 (defun erlext-read-newref ()
   (let* ((len (erlext-read2))
-	 (node (erlext-read-obj))
-	 (creation (erlext-read1))
-	 (id (erlext-readn (* 4 len))))
+         (node (erlext-read-obj))
+         (creation (erlext-read1))
+         (id (erlext-readn (* 4 len))))
     (vector erl-tag 'erl-new-ref node creation id)))
 
 ;; We don't actually support bignums. When we get one, we skip over it
