@@ -1120,3 +1120,31 @@ get_code_path(XREF) ->
         true ->
             code:get_path()
     end.
+
+%% distel:find_header_file("eunit","include/eunit.hrl").
+find_header_file(Application,SubPath)->
+    case code:lib_dir(Application) of
+        {error,Error}->
+            {error,Error};
+        LibDir ->
+            filename:join([LibDir, SubPath])
+    end
+        .
+
+%% distel:find_header_files("eunit/include/eunit.hrl").
+find_header_file2(HeaderPathInSrc)->
+    Index =string:chr(HeaderPathInSrc,$/),
+    case  Index of
+        0->                                     %no $/ found in String
+            {error,not_a_system_header_file};
+        Index ->
+            Application = string:substr(HeaderPathInSrc,1,Index-1),
+            SubPath = string:substr(HeaderPathInSrc,Index+1),
+            find_header_file(Application,SubPath)
+    end
+        .
+
+%% distel:find_header_files(["eunit/include/eunit.hrl",kernel/include/file.hrl]).
+find_header_files(HeaderPathsInSrc,Hook)->
+    [lists:map(fun ?MODULE:find_header_file2/1 ,HeaderPathsInSrc),Hook]
+        .
