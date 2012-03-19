@@ -141,7 +141,7 @@ parameters is a list of found header files"
 
 (defun erl-find-source-under-point ()
   "When trying to find a function definition checks to see if we
-  are standing on a macro instead."
+  are standing on a macro ,a header file a record."
   (interactive)
   (let ((pattern (erl-is-pattern)))
     (cond ((equal pattern 'open-header)
