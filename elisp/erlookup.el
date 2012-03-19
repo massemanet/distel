@@ -161,6 +161,7 @@ parameters is a list of found header files"
 (defvar erl-erlookup-pattern nil "private variable")
 
 (defun erl-find-source-pattern-under-point(pattern)
+  (ring-insert-at-beginning erl-find-history-ring (copy-marker (point-marker)))
   (setq erl-erlookup-pattern pattern)
   (let (buf  buf-exists found tmp-result)
     (setq found (catch 'found
@@ -194,6 +195,9 @@ parameters is a list of found header files"
            (with-current-buffer (switch-to-buffer (find-file (car found)))
              (goto-char (nth 1 found))
              )  )
+         (unless found
+           (ring-remove erl-find-history-ring)
+           )
          )
        )
       )
