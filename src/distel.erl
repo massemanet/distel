@@ -1148,3 +1148,53 @@ find_header_file2(HeaderPathInSrc)->
 find_header_files(HeaderPathsInSrc,Hook)->
     [lists:map(fun ?MODULE:find_header_file2/1 ,HeaderPathsInSrc),Hook]
         .
+%% distel:find_matched_system_header_files("file").
+find_matched_system_header_files(Pattern)->
+    {ok,System_header_files}= find_all_system_header_files(),
+    case Pattern of
+        ""->
+            {ok,System_header_files};
+        _ ->
+            Result=lists:foldl(fun(Hrl,Acc)->
+                                       case string:str(Hrl,Pattern)of %String contains Pattern
+                                           0->
+                                               Acc;
+                                           _->
+                                               [Hrl|Acc]
+                                       end
+                               end,
+                               [],System_header_files),
+            {ok,Result}
+    end
+
+        .
+%% ["common_test/include/ct.hrl",
+%%  "common_test/include/ct_event.hrl",
+%%  "cosEvent/include/CosEventChannelAdmin_ProxyPushConsumer.hrl",...]
+find_all_system_header_files()->
+    Hrls=    lists:map(fun(Path)->
+                               ApplicationPath=filename:dirname(Path),
+                               IncludePath =filename:join(ApplicationPath,"include"),
+                               ApplicationNameWithVersionNum = filename:basename(ApplicationPath) ,
+                               [ApplicationName|_]=string:tokens(ApplicationNameWithVersionNum,"-"),
+                               case file:list_dir(IncludePath) of
+                                   {ok,IncludeFileNames}->
+                                       lists:map(fun(IncludeName) -> ApplicationName ++ "/include/" ++ IncludeName  end,IncludeFileNames);
+                                   {error,_Reason} ->
+                                       ""
+                               end
+
+                       end,[X|| X <- code:get_path() ,X =/= "."]),
+    {ok,flatten_hrls(Hrls,[])}
+        .
+
+flatten_hrls([],Acc)->
+    Acc;
+flatten_hrls([H|Tail],Acc) ->
+    case H of
+        []->
+            flatten_hrls(Tail,Acc);
+        H ->
+            flatten_hrls(Tail,H ++ Acc)
+    end
+        .
