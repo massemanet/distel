@@ -901,31 +901,42 @@ prompts for an mfa."
   "Complete the module or remote function name at point."
   (interactive (list (erl-target-node)))
   (let ((end (point))
-	(beg (ignore-errors 
-	       (save-excursion (backward-sexp 1)
-			       ;; FIXME: see erl-goto-end-of-call-name
-			       (when (eql (char-before) ?:)
-				 (backward-sexp 1))
-			       (point)))))
+        (beg (ignore-errors 
+               (save-excursion (backward-sexp 1)
+                               ;; FIXME: see erl-goto-end-of-call-name
+                               (when (eql (char-before) ?:)
+                                 (backward-sexp 1))
+                               (point)))))
     (when beg
       (let* ((str (buffer-substring-no-properties beg end))
-             (buf (current-buffer))
-             )
+             (buf (current-buffer)))
         (setq this-command (cons 'erl-complete str))
-        (if (string-match "^\\(.*\\):\\(.*\\)$" str)
-            ;; completing function in module:function
-            (let ((mod (intern (match-string 1 str)))
-                  (pref (match-string 2 str))
-                  (beg (+ beg (match-beginning 2))))
-              (erl-spawn
-                (erl-send-rpc node 'distel 'functions (list mod pref))
-                (&erl-receive-completions "function" beg end pref buf
-                                          #'erl-complete-sole-function)))
-          ;; completing just a module
-          (erl-spawn
-            (erl-send-rpc node 'distel 'modules (list str))
-            (&erl-receive-completions "module" beg end str buf
-                                      #'erl-complete-sole-module)))))))
+        (if (string-match   "-include_lib[ \t]*(" (buffer-substring (line-beginning-position)(line-end-position))) ;complete include_lib
+            (progn (save-excursion
+                     (search-backward "\"" (line-beginning-position) t )
+                     (setq beg (match-end 0))
+                     (setq str (buffer-substring beg end)))
+                   (erl-spawn
+                     (erl-send-rpc node 'distel 'find_matched_system_header_files (list str))
+                     (&erl-receive-completions "header" beg end str buf
+                                               (lambda ()"do nothing" ))))
+          (if (string-match "^\\(.*\\):\\(.*\\)$" str) ;complete module:fun
+              ;; completing function in module:function
+              (let ((mod (intern (match-string 1 str)))
+                    (pref (match-string 2 str))
+                    (beg (+ beg (match-beginning 2))))
+                (erl-spawn
+                  (erl-send-rpc node 'distel 'functions (list mod pref))
+                  (&erl-receive-completions "function" beg end pref buf
+                                            #'erl-complete-sole-function)))
+            ;; completing just a module
+            (erl-spawn
+              (erl-send-rpc node 'distel 'modules (list str))
+              (&erl-receive-completions "module" beg end str buf
+                                        #'erl-complete-sole-module)))    
+          )
+        
+        ))))
 
 (defun &erl-receive-completions (what beg end prefix buf sole)
   (let ((state (erl-async-state buf))
