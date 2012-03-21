@@ -86,6 +86,7 @@ the FSM fails."
     (setq fsm-buffer-p t)
     (setq fsm-state state0)
     (setq fsm-process socket)
+    (set-process-query-on-exit-flag  fsm-process nil)
     (setq fsm-cont cont)
     (setq fsm-fail-cont fail-cont)
     (set-process-sentinel socket #'fsm-sentinel)
