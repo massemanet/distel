@@ -144,11 +144,11 @@ parameters is a list of found header files"
   are standing on a macro ,a header file a record."
   (interactive)
   (let ((pattern (erl-is-pattern)))
-    (cond ((equal pattern 'open-header)
+    (cond ((equal pattern 'open-header) ;find header-files
            (erl-open-header-file-under-point))
-          ((stringp pattern)
+          ((stringp pattern)            ;find macro or record
            (erl-find-source-pattern-under-point pattern))
-          (t
+          (t                            ;find function
            (erl-find-function-under-point)))))
 
 (defun erl-find-source-pattern-in-file(pattern  header-file)
