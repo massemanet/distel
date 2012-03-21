@@ -888,12 +888,12 @@ prompts for an mfa."
 		 (message "Couldn't find function %S/%S" function arity)
 	       (message "Couldn't find function %S" function)))))))
 
-(defun erl-read-symbol-or-nil (prompt)
-  "Read a symbol, or NIL on empty input."
-  (let ((s (read-string prompt)))
-    (if (string= s "")
-	nil
-      (intern s))))
+;; (defun erl-read-symbol-or-nil (prompt)
+;;   "Read a symbol, or NIL on empty input."
+;;   (let ((s (read-string prompt)))
+;;     (if (string= s "")
+;; 	nil
+;;       (intern s))))
 
 ;;;; Completion
 
@@ -946,8 +946,14 @@ prompts for an mfa."
         ((['rex ['ok completions]]
           (when (equal state (erl-async-state buf))
             (with-current-buffer buf
-              (erl-complete-thing what  beg end prefix
-                                  completions sole))))
+              (let ((complete (completing-read "complete:" completions nil t prefix)))
+                (delete-region beg end)
+                (insert complete)
+                (apply sole '())
+                )
+              ;; (erl-complete-thing what  beg end prefix
+              ;;                     completions sole)
+              )))
          (['rex ['error reason]]
           (message "Error: %s" reason))
          (other
@@ -963,41 +969,43 @@ want to cancel the operation."
     (cons (buffer-modified-tick)
 	  (point))))
 
-(defun erl-complete-thing (what  beg end pattern completions sole)
-  "Complete a string in the buffer.
-WHAT is a string that says what we're completing.
-SCROLLABLE is a flag saying whether this is a repeated command that
-may scroll the completion list.
-BEG and END are the buffer positions around what we're completing.
-PATTERN is the string to complete from.
-COMPLETIONS is a list of potential completions (strings.)
-SOLE is a function which is called when a single completion is selected."
-  ;; This function, and `erl-maybe-scroll-completions', are basically
-  ;; cut and paste programming from `lisp-complete-symbol'. The fancy
-  ;; Emacs completion packages (hippie and pcomplete) looked too
-  ;; scary.
-  (let* ((completions (erl-make-completion-alist completions))
-         (completion (try-completion pattern completions)))
-    (cond ((eq completion t)
-           (message "Sole completion")
-           (apply sole '()))
-          ((null completion))
-                                        ;	       (message "Can't find completion for %s \"%s\"" what pattern)
-                                        ;	       (ding))
-          ((not (string= pattern completion))
-           (delete-region beg end)
-           (insert completion)
-           (if (eq t (try-completion completion completions))
-               (apply sole '())))
-          (t
-	       (message "Making completion list...")
-	       (let ((list (all-completions pattern completions))
-                 (init-input (buffer-substring beg end))
-                 )
-             (setq list (sort list 'string<))
-             (insert (substring  (completing-read "complete:" list nil nil init-input ) (length init-input)))
-             )
-	       (message "Making completion list...%s" "done")))))
+;; (defun erl-complete-thing (what  beg end pattern completions sole)
+;;   "Complete a string in the buffer.
+;; WHAT is a string that says what we're completing.
+;; SCROLLABLE is a flag saying whether this is a repeated command that
+;; may scroll the completion list.
+;; BEG and END are the buffer positions around what we're completing.
+;; PATTERN is the string to complete from.
+;; COMPLETIONS is a list of potential completions (strings.)
+;; SOLE is a function which is called when a single completion is selected."
+;;   ;; This function, and `erl-maybe-scroll-completions', are basically
+;;   ;; cut and paste programming from `lisp-complete-symbol'. The fancy
+;;   ;; Emacs completion packages (hippie and pcomplete) looked too
+;;   ;; scary.
+  
+;;   ;; (let* ((completions (erl-make-completion-alist completions))
+;;   ;;        (completion (try-completion pattern completions)))
+;;   ;;   (cond ((eq completion t)
+;;   ;;          (message "Sole completion")
+;;   ;;          (apply sole '()))
+;;   ;;         ((null completion))
+;;   ;;                                       ;	       (message "Can't find completion for %s \"%s\"" what pattern)
+;;   ;;                                       ;	       (ding))
+;;   ;;         ((not (string= pattern completion))
+;;   ;;          (delete-region beg end)
+;;   ;;          (insert completion)
+;;   ;;          (if (eq t (try-completion completion completions))
+;;   ;;              (apply sole '())))
+;;   ;;         (t
+;;   ;;          (message "Making completion list...")
+;;   ;;          (let ((list (all-completions pattern completions))
+;;   ;;                (init-input (buffer-substring beg end))
+;;   ;;                )
+;;   ;;            (setq list (sort list 'string<))
+;;   ;;            (insert (substring  (completing-read "complete:" list nil nil init-input ) (length init-input)))
+;;   ;;            )
+;;   ;;          (message "Making completion list...%s" "done"))))
+;;   )
 
 (defun erl-complete-sole-module ()
   (insert ":"))
@@ -1008,12 +1016,12 @@ SOLE is a function which is called when a single completion is selected."
     (erl-print-arglist call (erl-target-node))))
 
 
-(defun erl-make-completion-alist (list)
-  "Make an alist out of list.
-The same elements go in the CAR, and nil in the CDR. To support the
-apparently very stupid `try-completions' interface, that wants an
-alist but ignores CDRs."
-  (mapcar (lambda (x) (cons x nil)) list))
+;; (defun erl-make-completion-alist (list)
+;;   "Make an alist out of list.
+;; The same elements go in the CAR, and nil in the CDR. To support the
+;; apparently very stupid `try-completions' interface, that wants an
+;; alist but ignores CDRs."
+;;   (mapcar (lambda (x) (cons x nil)) list))
 
 ;;;; Refactoring
 
