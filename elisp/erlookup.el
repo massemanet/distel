@@ -161,11 +161,13 @@ parameters is a list of found header files"
 (defvar erl-erlookup-pattern nil "private variable")
 
 (defun erl-find-source-pattern-under-point(pattern)
+  "pattern can be a '#str','?str',means finding a record or macro  "
   (ring-insert-at-beginning erl-find-history-ring (copy-marker (point-marker)))
   (setq erl-erlookup-pattern pattern)
   (let (buf  buf-exists found tmp-result)
     (setq found (catch 'found
-                  (dolist (header-file (erl-extract-include-paths-from-buffer (current-buffer)))
+                  (dolist (header-file (cons (buffer-file-name (current-buffer))
+                                             (erl-extract-include-paths-from-buffer (current-buffer))))
                     (setq tmp-result (erl-find-source-pattern-in-file pattern header-file))
                     (if (equal (caar tmp-result) 'ok)
                         (throw 'found `(,header-file ,(nth 1 (car tmp-result))))
