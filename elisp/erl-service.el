@@ -964,7 +964,10 @@ prompts for an mfa."
         ((['rex ['ok completions]]
           (when (equal state (erl-async-state buf))
             (with-current-buffer buf
-              (let ((complete (completing-read "complete:" completions nil t prefix)))
+              (let ((complete  (if (and completions (listp completions) (= 1 (length completions)))
+                                   (car completions)
+                                 (completing-read "complete:" completions nil t prefix)
+                                 )))
                 (delete-region beg end)
                 (insert complete)
                 (apply sole '()))
