@@ -1122,7 +1122,7 @@ get_code_path(XREF) ->
     end.
 
 %% distel:find_header_file("eunit","include/eunit.hrl").
-find_header_file(Application,SubPath)->
+find_header_file2(Application,SubPath)->
     case code:lib_dir(Application) of
         {error,Error}->
             {error,Error};
@@ -1131,8 +1131,8 @@ find_header_file(Application,SubPath)->
     end
         .
 
-%% distel:find_header_files("eunit/include/eunit.hrl").
-find_header_file2(HeaderPathInSrc)->
+%% distel:find_header_file2("eunit/include/eunit.hrl").
+find_header_file(HeaderPathInSrc)->
     Index =string:chr(HeaderPathInSrc,$/),
     case  Index of
         0->                                     %no $/ found in String
@@ -1140,7 +1140,7 @@ find_header_file2(HeaderPathInSrc)->
         Index ->
             Application = string:substr(HeaderPathInSrc,1,Index-1),
             SubPath = string:substr(HeaderPathInSrc,Index+1),
-            find_header_file(Application,SubPath)
+            find_header_file2(Application,SubPath)
     end
         .
 
