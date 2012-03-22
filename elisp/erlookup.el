@@ -138,6 +138,44 @@ parameters is a list of found header files"
      ((looking-back "\\#") (erl-record-regex))
      ((looking-back "\\?") (erl-macro-regex))
      (t t))))
+;;; find variable
+(defun erl-find-variable-binding ()
+  (ring-insert-at-beginning erl-find-history-ring (copy-marker (point-marker)))
+  (let ((sym (thing-at-point 'symbol)))
+    (if (erlang-in-arglist-p)
+        (message "To be continued")
+      (erl-search-local-variable-binding sym))))
+
+(defun erl-search-local-variable-binding (sym)
+  (let ((origin nil)
+        (sympos nil))
+    (beginning-of-thing 'symbol)
+    (setq origin (point))
+    (erlang-beginning-of-clause)
+    (setq sympos (erl-search-variable sym))
+    (if (eq origin sympos)
+        (progn (erl-find-source-unwind)
+               (message "Already standing on first occurance of: %s" sym))
+      (goto-char sympos))))
+
+(defun erl-search-variable (sym)
+  (set (make-local-variable 'case-fold-search) nil)
+  (re-search-forward sym)
+  (backward-char)
+  (if (equal (thing-at-point 'symbol) sym)
+      (progn (beginning-of-thing 'symbol)
+             (point))
+    (erl-search-variable sym)))
+
+
+(defun erlang-at-variable-p ()
+  "Possibly the ugliest hack ever :)
+
+Rely on syntax highlighting of erlang-mode to determine whether
+we are standing on a variable"
+  (if (eq 'font-lock-variable-name-face (get-text-property (point) 'face))
+      t nil))
+;;;
 
 (defun erl-find-source-under-point ()
   "When trying to find a function definition checks to see if we
@@ -148,6 +186,10 @@ parameters is a list of found header files"
            (erl-open-header-file-under-point))
           ((stringp pattern)            ;find macro or record
            (erl-find-source-pattern-under-point pattern))
+          ((erlang-at-variable-p)
+           (erl-find-variable-binding))
+          ;; ((erlang-on-function-definition-p)
+          ;;  (erl-who-calls (erl-target-node)))
           (t                            ;find function
            (erl-find-function-under-point)))))
 
