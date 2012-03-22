@@ -795,12 +795,11 @@ default.)"
       (erl-send-rpc node 'distel 'loaded_modules '())
       (erl-receive (use-symbol-under-point-as-default-p)
           ((['rex ['ok modules]]
-            (erl-find-function (completing-read "module: "
-                                                (mapcar (lambda (S) (symbol-name S)) modules)
-                                                nil nil
-                                                (if use-symbol-under-point-as-default-p (thing-at-point 'symbol) "")
-                                                ))
-            )
+            (erl-find-function
+             (completing-read
+              "module: "
+              (mapcar (lambda (S) (symbol-name S)) modules) nil nil
+              (if use-symbol-under-point-as-default-p (thing-at-point 'symbol) ""))))
            (['rex ['error reason]]
             (ring-remove erl-find-history-ring)
             (message "Error: %s" reason))))))
