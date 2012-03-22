@@ -9,6 +9,7 @@
 ;; erlang module, which does most of the work for us.
 
 (require 'erlang)
+(require 'thingatpt)
 (eval-when-compile (require 'cl))
 (require 'erl)
 
@@ -784,31 +785,27 @@ default.)"
   (when (eq (char-after) ?:)
     (forward-sexp)))
 
-(defvar erl-loaded-modules nil
-  "Scary global variable containing a list of the modules
-loaded on the Erlang node. Should only be set from
-`erl-loaded-modules'.")
-
-(defun erl-find-module ()
-  (interactive)
-   (completing-read "module: " (erl-loaded-modules)))
-
-(defun erl-loaded-modules ()
-  (interactive)
-  (erl-loaded-modules-helper)
-  (mapcar (lambda (S) (symbol-name S)) erl-loaded-modules))
-
-(defun erl-loaded-modules-helper ()
+(defun erl-find-module (&optional use-symbol-under-point-as-default-p)
+  "find the source file of a module,with prefix `C-u'
+ use symbol under point as default module to find"
+  (interactive "P")
   (let ((module (erlang-get-module))
         (node (or erl-nodename-cache (erl-target-node))))
     (erl-spawn
       (erl-send-rpc node 'distel 'loaded_modules '())
-      (erl-receive ()
+      (erl-receive (use-symbol-under-point-as-default-p)
           ((['rex ['ok modules]]
-            (setq erl-loaded-modules modules))
+            (erl-find-function (completing-read "module: "
+                                                (mapcar (lambda (S) (symbol-name S)) modules)
+                                                nil nil
+                                                (if use-symbol-under-point-as-default-p (thing-at-point 'symbol) "")
+                                                ))
+            )
            (['rex ['error reason]]
             (ring-remove erl-find-history-ring)
-            (message "Error: %s" reason)))))))
+            (message "Error: %s" reason))))))
+  )
+
 
 (defun erl-find-function (module &optional function arity)
   "Find the source code for MODULE in a buffer, loading it if necessary.
@@ -1334,5 +1331,10 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
     `(let ((,start (point)))
        (prog1 (progn (insert ,@body))
      (add-text-properties ,start (point) ,props)))))
+
+;; Local Variables:
+;; coding: utf-8
+;; indent-tabs-mode: nil
+;; End:
 
 (provide 'erl-service)
