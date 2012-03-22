@@ -145,6 +145,18 @@ parameters is a list of found header files"
     (if (erlang-in-arglist-p)
         (message "To be continued")
       (erl-search-local-variable-binding sym))))
+(defvar erl-function-definition-regex
+  (concat "^" erlang-atom-regexp "\\s *(")
+  "Regex for finding function definitions")
+
+(defun erlang-in-arglist-p ()
+  (if (erlang-stop-when-inside-argument-list)
+      (save-excursion
+        (re-search-backward "(")
+        (forward-char)
+        (if (looking-back erl-function-definition-regex)
+            t nil))
+    nil))
 
 (defun erl-search-local-variable-binding (sym)
   (let ((origin nil)
