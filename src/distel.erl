@@ -21,7 +21,6 @@
                 , foreach/2
                 , keysearch/3
                 , map/2
-                , member/2
                 , prefix/2
                 , reverse/1
                 , sort/1
