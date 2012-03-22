@@ -802,8 +802,7 @@ default.)"
               (if use-symbol-under-point-as-default-p (thing-at-point 'symbol) ""))))
            (['rex ['error reason]]
             (ring-remove erl-find-history-ring)
-            (message "Error: %s" reason))))))
-  )
+            (message "Error: %s" reason)))))))
 
 
 (defun erl-find-function (module &optional function arity)
