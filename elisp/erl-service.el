@@ -28,7 +28,7 @@ commands. Using C-u to bypasses the cache.")
 Force node selection if no such node has been choosen yet, or when
 invoked with a prefix argument."
   (or (and (not current-prefix-arg) erl-nodename-cache)
-      (erl-choose-nodename)))
+      (call-interactively 'erl-choose-nodename)))
 
 (defun erl-set-cookie ()
   "Prompt the user for the cookie."
@@ -784,11 +784,31 @@ default.)"
   (when (eq (char-after) ?:)
     (forward-sexp)))
 
+(defvar erl-loaded-modules nil
+  "Scary global variable containing a list of the modules
+loaded on the Erlang node. Should only be set from
+`erl-loaded-modules'.")
+
 (defun erl-find-module ()
   (interactive)
-  (if distel-ido-completion
-      (erl-find-function (ido-completing-read "module: " (erl-loaded-modules)))
-    (erl-find-function (read-string "module: "))))
+   (completing-read "module: " (erl-loaded-modules)))
+
+(defun erl-loaded-modules ()
+  (interactive)
+  (erl-loaded-modules-helper)
+  (mapcar (lambda (S) (symbol-name S)) erl-loaded-modules))
+
+(defun erl-loaded-modules-helper ()
+  (let ((module (erlang-get-module))
+        (node (or erl-nodename-cache (erl-target-node))))
+    (erl-spawn
+      (erl-send-rpc node 'distel 'loaded_modules '())
+      (erl-receive ()
+          ((['rex ['ok modules]]
+            (setq erl-loaded-modules modules))
+           (['rex ['error reason]]
+            (ring-remove erl-find-history-ring)
+            (message "Error: %s" reason)))))))
 
 (defun erl-find-function (module &optional function arity)
   "Find the source code for MODULE in a buffer, loading it if necessary.
