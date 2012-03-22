@@ -26,21 +26,17 @@
   (save-excursion
     (beginning-of-line)
     (when (looking-at erl-include-lib-pattern)
-      (let* ((application (match-string 2))
-             (sub-path  (match-string 3)))
-        (let ((node (or erl-nodename-cache (erl-target-node))))
-          (erl-spawn
-            (erl-send-rpc node 'distel 'find_header_file (list (intern application) (intern sub-path)))
-            (erl-receive ()
-                ((['rex header-file]
-                  (when (file-exists-p header-file) (find-file header-file)))
-                 (['rex ['error reason]]
-                  (ring-remove erl-find-history-ring)
-                  (message "Error: %s" reason))))))
-        )
-      )
-    )
-  )
+      (let* ((include-lib-header (match-string 1))
+             (node (or erl-nodename-cache (erl-target-node))))
+        (erl-spawn
+          (erl-send-rpc node 'distel 'find_header_file (list include-lib-header))
+          (erl-receive ()
+              ((['rex header-file]
+                (when (file-exists-p header-file) (find-file header-file)))
+               (['rex ['error reason]]
+                (ring-remove erl-find-history-ring)
+                (message "Error: %s" reason)))))))))
+
 (defun find-header-file-by-include-under-point()
   "point is on '-include(header-file)' ,open the header file "
   (save-excursion
