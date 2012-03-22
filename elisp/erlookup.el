@@ -1,3 +1,7 @@
+(require 'thingatpt)
+(require 'erlang)
+(require 'distel)
+
 (defvar erl-include-or-include-lib-pattern "-include\\(_lib(\\|(\\)\""
   "Regexp for matching '-include' and '-include_lib' entries in a file.")
 
@@ -90,8 +94,7 @@
   "Collects included paths from a file and returns them in a list,
 only '-include(' ,no 'include_lib('"
   (let ((paths nil))
-    (save-excursion
-      (set-buffer buffer)
+    (with-current-buffer buffer
       (goto-char (point-min))
       (while (re-search-forward erl-include-pattern nil t)
         (push (match-string 1) paths)))
