@@ -105,8 +105,7 @@ called,the `hook' is a function accept one parameter,the
 parameters is a list of found header files"
   (let ((node (or erl-nodename-cache (erl-target-node)))
         (paths nil))
-    (save-excursion
-      (set-buffer buffer)
+    (with-current-buffer buffer
       (goto-char (point-min))
       (while (re-search-forward erl-include-lib-pattern nil t)
         (add-to-list 'paths (match-string 1) t)))
