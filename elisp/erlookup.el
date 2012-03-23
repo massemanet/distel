@@ -217,6 +217,7 @@ or   (nil header-file-already-opened-in-emacs-p)"
 
 (defvar erl-erlookup-pattern nil "private variable")
 
+;; FIXME: if a header file include another header file ,it failed
 (defun erl-find-source-pattern-under-point(pattern)
   "pattern can be a '#str','?str',means finding a record or macro  "
   (ring-insert-at-beginning erl-find-history-ring (copy-marker (point-marker)))
