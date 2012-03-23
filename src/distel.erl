@@ -1143,9 +1143,9 @@ find_header_file(HeaderPathInSrc)->
     end
         .
 
-%% distel:find_header_files(["eunit/include/eunit.hrl",kernel/include/file.hrl]).
-find_header_files(HeaderPathsInSrc,Hook)->
-    [lists:map(fun ?MODULE:find_header_file2/1 ,HeaderPathsInSrc),Hook]
+%% distel:find_header_files(["eunit/include/eunit.hrl","kernel/include/file.hrl"]).
+find_header_files(HeaderPathsInSrc)->
+    lists:map(fun ?MODULE:find_header_file/1 ,HeaderPathsInSrc)
         .
 %% distel:find_matched_system_header_files("file").
 find_matched_system_header_files(Pattern)->
