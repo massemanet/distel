@@ -265,7 +265,7 @@ or   (nil header-file-already-opened-in-emacs-p)"
   )
 
 (defun erl-find-pattern-in-buffer (buffer pattern)
-  "Goto the definition of ARG in the current buffer and return '(ok newposition) ,or nil"
+  "find pattern in buffer  return '(ok newposition) ,or nil"
   (save-excursion
     (with-current-buffer buffer
       (goto-char (point-min))
