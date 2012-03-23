@@ -105,16 +105,18 @@ called,the `hook' is a function accept one parameter,the
 parameters is a list of found header files"
   (let ((node (or erl-nodename-cache (erl-target-node)))
         (paths nil))
-    (with-current-buffer buffer
-      (goto-char (point-min))
-      (while (re-search-forward erl-include-lib-pattern nil t)
-        (add-to-list 'paths (match-string 1) t)))
+    (save-excursion
+      (with-current-buffer buffer
+        (goto-char (point-min))
+        (while (re-search-forward erl-include-lib-pattern nil t)
+          (add-to-list 'paths (match-string 1) t)))
+      )
+
     (erl-spawn
       (erl-send-rpc node 'distel 'find_header_files (list paths))
       (erl-receive (hook)
           ((['rex header-files ]
-            (apply hook (list header-files))
-            )
+            (apply hook (list header-files)))
            (['rex ['error reason]]
             (ring-remove erl-find-history-ring)
             (message "Error: %s" reason)))))
@@ -205,6 +207,8 @@ we are standing on a variable"
            (erl-find-function-under-point)))))
 
 (defun erl-find-source-pattern-in-file(pattern  header-file)
+  "return ((ok position-of-matched-pattern-in-headerfile) header-file-already-opened-in-emacs-p)
+or   (nil header-file-already-opened-in-emacs-p)"
   (let* ((buf-exists (find-buffer-visiting header-file))
          (buf buf-exists))
     (unless buf-exists
@@ -223,11 +227,11 @@ we are standing on a variable"
                                              (erl-extract-include-paths-from-buffer (current-buffer))))
                     (setq tmp-result (erl-find-source-pattern-in-file pattern header-file))
                     (if (equal (caar tmp-result) 'ok)
-                        (throw 'found `(,header-file ,(nth 1 (car tmp-result))))
-                      (unless (nth 1 tmp-result)
+                        (throw 'found `(,header-file ,(nth 1 (car tmp-result)))) ;return (header-file new-position)
+                      (unless (nth 1 tmp-result) ;if buffer opened by function find-file-noselect ,now make sure it is closed
                         (kill-buffer (find-buffer-visiting header-file)))
                       ))nil))
-    (when found
+    (when found                         ;found = (header-file newposition)
       (with-current-buffer (switch-to-buffer (find-file (car found)))
         (goto-char (nth 1 found))))
 
@@ -261,15 +265,12 @@ we are standing on a variable"
   )
 
 (defun erl-find-pattern-in-buffer (buffer pattern)
-  "Goto the definition of ARG in the current buffer and return '(ok newposition) ,or (fail oldposition)"
+  "Goto the definition of ARG in the current buffer and return '(ok newposition) ,or nil"
   (save-excursion
     (with-current-buffer buffer
-      (let ((origin (point)))
-        (goto-char (point-min))
-        (set (make-local-variable 'case-fold-search) nil)
-        (if (re-search-forward pattern nil t)
-            `(ok ,(point)) `(fail ,origin))
-        )
-      )  )
-  )
+      (goto-char (point-min))
+      (set (make-local-variable 'case-fold-search) nil)
+      (if (re-search-forward pattern nil t)
+          (list 'ok (point)) nil))))
+
 (provide 'erlookup)
