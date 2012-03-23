@@ -90,10 +90,11 @@
   "Collects included paths from a file and returns them in a list,
 only '-include(' ,no 'include_lib('"
   (let ((paths nil))
-    (with-current-buffer buffer
-      (goto-char (point-min))
-      (while (re-search-forward erl-include-pattern nil t)
-        (push (match-string 1) paths)))
+    (save-excursion
+      (with-current-buffer buffer
+        (goto-char (point-min))
+        (while (re-search-forward erl-include-pattern nil t)
+          (push (match-string 1) paths))))
     (nreverse paths)))
 
  ;; (erl-extract-include-lib-paths-from-buffer (current-buffer) (lambda (header-files) (print header-files) ))
@@ -262,12 +263,14 @@ we are standing on a variable"
 
 (defun erl-find-pattern-in-buffer (buffer pattern)
   "Goto the definition of ARG in the current buffer and return '(ok newposition) ,or (fail oldposition)"
-  (with-current-buffer buffer
-    (let ((origin (point)))
-      (goto-char (point-min))
-      (set (make-local-variable 'case-fold-search) nil)
-      (if (re-search-forward pattern nil t)
-          `(ok ,(point)) `(fail ,origin))
-      )
-    ))
+  (save-excursion
+    (with-current-buffer buffer
+      (let ((origin (point)))
+        (goto-char (point-min))
+        (set (make-local-variable 'case-fold-search) nil)
+        (if (re-search-forward pattern nil t)
+            `(ok ,(point)) `(fail ,origin))
+        )
+      )  )
+  )
 (provide 'erlookup)
