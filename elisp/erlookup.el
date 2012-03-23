@@ -110,9 +110,9 @@ parameters is a list of found header files"
       (while (re-search-forward erl-include-lib-pattern nil t)
         (add-to-list 'paths (match-string 1) t)))
     (erl-spawn
-      (erl-send-rpc node 'distel 'find_header_files (list paths hook))
-      (erl-receive ()
-          ((['rex (header-files hook)]
+      (erl-send-rpc node 'distel 'find_header_files (list paths))
+      (erl-receive (hook)
+          ((['rex header-files ]
             (apply hook (list header-files))
             )
            (['rex ['error reason]]
