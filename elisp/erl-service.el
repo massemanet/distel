@@ -925,7 +925,7 @@ prompts for an mfa."
         (erl-send-rpc node 'distel 'find_matched_system_header_files (list str))
         (&erl-receive-completions "header" beg end str buf
                                   (lambda ()"do nothing" )))))
-   ((looking-back  "[ \t]*\\b\\(.+\\):\\(.*\\)$");complete module:fun
+   ((looking-back  "[ \t]*\\_<\\(.+\\):\\(.*\\)$" (line-beginning-position)  );complete module:fun
     (let ((fun-end (point))
           (buf (current-buffer))
           (mod (intern (match-string 1 )))
@@ -935,7 +935,7 @@ prompts for an mfa."
         (erl-send-rpc node 'distel 'functions (list mod fun-prefix))
         (&erl-receive-completions "function" fun-beg fun-end fun-prefix buf
                                   #'erl-complete-sole-function))))
-   ((looking-back  "[ \t]*\\b\\(.+\\)$") ; completing just a module
+   ((looking-back  "[ \t]*\\_<\\(.+\\)$") ; completing just a module
     (let ((end (point))
           (buf (current-buffer))
           (prefix (match-string 1 ))
