@@ -993,14 +993,6 @@ want to cancel the operation."
     (insert "(")
     (erl-print-arglist call (erl-target-node))))
 
-
-;; (defun erl-make-completion-alist (list)
-;;   "Make an alist out of list.
-;; The same elements go in the CAR, and nil in the CDR. To support the
-;; apparently very stupid `try-completions' interface, that wants an
-;; alist but ignores CDRs."
-;;   (mapcar (lambda (x) (cons x nil)) list))
-
 ;;;; Refactoring
 
 (defun erl-refactor-subfunction (node name start end)
