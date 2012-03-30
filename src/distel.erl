@@ -707,11 +707,10 @@ modules(Prefix) ->
     {error,_}-> xref_modules(Prefix)
   end.
 
-%% distel:functions("code","roo").
-functions(Mod,Prefix)when is_list(Mod),is_list(Prefix)->
-    Mod1= list_to_atom(Mod),
+%% distel:functions(code,"roo").
+functions(Mod,Prefix)when is_atom(Mod),is_list(Prefix)->
     try
-        Mod1:module_info(exports) of
+        Mod:module_info(exports) of
         Exports->
             Result= lists:foldl(
                       fun(X,Acc)->
@@ -735,10 +734,11 @@ functions(Mod,Prefix)when is_list(Mod),is_list(Prefix)->
             {ok,Result}
     catch
         error:_Error->
-            case otp_doc:functions(Mod,Prefix) of
-                {ok,Ans} -> {ok,Ans};
-                {error,_}-> xref_functions(Mod,Prefix)
-            end
+            ok
+            %% case otp_doc:functions(Mod,Prefix) of
+            %%     {ok,Ans} -> {ok,Ans};
+            %%     {error,_}-> xref_functions(Mod,Prefix)
+            %% end
     end
         .
 
