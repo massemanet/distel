@@ -85,8 +85,8 @@ assert(Props) ->
 
 %% gen_server callbacks
 init(Props) -> 
-  Dir = "/usr/share/doc/erlang-15.2/html",
-  %% Dir =  proplists:get_value(root_dir, Props, code:root_dir()),
+  %% Dir = "/usr/share/doc/erlang-15.2/html",
+  Dir =  proplists:get_value(root_dir, Props, code:root_dir()),
   
   Prot = proplists:get_value(prot, Props, file),
   ets:new(?MODULE,[named_table,ordered_set]),
