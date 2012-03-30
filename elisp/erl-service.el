@@ -963,12 +963,11 @@ prompts for an mfa."
                                  (if completions
                                      (completing-read "complete:" completions nil t prefix)
                                    nil))))
-                (delete-region beg end)
-                (insert complete)
-                (apply sole '()))
-              ;; (erl-complete-thing what  beg end prefix
-              ;;                     completions sole)
-              )))
+                (when complete
+                  (delete-region beg end)
+                  (insert complete)
+                  (apply sole '())
+                  )))))
          (['rex ['error reason]]
           (message "Error: %s" reason))
          (other
