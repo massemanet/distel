@@ -706,11 +706,41 @@ modules(Prefix) ->
     {ok,Ans} -> {ok,Ans};
     {error,_}-> xref_modules(Prefix)
   end.
-functions(Mod, Prefix) ->
-  case otp_doc:functions(Mod,Prefix) of
-    {ok,Ans} -> {ok,Ans};
-    {error,_}-> xref_functions(Mod,Prefix)
-  end.
+
+%% distel:functions("code","roo").
+functions(Mod,Prefix)when is_list(Mod),is_list(Prefix)->
+    Mod1= list_to_atom(Mod),
+    try
+        Mod1:module_info(exports) of
+        Exports->
+            Result= lists:foldl(
+                      fun(X,Acc)->
+                              {FunNameAtom,_ArgCount}=X ,
+                              FunName =atom_to_list(FunNameAtom),
+                              case Prefix of
+                                  ""->
+                                      [FunName|Acc];
+                                  _ ->
+                                      case string:str(FunName,Prefix) of
+                                          1->      %FunNameAtom startsWith Prefix
+                                              [FunName|Acc];
+                                          _ ->
+                                              Acc
+                                      end
+
+                              end
+
+                      end,
+                      [],Exports),
+            {ok,Result}
+    catch
+        error:_Error->
+            case otp_doc:functions(Mod,Prefix) of
+                {ok,Ans} -> {ok,Ans};
+                {error,_}-> xref_functions(Mod,Prefix)
+            end
+    end
+        .
 
 xref_completions(F,A) ->
     fun(server) -> distel_completions;
