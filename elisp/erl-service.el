@@ -956,7 +956,6 @@ prompts for an mfa."
         continue)
     (erl-receive (what state beg end prefix buf  continue sole)
         ((['rex ['ok completions]]
-          (print completions)
           (when (equal state (erl-async-state buf))
             (with-current-buffer buf
               (let ((complete  (if (and completions (listp completions) (= 1 (length completions)))
