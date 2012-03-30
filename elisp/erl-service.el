@@ -961,7 +961,7 @@ prompts for an mfa."
               (let ((complete  (if (and completions (listp completions) (= 1 (length completions)))
                                    (car completions)
                                  (if completions
-                                     (completing-read "complete:" completions nil t prefix)
+                                     (completing-read "complete:" completions nil nil prefix)
                                    nil))))
                 (when complete
                   (delete-region beg end)
