@@ -549,7 +549,7 @@ int_i(Mod, Exps, Abst, Srcfile, Beamfile) ->
     true = erts_debug:breakpoint({Mod,'_','_'}, true) > 0.
 
 is_interpreted(Mod) ->
-    Mod:module_info(compile) == [].
+    [Mod] =:= [I || I <- int:interpreted(), I =:= Mod].
 
 int_interpreted() ->
     [Mod || {Mod,Beamfile} <- code:all_loaded(),
