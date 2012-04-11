@@ -217,8 +217,18 @@ lines(Line,_,Dir) ->
   case string:tokens(Line, "<> \"") of
     ["TD", "A", "HREF=", "../"++Href, M|_] -> 
       case filename:basename(Href,".html") of
-	"index" -> ok;
-	M -> e_set({file,M}, filename:join([Dir,Href]))
+        "index" -> ok;
+        "erlang"->
+          %%treat erlang module special,because there are two links
+          %% HREF="../erts-5.9/doc/html/erlang.html"  this is the real one 
+          %% HREF="../lib/kernel-2.15/doc/html/erlang.html" there is nothing here
+          case ets:lookup(otp_doc,{file,"erlang"}) of
+            []->
+              e_set({file,M}, filename:join([Dir,Href]));
+            [{{file,"erlang"}, ErlangPath}]->
+              e_set({file,M}, ErlangPath)
+          end;
+        M -> e_set({file,M}, filename:join([Dir,Href]))
       end;
     _ -> ok
   end.
