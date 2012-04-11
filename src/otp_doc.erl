@@ -150,7 +150,9 @@ link_with_anchor(MFAs,State) ->
   {link,io_str("~w://~s#~s~s~s",
 	 [State#state.prot,e_get({file,M}),linkmf(M,F),State#state.delim,A])}.
 
-linkmf("erlang",F) -> "erlang:"++F;
+%% I test it on R15B
+%% I comment this line ,don't treat erlang module specially
+%% linkmf("erlang",F) -> "erlang:"++F; erlang:abs(1)
 linkmf(_,F) -> F.
 
 exact_match(M,F,MFAs,State) -> 
