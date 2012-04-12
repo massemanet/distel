@@ -549,16 +549,11 @@ int_i(Mod, Exps, Abst, Srcfile, Beamfile) ->
     true = erts_debug:breakpoint({Mod,'_','_'}, true) > 0.
 
 is_interpreted(Mod) ->
-    [Mod] =:= [I || I <- int:interpreted(), I =:= Mod].
+    lists:member(Mod,int:interpreted()).
 
 int_interpreted() ->
-    [Mod || {Mod,Beamfile} <- code:all_loaded(),
-            is_list(Beamfile),
-            is_interpreted(Mod)].
-%% Attach the client process Emacs to the interpreted process Pid.
-%%
-%% spawn_link's a new process to proxy messages between Emacs and
-%% Pid's meta-process.
+    int:interpreted().
+
 debug_attach(Emacs, Pid) ->
     spawn_link(?MODULE, attach_init, [Emacs, Pid]).
 
