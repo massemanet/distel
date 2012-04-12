@@ -868,6 +868,41 @@ function under point"
   (interactive)
   (erl-do-find-doc 'sig nil))
 
+
+(defun erl-do-find-doc-of-module ()
+  "completing read modules  ,and find document of a module with w3m"
+  (interactive)
+  (let ((module (erlang-get-module))
+        (node (or erl-nodename-cache (erl-target-node))))
+    (erl-spawn
+      (erl-send-rpc node 'otp_doc 'modules '(""))
+      (erl-receive (node)
+          ((['rex ['ok modules]]
+            (erl-spawn
+              (erl-send-rpc node 'otp_doc 'distel
+                            (list 'link
+                                  (completing-read
+                                   "find doc of module : " modules nil nil
+                                   "") "" -1))
+              (erl-receive ()
+                  ((['rex nil]
+                    (message "No doc found."))
+                   (['rex 'no_html]
+                    (message "no html docs installed"))
+                   (['rex ['mfas string]]
+                    (message "candidates: %s" string))
+                   (['rex ['sig string]]
+                    (message "%s" string))
+                   (['rex ['link link]]
+                    (w3m-browse-url link))
+                   (['rex [reaso reason]]
+                    (message "Error: %s %s" reaso reason)))))
+            )
+           (['rex ['error reason]]
+            (ring-remove erl-find-history-ring)
+            (message "Error: %s" reason))))))
+  )
+
 (defun erl-do-find-doc (what how &optional module function ari)
   "Find the documentation for an OTP mfa.
 if WHAT is 'link, tries to get a link to the html docs, and open
@@ -885,6 +920,7 @@ prompts for an mfa."
       (arity (or ari -1))
       (module (if (equal mod "-") fun mod))
       (function (if (equal mod "-") nil fun)))
+      (print function)
       (erl-spawn
     (erl-send-rpc node 'otp_doc 'distel (list what module function arity))
     (erl-receive ()
