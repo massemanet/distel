@@ -785,24 +785,42 @@ default.)"
   (when (eq (char-after) ?:)
     (forward-sexp)))
 
-(defun erl-find-module (&optional use-symbol-under-point-as-default-p)
-  "find the source file of a module,with prefix `C-u'
- use symbol under point as default module to find"
+(defun erl-find-module (&optional arg)
+  "find the source file of a module,with prefix `C-u' use symbol
+ under point as default module to find,if not lists all modules
+ for you to choose"
   (interactive "P")
+  (if arg
+      (erl-find-module-under-point)
+    (erl-find-module-1)
+    )
+  )
+
+(defun erl-find-module-1 ()
+  "find the source file of a module"
   (let ((module (erlang-get-module))
         (node (or erl-nodename-cache (erl-target-node))))
     (erl-spawn
       (erl-send-rpc node 'distel 'loaded_modules '())
-      (erl-receive (use-symbol-under-point-as-default-p)
+      (erl-receive ()
           ((['rex ['ok modules]]
             (erl-find-function
              (completing-read
               "module: "
               (mapcar (lambda (S) (symbol-name S)) modules) nil nil
-              (if use-symbol-under-point-as-default-p (thing-at-point 'symbol) ""))))
+              "")))
            (['rex ['error reason]]
             (ring-remove erl-find-history-ring)
             (message "Error: %s" reason)))))))
+
+(defun erl-find-module-under-point ()
+  "find the source file of a module,
+ use symbol under point as default module to find"
+  (cond
+   ( (looking-back   "\\([a-zA-Z0-9_]+\\):\\([a-zA-Z0-9_]*\\)(?[ \t]*[a-zA-Z0-9_]*" (line-beginning-position) t)
+     (erl-find-function (match-string 1)))
+   (t
+    (erl-find-function (thing-at-point 'symbol)))))
 
 
 (defun erl-find-function (module &optional function arity)
