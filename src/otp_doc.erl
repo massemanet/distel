@@ -271,6 +271,8 @@ funcsf(Line,A,M) ->
       a_line(M,fa(FA),Sig),[];			% R12-
     ["a name=",FA,"span class=","bold_code",Sig,"/span","/a"|_] ->
       a_line(M,fa(FA),Sig),[];			% R12-
+    ["a name=",FA,"/a","span class=" ,"bold_code",Sig,"span class=","bold_code"|_] -> % R15 filename:join 
+      a_line(M,fa(FA),Sig),[];			% R12-
     ["A NAME=",FA,"STRONG","CODE",Sig,"/CODE","/STRONG","/A"|_] ->
       a_line(M,fa(FA),Sig),[];			% -R11
     ["A NAME=",_,"STRONG","CODE"|_] ->
