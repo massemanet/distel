@@ -856,7 +856,8 @@ function under point"
 (defun erl-find-doc ()
   (interactive)
   (if (require 'w3m nil t)
-      (erl-do-find-doc 'link nil)
+      erl-do-find-doc-of-module
+      ;; (erl-do-find-doc 'link nil)
     (erl-find-sig)))
 
 (defun erl-find-sig-under-point ()
