@@ -266,27 +266,36 @@ cache_funcs(M) ->
   fold_file(curry(fun funcsf/3,M), [], e_get({file,M})).
 
 funcsf(Line,A,M) ->
-  case trim_P(string:tokens(A++Line,"<>\"")) of
+  funcsf_handle(trim_P(string:tokens(A++Line,"<>\"")),Line,A,M)
+    .
+
+funcsf_handle(Result,Line,A,M)->
+  case Result of
+    %% rp(string:tokens("a name='fwrite-1'></a><span class='bold_code'>fwrite(Format) -&gt; ok</span><br><a name='fwrite-2'></a><span class='bold_code'>fwrite(Format, Data) -&gt; ok</span><br><a name='fwrite-3'></a><span class='bold_code'>fwrite(IoDevice, Format, Data) -&gt; ok</span><br><a name='format-1'></a><span class='bold_code'>format(Format) -&gt; ok</span><br><a name='format-2'></a><span class='bold_code'>format(Format, Data) -&gt; ok</span><br><a name='format-3'></a><span class='bold_code'>format(IoDevice, Format, Data) -&gt; ok</span><br><div class='REFBODY'>","<>'")).
+    ["a name=",FA,"/a","span class=","bold_code",Sig,"/span", "br"|Tail] ->  % R15 io:format(a,2)
+      funcsf_handle(Tail,Line,A,M),
+      a_line(M,fa(FA),Sig),[];% 
     ["a name=",FA,"/a","span class=","bold_code",Sig,"/span"|_] ->  % R14
-      a_line(M,fa(FA),Sig),[];			% R12-
+      a_line(M,fa(FA),Sig),[];% R12-
     ["a name=",FA,"span class=","bold_code",Sig,"/span","/a"|_] ->
-      a_line(M,fa(FA),Sig),[];			% R12-
+      a_line(M,fa(FA),Sig),[];% R12-
     ["a name=",FA,"/a","span class=" ,"bold_code",Sig,"span class=","bold_code"|_] -> % R15 filename:join 
-      a_line(M,fa(FA),Sig),[];			% R12-
+      a_line(M,fa(FA),Sig),[];% R12-
     ["A NAME=",FA,"STRONG","CODE",Sig,"/CODE","/STRONG","/A"|_] ->
-      a_line(M,fa(FA),Sig),[];			% -R11
+      a_line(M,fa(FA),Sig),[];% -R11
     ["A NAME=",_,"STRONG","CODE"|_] ->
-      A++Line;					% -R11, broken lines
-    _ -> 
+      A++Line;% -R11, broken lines
+    _ ->
       case A of
-	[] -> [];
-	_ -> A++Line
+        [] -> [];
+        _ -> A++Line
       end
-  end.
+  end
+    .
 
 a_line(_,["Module:"++_,_],_) -> ok;  %ignore the gen_server/gen_fsm callbacks
 a_line("erlang",["erlang:"++F,A],"erlang:"++Sig) -> a_line("erlang",[F,A],Sig);
-a_line(M,[F,A],Sig) ->	    %io:fwrite("- ~p~n",[{M,F,A}]).
+a_line(M,[F,A],Sig) -> % io:fwrite("- ~p~n",[{M,F,A}]).
   try e_bag({fs,M},F),
       e_bag({{as,M},F}, A),
       e_set({{sig,M,F},A}, dehtml(Sig))
