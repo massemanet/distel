@@ -225,13 +225,10 @@ or   (nil header-file-already-opened-in-emacs-p)"
       (setq buf(find-file-noselect header-file t)))
     (list (erl-find-pattern-in-buffer buf pattern) buf-exists)))
 
-(defvar erl-erlookup-pattern nil "private variable")
-
 ;; FIXME: if a header file include another header file ,it failed
 (defun erl-find-source-pattern-under-point(pattern)
   "pattern can be a '#str','?str',means finding a record or macro  "
   (ring-insert-at-beginning erl-find-history-ring (copy-marker (point-marker)))
-  (setq erl-erlookup-pattern pattern)
   (let (buf  buf-exists found tmp-result)
     (setq found (catch 'found
                   (dolist (header-file (cons (buffer-file-name (current-buffer))
@@ -253,27 +250,16 @@ or   (nil header-file-already-opened-in-emacs-p)"
          (setq found
                (catch 'found
                  (dolist (header-file header-files )
-                   (setq tmp-result (erl-find-source-pattern-in-file  erl-erlookup-pattern header-file))
+                   (setq tmp-result (erl-find-source-pattern-in-file  pattern header-file))
                    (if (equal (caar tmp-result) 'ok)
                        (throw 'found `(,header-file ,(nth 1 (car tmp-result))))
                      (unless (nth 1 tmp-result)
-                       (kill-buffer (find-buffer-visiting header-file)))
-                     )
-                   )  )
-               )
+                       (kill-buffer (find-buffer-visiting header-file)))))))
          (when found
            (with-current-buffer (switch-to-buffer (find-file (car found)))
-             (goto-char (nth 1 found))
-             )  )
+             (goto-char (nth 1 found))))
          (unless found
-           (ring-remove erl-find-history-ring)
-           )
-         )
-       )
-      )
-
-    )
-  )
+           (ring-remove erl-find-history-ring)))))))
 
 (defun erl-find-pattern-in-buffer (buffer pattern)
   "find pattern in buffer  return '(ok newposition) ,or nil"
