@@ -2,13 +2,13 @@
 (require 'erlang)
 (require 'distel)
 
-(defvar erl-include-or-include-lib-pattern "-include\\(_lib(\\|(\\)\""
+(defvar erl-include-or-include-lib-pattern "-include\\(_lib\\)?[ \t]*([ \t]*\""
   "Regexp for matching '-include' and '-include_lib' entries in a file.")
 
-(defvar erl-include-lib-pattern "-include_lib(\"\\(\\(.*?\\)/\\(.*?\\)\\)\"[ \t]*)"
+(defvar erl-include-lib-pattern "[ \t]*-include_lib[ \t]*([ \t]*\"\\(\\(.*?\\)/\\(.*?\\)\\)\"[ \t]*)"
   "Regexp for matching '-include_lib' entries in a file.")
 
-(defvar erl-include-pattern "-include(\"\\(.*?\\)\"[ \t]*)"
+(defvar erl-include-pattern "[ \t]*-include[ \t]*([ \t]*\"\\(.*?\\)\"[ \t]*)"
   "Regexp for matching '-include' entries in a file.")
 
 
