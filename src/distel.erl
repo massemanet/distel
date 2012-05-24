@@ -697,6 +697,18 @@ stack_pos(#attach{stack={Pos,_Max}}) -> Pos.
 %% Completion support
 %% ----------------------------------------------------------------------
 
+all_modules()->
+    ModuleNames=lists:map(
+                  fun(Path)->
+                          case file:list_dir(Path) of
+                              {ok,BeamNames}->
+                                  [filename:basename(Beam,".beam")||
+                                      Beam <- BeamNames,".beam" == filename:extension(Beam)];
+                              {error,_Reason} ->
+                                  []
+                          end
+                  end,[X|| X <- code:get_path()]),
+    {ok,flatten_hrls(ModuleNames,[])}.
 loaded_modules() ->
   Mods = erlang:loaded(),
   {ok, Mods}.
