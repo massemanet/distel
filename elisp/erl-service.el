@@ -801,14 +801,11 @@ default.)"
   (let ((module (erlang-get-module))
         (node (or erl-nodename-cache (erl-target-node))))
     (erl-spawn
-      (erl-send-rpc node 'distel 'loaded_modules '())
+      (erl-send-rpc node 'distel 'all_modules '())
       (erl-receive ()
           ((['rex ['ok modules]]
             (erl-find-function
-             (completing-read
-              "module: "
-              (mapcar (lambda (S) (symbol-name S)) modules) nil nil
-              "")))
+             (completing-read "module: " modules nil nil "")))
            (['rex ['error reason]]
             (ring-remove erl-find-history-ring)
             (message "Error: %s" reason)))))))
