@@ -805,7 +805,7 @@ default.)"
       (erl-receive ()
           ((['rex ['ok modules]]
             (erl-find-function
-             (completing-read "module: " modules nil nil "")))
+             (completing-read "find src of module: " modules nil nil "")))
            (['rex ['error reason]]
             (ring-remove erl-find-history-ring)
             (message "Error: %s" reason)))))))
