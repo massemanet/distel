@@ -115,7 +115,7 @@ evaluate(String, {Defs, Line, Bindings}) ->
 	    case parse_form(String) of
 		{ok, Parse} -> 
 		    {ok, Name, Arity} = get_function_name(Parse),
-		    ets:insert(Defs, {Name, Parse}),
+		    ets:insert(Defs, {{Name,Arity}, Parse}),
 		    FunTrees = lists:flatten(
 				 lists:reverse(ets:match(Defs,{'_', '$1'}))),
 		    %% Line isn't really used yet
