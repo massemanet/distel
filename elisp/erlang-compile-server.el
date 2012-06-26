@@ -1,20 +1,17 @@
 ;;;; variables for customization
 ; erlang-compile-server-check-on-save default t
 ; erlang-compile-server-compile-if-ok default t
-; keybinding for save C-x C-a ?
-; keybinding for toggle mode ?
 
 (require 'distel)
 
-;;;;;;;
-;;;;;;;; Erlang compile server
-;;;;;;;
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Erlang Compile Server ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Check that module is loaded else load it
-(add-hook 'erl-nodeup-hook 'esc-check-backend)
+(add-hook 'erl-nodeup-hook 'ecs-check-backend)
 
-(defun esc-check-backend (node _fsm)
+(defun ecs-check-backend (node _fsm)
   "Check if we have the 'erlang_compile_server' module available on `node'.
 If not then try to send the module over as a binary and load it in."
   (unless distel-inhibit-backend-check
@@ -31,17 +28,38 @@ If not then try to send the module over as a binary and load it in."
 
 ;; Initialize
 (defun erlang-compile-server-setup ()
-  (or (boundp 'erlang-compile-server-check-on-save)
-      (setq erlang-compile-server-check-on-save t))
-  (or (boundp 'erlang-compile-server-compile-if-ok)
-      (setq erlang-compile-server-compile-if-ok t))
+   ;; todo: add hooks, what if variable changes while running?
   (if erlang-compile-server-check-on-save
       (add-hook 'after-save-hook 'erlang-compile-server-check-file-ending))
   (add-hook 'erlang-mode-hook 'erlang-compile-server-mode-hook)
   (add-to-list 'minor-mode-alist
 	       '(erlang-compile-server-mode
-		 " ESC"))
+		 " ECS"))
+;  (if (not (null erlang-compile-server-check-on-interval))
+;      (erlang-compile-server-start-interval))
 )
+
+(defun erlang-compile-server-start-interval ()
+;  (while t
+;  (if (buffer-modified-p) (erlang-compile-server-check-for-errors-and-warnings))
+;  (sleep-for 'erlang-compile-server-interval)
+;  (message "Checking..."))
+)
+
+(defvar erlang-compile-server-check-on-interval t
+"Checks errors and warnings on given intervals.")
+
+(defvar erlang-compile-server-check-on-save t
+"Checks errors and warnings on save.")
+
+(defvar erlang-compile-server-compile-if-ok t
+"Compiles the module if it doesn't have any errors or warnings.")
+
+(defvar erlang-compile-server-verbose t
+"Writes output to *Messages* buffer.")
+
+(defvar erlang-compile-server-interval 10
+"Seconds between checks if `erlang-compile-server-check-on-interval' is set.")
 
 (defun erlang-compile-server-mode-hook ()
   (erlang-compile-server-mode t))
@@ -50,7 +68,11 @@ If not then try to send the module over as a binary and load it in."
   "Erlang compile server"
   nil
   nil
-  nil)
+  '(("\C-x\C-a" 'undefined)))
+
+;'(("\C-x\C-a" erlang-compile-server-check-for-errors-and-warnings)))
+
+(define-key erlang-compile-server-mode-map "\C-x\C-a" 'erlang-compile-server-check-for-errors-and-warnings)
 
 ;; On save, check for errors etc
 (defun erlang-compile-server-check-file-ending()
@@ -58,20 +80,40 @@ If not then try to send the module over as a binary and load it in."
    (if (string= (substring path (- 0 (length ".erl"))) ".erl") (erlang-compile-server-check-for-errors-and-warnings)))
 )
 
+(defun erlang-compile-server-message (var msg &rest rest)
+  "Prints a message if a given variable or expression is non-nil."
+  (if var (message msg rest))
+)
+
 ;;; Main function
 (defun erlang-compile-server-check-for-errors-and-warnings()
   (interactive)
+  (inferior-erlang-prepare-for-input t)
   (let ((node (erl-target-node))
 	(path (buffer-file-name))
-	(buffer (current-buffer)))
-;	(compile-opts (get-compile-options)))
+	(buffer (current-buffer))
+	(inc-dirs (erlang-compile-server-get-includes))
+	(inc-libs (erlang-compile-server-get-includes t))
+	incs
+	(incstring '())
+	tmpopts)
+    (setq incs (append inc-dirs inc-libs))
+    (dolist (inc incs) (add-to-list 'incstring (format "{i, %s}, " (file-name-directory inc))))
     (erl-spawn
-      (erl-send-rpc node 'erlang_compile_server 'try_to_compile (list path)) ; n m f a
-      (erl-receive (buffer)
+      (if (buffer-modified-p)
+	  (erl-send-rpc node 'erlang_compile_server 'get_warnings_from_buffer (list (buffer-string) incstring))
+	  (erl-send-rpc node 'erlang_compile_server 'get_warnings (list path incstring))) ; n m f a
+      (erl-receive (buffer incstring)
 	  ((['rex ['ok]] ; no errors
 	    (erlang-compile-server-remove-overlays buffer)
-	    (message "Ok. %s" (if erlang-compile-server-compile-if-ok " Compiling." ""))
-	    (if erlang-compile-server-compile-if-ok (erlang-compile)))
+	    (erlang-compile-server-message erlang-compile-server-verbose "Ok.")
+	    (when (and (not (buffer-modified-p))
+		       erlang-compile-server-compile-if-ok)
+	      (progn (erlang-compile-server-message erlang-compile-server-verbose "Compiling.")
+		     (setq tempopts erlang-compile-extra-opts)
+		     (setq erlang-compile-extra-opts incstring)
+		     (erlang-compile)
+		     (setq erlang-compile-extra-opts tempopts))))
 	   (['rex ['w warnings]] ; only warnings
 	    (erlang-compile-server-remove-overlays buffer)
 	    (erlang-compile-server-print-errors-and-warnings () warnings))
@@ -83,20 +125,17 @@ If not then try to send the module over as a binary and load it in."
 	   (['rex whatever] ; ...
 	    (message "This shouldn't have happend: %s" whatever)))))))
 
-(defun erlang-compile-server-get-compile-options () ;; deprecated
-  (let ((code-dir-opts ; outputfolder
-	 (apply #'append
-		(mapcar (lambda (dir) (tuple 'pa dir))
-			(list (concat (erlang-compile-server-get-app-dir) "ebin")))))
-	(inc-dir-opts ; include dirs
-	 (apply #'append
-		(mapcar (lambda (dir) (tuple 'i dir))
-			(list (concat (erlang-compile-server-get-app-dir) "include"))))))
-    (list code-dir-opts inc-dir-opts)))
-
-(defun erlang-compile-server-erlang-get-app-dir () ;; deprecated
-  (let ((src-path (file-name-directory (buffer-file-name))))
-    (file-name-directory (directory-file-name src-path))))
+(defun erlang-compile-server-get-includes (&optional is-lib)
+  "Find the includefiles for an erlang module."
+  (let ((inc-regexp (concat "-include" (when is-lib "_lib") "(\"\\([^\)]*\\)"))
+	(include-list '())
+	(pt (point-min))
+	mesf)
+    (while (string-match inc-regexp (buffer-string) pt)
+      (add-to-list 'include-list (substring (match-string 1) 1))
+      (setq pt (match-end 0))
+      )
+    include-list))
 
 (defun erlang-compile-server-print-errors-and-warnings(errors warnings)
   (save-excursion
@@ -107,31 +146,32 @@ If not then try to send the module over as a binary and load it in."
       (while err ; errors
 	(setq x (pop err)
 	      tooltip-text (format "%s error: %s @line %s " (tuple-elt x 2) (tuple-elt x 3) (tuple-elt x 1)))
-	(erlang-compile-server-make-overlay (tuple-elt x 1) 'error-line tooltip-text)
-	(message "%s" (propertize tooltip-text 'face 'erlang-compile-server-error-line)))
+	(erlang-compile-server-make-overlay (tuple-elt x 1) 'erlang-compile-server-error-line tooltip-text)
+	(erlang-compile-server-message
+	 erlang-compile-server-verbose tooltip-text))
       (while war ; warnings
 	(setq x (pop war)
 	      tooltip-text (format "%s warning: %s @line %s" (tuple-elt x 2) (tuple-elt x 3) (tuple-elt x 1)))
-	(erlang-compile-server-make-overlay (tuple-elt x 1) 'warning-line tooltip-text)
-	(message "%s" (propertize tooltip-text 'face 'erlang-compile-server-warning-line))))
-))
+	(erlang-compile-server-make-overlay (tuple-elt x 1) 'erlang-compile-server-warning-line tooltip-text)
+	(erlang-compile-server-message
+	 erlang-compile-server-verbose tooltip-text)))))
 
 ;;; Overlays
 
 ;; Faces for highlighting
 (defface erlang-compile-server-error-line
-  '((((class color) (background dark)) (:background "Firebrick4"))
-    (((class color) (background light)) (:background "LightPink"))
+  '((((class color) (background dark)) (:background "Firebrick"))
+    (((class color) (background light)) (:background "LightPink1"))
     (t (:bold t)))
   "Face used for marking error lines."
-  :group 'flymake)
+  :group 'ecs)
 
 (defface erlang-compile-server-warning-line
-  '((((class color) (background dark)) (:background "DarkBlue"))
-    (((class color) (background light)) (:background "LightBlue2"))
+  '((((class color) (background dark)) (:background "dark blue"))
+    (((class color) (background light)) (:background "light blue"))
     (t (:bold t)))
   "Face used for marking warning lines."
-  :group 'flymake)
+  :group 'ecs)
 
 (defun erlang-compile-server-remove-overlays (buffer)
     (set-buffer buffer)
