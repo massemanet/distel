@@ -15,13 +15,22 @@ get_warnings(Path, Outdir, Includes) ->
     case compile:file(Module, [Outdir, Includes, binary, verbose, return]) of
 	{ok, _Mod, _Binary, []} ->
 	    {ok};
+
 	{ok, _Modulename, _Binary, Warnings} ->
-	    {w, Warnings};
+	    {w, create_list(Warnings, warning)};
+
 	{error, Errors, Warnings} ->
-	    {e, Errors, Warnings};
+	    {e, lists:keymerge(1, create_list(Errors, error), create_list(Warnings, warning))};
+
 	E ->
-	    {ok, distel:fmt("Something happend: ~p.", [E])} 
+	    {ok, distel:fmt("Something happend: ~p.", [E])}
     end.
+
+create_list(ErrorList, Info) ->
+    [{Line, Info, Descr} ||
+	{Line, _Mod, Descr} <- lists:keysort(1,
+					     lists:flatten([[Es || Es <- Errinfo] ||
+							       {_File, Errinfo} <- ErrorList]))].
 
 get_warnings_from_buffer(Textstring) ->
     get_warnings_from_buffer(Textstring, []).
