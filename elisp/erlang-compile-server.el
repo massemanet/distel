@@ -24,6 +24,9 @@
 (defvar erlang-compile-server-enable-eunit nil
 "If non-nil also checks the eunit tests in the module-file.")
 
+(defvar erlang-compile-server-enable-xref nil
+"If non-nil also checks for exported functions that isn't used externally through xref.")
+
 ;; Check that module is loaded else load it
 (add-hook 'erl-nodeup-hook 'ecs-check-backend)
 
@@ -79,6 +82,7 @@ And then set one or more of the following variables (defaults):
  erlang-compile-server-verbose (nil)
  erlang-compile-server-interval (120) (not supported yet)
  erlang-compile-server-enable-eunit (nil)
+ erlang-compile-server-enable-xref (nil)
 
 \\[erlang-compile-server-check-compile] - check for compile errors/warnings
 \\[erlang-compile-server-check-eunit] - check that eunit tests run
@@ -112,6 +116,7 @@ And then set one or more of the following variables (defaults):
 
 ;;; Main function
 (defun erlang-compile-server-check-compile ()
+  "Checks for compilation errors and warnings, eunit tests and/or xref checks and creates overlays accordingly."
   (interactive)
   (let ((node (erl-target-node))
 	(path (buffer-file-name))
@@ -122,21 +127,23 @@ And then set one or more of the following variables (defaults):
 	(incstring '())
 	tmpopts)
     (setq incs (append inc-dirs inc-libs))
-    (dolist (inc incs) (add-to-list 'incstring (format "{i, %s}, " (file-name-directory inc))))
+    (setq ecs-error-list '())
+    (when erlang-compile-server-enable-xref (erlang-compile-server-check-xref))
+    (dolist (inc incs) (add-to-list 'incstring (file-name-directory inc)))
     (erl-spawn
       (if (buffer-modified-p)
 	  (erl-send-rpc node 'erlang_compile_server 'get_warnings_from_string (list (buffer-string) incstring))
 	(erl-send-rpc node 'erlang_compile_server 'get_warnings (list path incstring)))
-
+      
       (erl-receive (buffer incstring)
 	  ((['rex ['ok]] ; no errors
-	    (setq ecs-error-list '())
 	    (erlang-compile-server-remove-overlays buffer 'erlang-compile-server-overlay)
 	    (erlang-compile-server-message erlang-compile-server-verbose "Ok, no compile errors/warnings.")
 
 	    ;; compiling stuff
 	    (when (and (not (buffer-modified-p))
-		       erlang-compile-server-compile-if-ok)
+		       erlang-compile-server-compile-if-ok
+		       (not ecs-error-list))
 	      (progn (erlang-compile-server-message erlang-compile-server-verbose "Compiling.")
 		     (setq tempopts erlang-compile-extra-opts)
 		     (setq erlang-compile-extra-opts incstring)
@@ -144,26 +151,61 @@ And then set one or more of the following variables (defaults):
 		     (setq erlang-compile-extra-opts tempopts)))
 
 	   ;; eunit
-	    (when erlang-compile-server-enable-eunit (erlang-compile-server-check-eunit))
-	    )
+	    (when erlang-compile-server-enable-eunit (erlang-compile-server-check-eunit)))
+
 	   (['rex ['w warnings]] ; only warnings
 	    (set-buffer buffer)
-	    (setq ecs-error-list warnings)
-	    (erlang-compile-server-remove-overlays buffer 'erlang-compile-server-overlay)
-	    (erlang-compile-server-print-errors-and-warnings warnings))
+	    (nconc ecs-error-list warnings))
 
 	   (['rex ['e errors]] ; errors and possibly warnings
 	    (set-buffer buffer)
-	    (setq ecs-error-list errors)
-	    (erlang-compile-server-remove-overlays buffer 'erlang-compile-server-overlay)
-	    (erlang-compile-server-print-errors-and-warnings errors))
+	    (nconc ecs-error-list errors))
 
 	   (['rex ['badrpc rpc]] ; something wrong with rpc, is node active?
 	    (message "Something wrong with RPC, %s" rpc))
 
 	   (['rex whatever] ; ...
-	    (message "This shouldn't have happend: %s" whatever)))))))
+	    (message "This shouldn't have happend: %s" whatever)))
 
+	(when ecs-error-list
+	  (erlang-compile-server-remove-overlays buffer 'erlang-compile-server-overlay)
+	  (erlang-compile-server-print-errors-and-warnings ecs-error-list))))))
+
+
+(defun erlang-compile-server-check-xref ()
+  "Checks for exported function that is not used outside the module."
+  (interactive)
+  (setq ecs-current-buffer (current-buffer))
+  (let ((path (buffer-file-name))
+	(node (erl-target-node))
+	(expline (erlang-compile-server-find-exportlines)))
+    (erl-spawn
+      (erl-send-rpc node 'erlang_compile_server 'xref (list path))
+      (erl-receive (expline)
+	  ((['rex ['ok]]
+	    (erlang-compile-server-message
+	     erlang-compile-server-verbose
+	     "Xref couldn't find any unused exported functions."))
+
+	   (['rex ['w warnings]]
+	    (add-to-list 'ecs-error-list (tuple expline 'warning (tuple 'exported_unused_function warnings))))
+
+	   (['rex ['error e]]
+	    (erlang-compile-server-message erlang-compile-server-verbose "Xref had an error: %s." e))
+
+	   (['rex ['badrpc rpc]] ; something wrong with rpc, is node active?
+	    (message "Something wrong with RPC, %s" rpc))
+
+	   (['rex whatever] ; ...
+	    (message "This shouldn't have happend: %s" whatever))))
+      )))
+
+(defun erlang-compile-server-find-exportlines ()
+  (save-excursion
+    (set-buffer ecs-current-buffer)
+    (goto-char (or (string-match "^-export\\|^-compile" (buffer-string))
+		   (point-min)))
+    (line-number-at-pos (forward-char))))
 
 (defun erlang-compile-server-check-eunit ()
   (interactive)
@@ -179,11 +221,12 @@ And then set one or more of the following variables (defaults):
 
 (defun erlang-compile-server-eunit-receive-loop ()
   (erl-receive ()
-      ((['ok which] ;; kommer inte handa da de inte skickas fran noden, men valdigt latt att implementera
-	(erlang-compile-server-message erlang-compile-server-verbose (format "%s is ok." which))
+      ((['ok which] ;; kommer inte handa da de inte skickas fran noden,
+	;; men valdigt latt att implementera i framtiden
+	(erlang-compile-server-message erlang-compile-server-verbose "%s is ok." which)
 	(erlang-compile-server-eunit-receive-loop))
-       (['e [what line where]]
-	(add-to-list 'ecs-eunit-list (tuple line what where))
+       (['e error]
+	(add-to-list 'ecs-eunit-list error)
 	(erlang-compile-server-eunit-receive-loop))
        (['klar]
 	(erlang-compile-server-message erlang-compile-server-verbose "Done testing eunit.")))
