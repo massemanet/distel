@@ -8,52 +8,49 @@
 	 , check_eunit/2
 	 , eunit_loop/1
 	 , xref/1
-	 , not_used/0
+	 , xref_start/1
+	 , check_dialyzer/1
 	]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Erlang Compile Server %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-not_used() ->
-    ok.
-
-%%%% Compilation %%%%
-
 get_warnings(Path, Includes) ->
     get_warnings(Path, [], Includes).
 get_warnings(Path, Outdir, Includes) ->
     Module = filename:absname(Path),
+    %% todo; this list with includes
     Incs = [{i, I} || I <- Includes],
+
     case compile:file(Module, [Outdir, Incs, binary, verbose, return]) of
 	{ok, _Mod, _Binary, []} ->
 	    {ok};
 	{ok, _Modulename, _Binary, Warnings} ->
-	    {w, create_list(Warnings, warning)};
+	    {e, create_list(Warnings, warning)};
 	{error, Errors, Warnings} ->
 	    {e, lists:keymerge(1, create_list(Errors, error),
-			       create_list(Warnings, warning))};
-	E ->
-	    {ok, distel:fmt("Something happend: ~p.", [E])}
-	     end.
+			   create_list(Warnings, warning))}
+    end.
+    
 
 %% Does not work.
 get_warnings_from_string(Textstring, Includes) ->
-%    {ok, Tokens, _} = erl_scan:string(Textstring),
-%    {ok, Parse} = erl_parse:parse_form(Tokens),
-%    case compile:forms(Parse, [Includes, binary, verbose, return]) of
-%	{ok, _Mod, _Binary, []} ->
-%	    {ok};
-%
-%	{ok, _Modulename, _Binary, Warnings} ->
-%	    {w, create_list(Warnings, warning)};
-%
-%	{error, Errors, Warnings} ->
-%	    {e, lists:keymerge(1, create_list(Errors, error), create_list(Warnings, warning))};
-%
-%	E ->
-%	    {ok, distel:fmt("Something happend: ~p.", [E])}
-%    end.	
+%%    {ok, Tokens, _} = erl_scan:string(Textstring),
+%%    {ok, Parse} = erl_parse:parse_form(Tokens),
+%%    case compile:forms(Parse, [Includes, binary, verbose, return]) of
+%%	{ok, _Mod, _Binary, []} ->
+%%	    {ok};
+%%
+%%	{ok, _Modulename, _Binary, Warnings} ->
+%%	    {w, create_list(Warnings, warning)};
+%%
+%%	{error, Errors, Warnings} ->
+%%	    {e, lists:keymerge(1, create_list(Errors, error), create_list(Warnings, warning))};
+%%
+%%	E ->
+%%	    {ok, distel:fmt("Something happend: ~p.", [E])}
+%%    end.	
     Tmpfile = "Tmp901835",
     case file:write_file(Tmpfile, Textstring) of
 	ok ->
@@ -70,7 +67,9 @@ create_list(ErrorList, Info) ->
 					     lists:flatten([[Es || Es <- Errinfo] ||
 							       {_File, Errinfo} <- ErrorList]))].
 
-%%%% EUNIT %%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%       EUNIT       %%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 check_eunit(Path, Caller) ->
     Mod = list_to_atom(filename:rootname(Path)),
@@ -98,13 +97,16 @@ get_errors_and_send_back([_L|Ls], I) ->
 
 %% get the line for the error
 get_line([]) ->
-    "unknown";
+    "unknown"; %% maybe 0 or 1?
 get_line([{line, L}|_]) ->
     L;
 get_line([_L|Ls]) ->
     get_line(Ls).
 
-%%%% XREF %%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%        XREF       %%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 xref_start(Path) ->
     case whereis(ecs) of
 	undefined -> xref:start(ecs),
@@ -115,19 +117,29 @@ xref_start(Path) ->
 	     end
     end.
 
+%% seems to only work when recompiled/loaded
 xref(Module) ->
     Mod = list_to_atom(filename:basename(filename:rootname(Module))),
     Path = filename:dirname(Module)++"/../ebin/",
-    xref_start(Path),
-
-    {ok, MFA} = xref:analyze(ecs, exports_not_used),
-
-    xref_stop(),
-
-    ExFun = [form_mfa(X) || {M,_,_} = X <- MFA, M == Mod],
-    case ExFun of
-	[] -> {ok};
-	_ -> {w, ExFun}
+    
+    %% spawn new to try to capture the unwanted output, doesnt work btw
+    spawn(?MODULE, xref_start, [Path]),
+   
+    case whereis(ecs) of
+	undefined -> {error, "Couldn't find XREF server"};
+	_ ->
+	    try xref:analyze(ecs, exports_not_used) of
+		{ok, []} -> {ok};
+		{ok, MFA} -> case [form_mfa(X) || {M,_,_} = X <- MFA, M == Mod] of
+				 [] -> {ok};
+				 F -> {w, F}
+			     end;
+		R -> {error, R}
+	    catch
+		R -> {error, R}
+	    after
+		xref_stop()
+	    end
     end.
 
 xref_stop() ->
@@ -138,3 +150,27 @@ xref_stop() ->
 
 form_mfa({_M, F, A}) ->
     lists:concat([F, "/", A]).
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%     DIALYZER      %%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+check_dialyzer(Path) ->
+    DiaOpts = [{from, src_code}, {files,[Path]}, {get_warnings, true},
+	       {warnings, [no_return, no_unused, no_improper_lists,
+			   no_fun_app, no_match, no_opaque, no_fail_call,
+			   error_handling, race_conditions, behaviours,
+			   unmatched_returns, overspecs, underspecs, specdiffs]}],
+
+    Ret = try dialyzer:run(DiaOpts) of
+	      [] -> [];
+	      Warnings when is_list(Warnings) -> {w, [{L, warning, Msg} || {_, {_, L}, Msg} <- Warnings]};
+	      E -> E
+	  catch
+	      E -> E
+	  end,
+    case Ret of
+	[] -> {ok};
+	{w, _} = R -> R;
+	C -> {error, C}
+    end.

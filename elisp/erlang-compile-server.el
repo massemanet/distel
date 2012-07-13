@@ -1,361 +1,411 @@
 (require 'distel)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Erlang Compile Server ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Defvars and initialization ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Customization
-
-(defvar erlang-compile-server-check-on-interval nil
-"Checks errors and warnings on given intervals.")
-
-(defvar erlang-compile-server-check-on-save t
-"Checks errors and warnings on save.")
-
-(defvar erlang-compile-server-compile-if-ok nil
-"Compiles the module if it doesn't have any errors or warnings.")
-
-(defvar erlang-compile-server-verbose nil
-"Writes output to *Messages* buffer.")
-
-(defvar erlang-compile-server-interval 120
-"Seconds between checks if `erlang-compile-server-check-on-interval' is set.")
-
-(defvar erlang-compile-server-enable-eunit nil
+(defvar erl-ecs-enable-eunit t
 "If non-nil also checks the eunit tests in the module-file.")
 
-(defvar erlang-compile-server-enable-xref nil
+(defvar erl-ecs-enable-xref t
 "If non-nil also checks for exported functions that isn't used externally through xref.")
 
-;; Check that module is loaded else load it
-(add-hook 'erl-nodeup-hook 'ecs-check-backend)
+(defvar erl-ecs-enable-dialyzer t
+"If non-nil also checks Dialyzer for type warnings.")
 
-(defun ecs-check-backend (node _fsm)
-  "Check if we have the 'erlang_compile_server' module available on `node'.
-If not then try to send the module over as a binary and load it in."
-  (unless distel-inhibit-backend-check
-    (erl-spawn
-      (erl-send `[rex ,node]
-		`[,erl-self [call
-			     code ensure_loaded (erlang_compile_server)
-			     ,(erl-group-leader)]])
-      (erl-receive (node)
-	  ((['rex ['error _]]
-	    (&erl-load-backend node))
-	   (_ t))))))
+(defvar erl-ecs-check-on-save t
+"Checks errors and warnings on save.")
 
-;; Initialize
-(defun erlang-compile-server-setup ()
-   ;; todo: add hooks, what if variable changes while running?
-  (when erlang-compile-server-check-on-save
-      (add-hook 'after-save-hook 'erlang-compile-server-check-file-ending))
-  (add-hook 'erlang-mode-hook 'erlang-compile-server-mode-hook)
-  (add-to-list 'minor-mode-alist
-	       '(erlang-compile-server-mode
-		 " ECS"))
-  (if (not (null erlang-compile-server-check-on-interval))
-      (erlang-compile-server-start-interval))
-)
+(defvar erl-ecs-compile-if-ok nil
+"Compiles the module if it doesn't have any errors or warnings.")
 
-;;; todo
-(defun erlang-compile-server-start-interval ()
-;;;  (while t
-;;;  (if (buffer-modified-p) (erlang-compile-server-check-compile))
-;;;  (sleep-for 'erlang-compile-server-interval)
-;;;  (message "Checking..."))
-)
+(defvar erl-ecs-verbose nil
+"Writes output to *Messages* buffer.")
 
-(defun erlang-compile-server-mode-hook ()
-  (erlang-compile-server-mode t))
+(defvar erl-ecs-check-on-interval nil
+"Checks errors and warnings on given intervals.")
 
-(define-minor-mode erlang-compile-server-mode
-  "Extends distel with error evaluation and eunit testing.
+(defvar erl-ecs-interval 120
+"Seconds between checks if `erl-ecs-check-on-interval' is set.")
 
-Add the following lines to your .emacs file (after distel is initialized):
-\(require 'erlang-compile-server)
-\(erlang-compile-server-setup)
+;;; Error lists
+(defvar erl-ecs-error-list '())
+(defvar erl-ecs-eunit-list '())
+(defvar erl-ecs-xref-list '())
+(defvar erl-ecs-dialyzer-list '())
 
-And then set one or more of the following variables (defaults):
- erlang-compile-server-check-on-save (t)
- erlang-compile-server-check-on-interval (nil) (not supported yet)
- erlang-compile-server-compile-if-ok (nil)
- erlang-compile-server-verbose (nil)
- erlang-compile-server-interval (120) (not supported yet)
- erlang-compile-server-enable-eunit (nil)
- erlang-compile-server-enable-xref (nil)
-
-\\[erlang-compile-server-check-compile] - check for compile errors/warnings
-\\[erlang-compile-server-check-eunit] - check that eunit tests run
-\\[erlang-compile-server-goto-next-error] - goto next compile error
-\\[erlang-compile-server-goto-previous-error] - goto previous compile error"
-  nil
-  nil
-  '(("\C-x\C-a" 'undefined)))
-
-(defconst ecs-key-binding
-  '(("\C-x\C-a" erlang-compile-server-check-compile)
-    ("\C-c\C-n" erlang-compile-server-goto-next-error)
-    ("\C-c\C-p" erlang-compile-server-goto-previous-error)
-    ("\C-x\C-q" erlang-compile-server-check-eunit))
-  "Erlang compile server key binding")
-
-(dolist (k ecs-key-binding) (define-key erlang-compile-server-mode-map (car k) (cadr k)))
-
-;; On save, check for errors etc
-(defun erlang-compile-server-check-file-ending()
-  "Checks that it is a valid erlang file, this because of the after-save-hook."
-  (let ((path (buffer-file-name)))
-    (if (string= (substring path (- 0 (length ".erl"))) ".erl") (erlang-compile-server-check-compile))))
-
-(defun erlang-compile-server-message (var msg &rest rest)
-  "Prints a message if a given variable or expression is non-nil."
-  (when var (message msg rest))
-)
-
-(defvar ecs-node nil)
-
-;;; Main function
-(defun erlang-compile-server-check-compile ()
-  "Checks for compilation errors and warnings, eunit tests and/or xref checks and creates overlays accordingly."
-  (interactive)
-  (let ((node (erl-target-node))
-	(path (buffer-file-name))
-	(buffer (current-buffer))
-	(inc-dirs (erlang-compile-server-get-includes))
-	(inc-libs (erlang-compile-server-get-includes t))
-	incs
-	(incstring '())
-	tmpopts)
-    (setq incs (append inc-dirs inc-libs))
-    (setq ecs-error-list '())
-    (when erlang-compile-server-enable-xref (erlang-compile-server-check-xref))
-    (dolist (inc incs) (add-to-list 'incstring (file-name-directory inc)))
-    (erl-spawn
-      (if (buffer-modified-p)
-	  (erl-send-rpc node 'erlang_compile_server 'get_warnings_from_string (list (buffer-string) incstring))
-	(erl-send-rpc node 'erlang_compile_server 'get_warnings (list path incstring)))
-      
-      (erl-receive (buffer incstring)
-	  ((['rex ['ok]] ; no errors
-	    (erlang-compile-server-remove-overlays buffer 'erlang-compile-server-overlay)
-	    (erlang-compile-server-message erlang-compile-server-verbose "Ok, no compile errors/warnings.")
-
-	    ;; compiling stuff
-	    (when (and (not (buffer-modified-p))
-		       erlang-compile-server-compile-if-ok
-		       (not ecs-error-list))
-	      (progn (erlang-compile-server-message erlang-compile-server-verbose "Compiling.")
-		     (setq tempopts erlang-compile-extra-opts)
-		     (setq erlang-compile-extra-opts incstring)
-		     (erlang-compile)
-		     (setq erlang-compile-extra-opts tempopts)))
-
-	   ;; eunit
-	    (when erlang-compile-server-enable-eunit (erlang-compile-server-check-eunit)))
-
-	   (['rex ['w warnings]] ; only warnings
-	    (set-buffer buffer)
-	    (nconc ecs-error-list warnings))
-
-	   (['rex ['e errors]] ; errors and possibly warnings
-	    (set-buffer buffer)
-	    (nconc ecs-error-list errors))
-
-	   (['rex ['badrpc rpc]] ; something wrong with rpc, is node active?
-	    (message "Something wrong with RPC, %s" rpc))
-
-	   (['rex whatever] ; ...
-	    (message "This shouldn't have happend: %s" whatever)))
-
-	(when ecs-error-list
-	  (erlang-compile-server-remove-overlays buffer 'erlang-compile-server-overlay)
-	  (erlang-compile-server-print-errors-and-warnings ecs-error-list))))))
-
-
-(defun erlang-compile-server-check-xref ()
-  "Checks for exported function that is not used outside the module."
-  (interactive)
-  (setq ecs-current-buffer (current-buffer))
-  (let ((path (buffer-file-name))
-	(node (erl-target-node))
-	(expline (erlang-compile-server-find-exportlines)))
-    (erl-spawn
-      (erl-send-rpc node 'erlang_compile_server 'xref (list path))
-      (erl-receive (expline)
-	  ((['rex ['ok]]
-	    (erlang-compile-server-message
-	     erlang-compile-server-verbose
-	     "Xref couldn't find any unused exported functions."))
-
-	   (['rex ['w warnings]]
-	    (add-to-list 'ecs-error-list (tuple expline 'warning (tuple 'exported_unused_function warnings))))
-
-	   (['rex ['error e]]
-	    (erlang-compile-server-message erlang-compile-server-verbose "Xref had an error: %s." e))
-
-	   (['rex ['badrpc rpc]] ; something wrong with rpc, is node active?
-	    (message "Something wrong with RPC, %s" rpc))
-
-	   (['rex whatever] ; ...
-	    (message "This shouldn't have happend: %s" whatever))))
-      )))
-
-(defun erlang-compile-server-find-exportlines ()
-  (save-excursion
-    (set-buffer ecs-current-buffer)
-    (goto-char (or (string-match "^-export\\|^-compile" (buffer-string))
-		   (point-min)))
-    (line-number-at-pos (forward-char))))
-
-(defun erlang-compile-server-check-eunit ()
-  (interactive)
-  (setq ecs-current-buffer (current-buffer))
-  (setq ecs-eunit-list '())
-  (save-excursion
-    (erlang-compile-server-remove-overlays ecs-current-buffer 'erlang-compile-server-eunit-overlay)
-    (let ((node (erl-target-node))
-	  (path (buffer-name)))
-      (erl-spawn
-	(erl-send-rpc node 'erlang_compile_server 'check_eunit (list path erl-self))
-	(erlang-compile-server-eunit-receive-loop)))))
-
-(defun erlang-compile-server-eunit-receive-loop ()
-  (erl-receive ()
-      ((['ok which] ;; kommer inte handa da de inte skickas fran noden,
-	;; men valdigt latt att implementera i framtiden
-	(erlang-compile-server-message erlang-compile-server-verbose "%s is ok." which)
-	(erlang-compile-server-eunit-receive-loop))
-       (['e error]
-	(add-to-list 'ecs-eunit-list error)
-	(erlang-compile-server-eunit-receive-loop))
-       (['klar]
-	(erlang-compile-server-message erlang-compile-server-verbose "Done testing eunit.")))
-    (when ecs-current-buffer (erlang-compile-server-print-eunit-errors ecs-current-buffer))))
-
-(defun erlang-compile-server-print-eunit-errors (buffer)
-  (save-excursion
-    (set-buffer buffer)
-    (erlang-compile-server-print-errors-and-warnings ecs-eunit-list t)))
-
-(defun erlang-compile-server-get-includes (&optional is-lib)
-  "Find the includefiles for an erlang module."
-  (let ((inc-regexp (concat "-include" (when is-lib "_lib") "(\"\\([^\)]*\\)"))
-	(include-list '())
-	(pt (point-min))
-	mesf)
-    (while (string-match inc-regexp (buffer-string) pt)
-      (add-to-list 'include-list (substring (match-string 1) 1))
-      (setq pt (match-end 0)))
-    include-list))
-
-(defun erlang-compile-server-goto-error (&optional previous)
-  "Goto the next error or warning, or if previous is non-nil, goto the previous error or warning."
-  (interactive)
-  (let ((litem (do ;; initialising
-		   ((x 0 (+ x 1))
-		    (y (- (length ecs-error-list) 1) (- y 1)))
-		   ;; termination-args
-		   ((not (or (and (not previous)
-				  (and (nth x ecs-error-list)
-				       (<= (tuple-elt (nth x ecs-error-list) 1) (line-number-at-pos))))
-			     (and previous
-				  (and (>= y 0)
-				       (nth y ecs-error-list)
-				       (>= (tuple-elt (nth y ecs-error-list) 1) (line-number-at-pos))))))
-		    ;; do
-		    (if (not previous) (nth x ecs-error-list)
-		      (when (and (>= y 0) previous) (nth y ecs-error-list)))))))
-    ;; goto-error
-    (if litem (erlang-compile-server-goto-beginning-of-line (tuple-elt litem 1))
-      (when ecs-error-list
-	(if previous (erlang-compile-server-goto-beginning-of-line (tuple-elt (car (last ecs-error-list)) 1))
-	  (erlang-compile-server-goto-beginning-of-line (tuple-elt (car ecs-error-list) 1)))))))
-
-(defun erlang-compile-server-goto-next-error ()
-  (interactive)
-  (erlang-compile-server-goto-error))
-
-(defun erlang-compile-server-goto-previous-error ()
-  (interactive)
-  (erlang-compile-server-goto-error t))
-
-(defvar ecs-error-list '())
-(defvar ecs-eunit-list '())
-
-(defun erlang-compile-server-print-errors-and-warnings (errors &optional eunit)
-  (save-excursion
-    (let (tooltip-text)
-      (dolist (x errors)
-	(progn
-	  (setq tooltip-text (format "%s: %s @line %s " (tuple-elt x 2) (tuple-elt x 3) (tuple-elt x 1)))
-	  (erlang-compile-server-make-overlay (tuple-elt x 1)
-					      (if (not eunit) (if (string= (tuple-elt x 2) "error")
-								  'erlang-compile-server-error-line
-								'erlang-compile-server-warning-line)
-						'erlang-compile-server-eunit-line)
-					      tooltip-text
-					      (when eunit t))
-	  (erlang-compile-server-message erlang-compile-server-verbose tooltip-text))))))
-
-;;; Overlays
+(defvar erl-ecs-lineno-list '())
 
 ;; Faces for highlighting
-(defface erlang-compile-server-error-line
+(defface erl-ecs-error-line
   '((((class color) (background dark)) (:background "Firebrick"))
     (((class color) (background light)) (:background "LightPink1"))
     (t (:bold t)))
   "Face used for marking error lines."
   :group 'ecs)
 
-(defface erlang-compile-server-warning-line
+(defface erl-ecs-warning-line
   '((((class color) (background dark)) (:background "dark blue"))
     (((class color) (background light)) (:background "light blue"))
     (t (:bold t)))
   "Face used for marking warning lines."
   :group 'ecs)
 
-(defface erlang-compile-server-eunit-line
+(defface erl-ecs-lesser-line
   '((((class color) (background dark)) (:background "green"))
     (((class color) (background light)) (:background "pale green"))
     (t (:bold t)))
-  "Face used for marking eunit lines."
+  "Face used for marking lesser warning lines."
   :group 'ecs)
 
-(defun erlang-compile-server-remove-overlays (buffer which)
-    (set-buffer buffer)
-    (dolist (ol (overlays-in (point-min) (point-max)))
-      (when (and (overlayp ol) (overlay-get ol which))
-	(delete-overlay ol))))
+;; Check that module is loaded else load it
+(add-hook 'erl-nodeup-hook 'ecs-check-backend)
+
+(defun erl-ecs-check-backend (node _fsm)
+  "Reloads 'erlang_compile_server' module to `node'."
+  (unless distel-inhibit-backend-check
+    (progn (erl-ecs-message "ECS: reloading 'erlang_compile_server' onto %s" node)
+	   (erl-spawn
+	     (erl-send `[rex ,node]
+		       `[,erl-self [call
+				    code load_file (erlang_compile_server)
+				    ,(erl-group-leader)]])
+	     (erl-receive (node)
+		 ((['rex ['error _]]
+		   (&erl-load-backend node))
+		  (_ t)))))))
+
+(defun erl-ecs-setup ()
+  (add-hook 'erlang-mode-hook 'erl-ecs-mode-hook)
+
+  (erl-ecs-message "ECS loaded.")
+
+  (add-to-list 'minor-mode-alist
+	       '(erl-ecs-mode
+		 " ECS"))
+
+  (when erl-ecs-check-on-interval (erl-ecs-start-interval)))
+
+(defun erl-ecs-mode-hook ()
+  (erl-ecs-mode t)
+  (add-hook 'after-save-hook 'erl-ecs-on-save t t))
+
+(defun erl-ecs-on-save ()
+  (when erl-ecs-check-on-save (erl-ecs-evaluate)))
+
+(define-minor-mode erl-ecs-mode
+  "Extends distel with error evaluation.
+
+Add the following lines to your .emacs file (after distel is initialized):
+\(require 'erlang-compile-server)
+
+And then set one or more of the following variables (defaults):
+erl-ecs-enable-eunit (t)
+erl-ecs-enable-xref (t)
+erl-ecs-enable-dialyzer (t)
+
+erl-ecs-check-on-save (t)
+erl-ecs-compile-if-ok (nil)
+erl-ecs-verbose (nil)
+
+erl-ecs-check-on-interval (nil) (not supported yet)
+erl-ecs-interval (120) (not supported yet)
+
+\\[erl-ecs-evaluate] - check for errors/warnings/testfails etc
+\\[erl-ecs-next-error] - goto next error
+\\[erl-ecs-prev-error] - goto previous error"
+  nil
+  nil
+  '(("\C-x\C-a" 'undefined)))
+
+(defconst erl-ecs-key-binding
+  '(("\C-C\C-dq" erl-ecs-evaluate)
+    ("\C-c\C-n" erl-ecs-next-error)
+    ("\C-c\C-p" erl-ecs-prev-error))
+  "Erlang compile server key binding")
+
+(dolist (k erl-ecs-key-binding) (define-key erl-ecs-mode-map (car k) (cadr k)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;           Main             ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun erl-ecs-evaluate ()
+  (interactive)
+  (erl-ecs-message "ECS: Evaluating...")
+  (setq erl-ecs-lineno-list '())
+
+  ;; seems to only work when recompiled full _plt
+  (when erl-ecs-enable-dialyzer (erl-ecs-check-dialyzer))
+  (erl-ecs-check-compile)
+
+  ;; seems to only work when recompiled file
+  (when erl-ecs-enable-xref (erl-ecs-check-xref))
+  (when erl-ecs-enable-eunit (erl-ecs-check-eunit)))
+
+(defun erl-ecs-check-compile ()
+  "Checks for compilation errors and warnings."
+  (interactive)
+  (setq erl-ecs-current-buffer (current-buffer))
+  (erl-ecs-message "ECS: Checking erlang faults.")
+
+  (let ((node (erl-target-node))
+	(path (buffer-file-name))
+	(incstring (erl-ecs-get-includes)))
+      
+    (erl-spawn
+      (erl-send-rpc node 'erlang_compile_server 'get_warnings (list path incstring))
+      
+      (erl-receive ()
+	  ;; no errors
+	  ((['rex ['ok]]
+	    (erl-ecs-message "ECS erlang: No faults.")
+	    (erl-ecs-delete-items 'compile erl-ecs-lineno-list)
+	    (setq erl-ecs-error-list '())
+	    (erl-ecs-remove-overlays 'erl-ecs-overlay)
+	    (erl-ecs-if-no-compile-faults))
+	   
+	   ;; errors
+	   (['rex ['e errors]]
+	    (erl-ecs-message "ECS erlang: faults found.")
+	    (setq erl-ecs-error-list errors)
+	    (erl-ecs-print-errors 'compile erl-ecs-error-list))
+	   
+	   (else
+	    (erl-ecs-message "ECS erlang unexpected end: %s" else)))))))
 
 
-(defun erlang-compile-server-goto-beginning-of-line (line-no)
-  (goto-line line-no)
-  (goto-char (line-beginning-position))
-  (while (looking-at "[ \t]")
-    (forward-char))
-  (point))
+(defun erl-ecs-if-no-compile-faults ()
+  "Compile if compile-if-ok is set."
+  (let ((incstring (erl-ecs-get-includes))
+	tempopts)
+    (set-buffer erl-ecs-current-buffer)
 
-(defun erlang-compile-server-make-overlay (line-no face tooltip-text which)
-  (goto-line line-no)
-  (let* ((beg (erlang-compile-server-goto-beginning-of-line line-no))
-	 (end (line-end-position)))
+    (when (and (not (buffer-modified-p))
+	       erl-ecs-compile-if-ok)
+      
+      (progn (erl-ecs-message "ECS: Compiling.")
+	     (setq tempopts erlang-compile-extra-opts)
+	     (setq erlang-compile-extra-opts incstring)
+	     (erlang-compile)
+	     (setq erlang-compile-extra-opts tempopts)))))
+
+(defun erl-ecs-check-dialyzer ()
+  "Checks type and function warnings."
+  (interactive)
+  (erl-ecs-message "ECS: Checking Dialyzer.")
+
+  (let ((path (buffer-file-name))
+	(node (erl-target-node)))
+    (erl-spawn
+      (erl-send-rpc node 'erlang_compile_server 'check_dialyzer (list path))
+      (erl-receive ()
+	  ;; no dialyzer warnings
+	  ((['rex ['ok]]
+	    (erl-ecs-message "ECS Dialyzer: No warnings.")
+	    (setq erl-ecs-dialyzer-list '())
+	    (erl-ecs-delete-items 'dialyzer erl-ecs-lineno-list)
+	    (erl-ecs-remove-overlays 'ecs-dialyzer-overlay))
+
+	   ;; dialyzer warnings
+	   (['rex ['w warnings]]
+	    (erl-ecs-message "ECS Dialyzer: Warnings found.")
+	    (setq erl-ecs-dialyzer-list warnings)
+	    (erl-ecs-print-errors 'dialyzer erl-ecs-dialyzer-list 'ecs-dialyzer-overlay))
+
+	   (else))))))
+
+(defun erl-ecs-check-xref ()
+  "Checks for exported function that is not used outside the module."
+  (interactive)
+  (erl-ecs-message "ECS: Checking XREF.")
+
+  (let ((node (erl-target-node))
+	(path (buffer-file-name))
+	(expline (erl-ecs-find-exportline)))
+
+    (erl-spawn
+      (erl-send-rpc node 'erlang_compile_server 'xref (list path))
+      (erl-receive (expline)
+	  ;; no xref warnings
+	  ((['rex ['ok]]
+	    (erl-ecs-message "ECS XREF: No warnings.")
+	    (setq erl-ecs-xref-list '())
+	    (erl-ecs-delete-items 'xref erl-ecs-lineno-list)
+	    (erl-ecs-remove-overlays 'ecs-xref-overlay))
+	   
+	   ;; xref warnings
+	   (['rex ['w warnings]]
+	    (erl-ecs-message "ECS XREF: Warnings found.")
+	    (setq erl-ecs-xref-list (list (tuple expline 'warning (tuple 'exported_unused_function warnings))))
+	    (erl-ecs-print-errors 'xref erl-ecs-xref-list 'ecs-xref-overlay))
+
+	   (else))))))
+
+(defun erl-ecs-check-eunit ()
+  "Checks eunit tests."
+  (interactive)
+
+  (erl-ecs-message "ECS: Checking EUNIT.")
+
+  ;; reset eunit errors
+  (setq erl-ecs-eunit-list '())
+  (erl-ecs-delete-items 'eunit erl-ecs-lineno-list)
+  (erl-ecs-remove-overlays 'ecs-eunit-overlay)
   
-  (goto-char end)
-  (while (and (looking-at "[ \t\r\n]") (> (point) 1))
-    (backward-char))
-  (setq end (+ 1 (point)))
+  (let ((node (erl-target-node))
+	(path (buffer-name)))
+    (erl-spawn
+      (erl-send-rpc node 'erlang_compile_server 'check_eunit (list path erl-self))
+      (erl-ecs-eunit-receive))))
 
-  (erlang-compile-server-display-overlay beg end face tooltip-text which)
-))
+(defun erl-ecs-eunit-receive ()
+  (erl-receive ()
+      ((['ok which]
+	;; kommer inte handa da de inte skickas fran noden,
+	;; men valdigt latt att implementera i framtiden
+	(erl-ecs-eunit-receive))
 
-(defun erlang-compile-server-display-overlay (beg end face tooltip-text &optional eunit)
-    (let ((ov (make-overlay beg end nil t t)))
-      (overlay-put ov 'face           face)
-;      (overlay-put ov 'mouse-face     tooltip-text)
-      (overlay-put ov 'help-echo      tooltip-text)
-      (overlay-put ov (if (not eunit) 'erlang-compile-server-overlay
-			'erlang-compile-server-eunit-overlay) t)
-      (overlay-put ov 'priority (if (not eunit) 100 90))
-      ov))
+       (['e error]
+	(add-to-list 'ecs-eunit-list error)
+	(erl-ecs-eunit-receive))
+
+       (['klar]))
+
+    (erl-ecs-print-errors 'eunit erl-ecs-eunit-list 'ecs-eunit-overlay)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;          Helpers           ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun erl-ecs-get-includes ()
+  "Find the includefiles for an erlang module."
+  (save-excursion
+    (set-buffer erl-ecs-current-buffer)
+    (goto-char (point-min))
+    (let ((inc-regexp (concat "^-include\\(_lib\\)?(\"\\([^\)]*\\)"))
+	  (include-list '())
+	  (pt (point-min)))
+      (while (string-match inc-regexp (buffer-string) pt)
+	(add-to-list 'include-list (substring (match-string 2) 1))
+	(setq pt (match-end 0)))
+      include-list)))
+
+(defun erl-ecs-find-exportline ()
+  "Find the exportline."
+  (save-excursion
+    (set-buffer erl-ecs-current-buffer)
+    (goto-char (or (string-match "^-export\\|^-compile" (buffer-string))
+		   (point-min)))
+    (line-number-at-pos (forward-char))))
+
+(defun erl-ecs-remove-overlays (which)
+  "Removes all overlays with the name \\[which]"
+  (set-buffer erl-ecs-current-buffer)
+  (dolist (ol (overlays-in (point-min) (point-max)))
+    (when (and (overlayp ol)
+	       (overlay-get ol which))
+      (delete-overlay ol))))
+
+(defun erl-ecs-goto-beg-of-line (line-no)
+  "Return the beginning of the line without whitespaces."
+  (save-excursion
+    (goto-line line-no)
+    (goto-char (line-beginning-position))
+    (while (looking-at "[ \t]")
+      (forward-char))
+    (point)))
+
+(defun erl-ecs-goto-end-of-line (line-no)
+  "Return the end of the line without whitespaces"
+  (save-excursion
+    (goto-line line-no)
+    (goto-char (line-end-position))
+    (while (and (looking-at "[ \t\r\n]") (> (point) 1))
+      (backward-char))
+    (+ 1 (point))))
+
+(defun erl-ecs-print-errors (tag errors &optional lesser lesser-face)
+  "Makes the overlays."
+  (set-buffer erl-ecs-current-buffer)
+  (dolist (x errors)
+    (progn
+      ;; bug here, on every other check; adds items to list strange
+      (setq erl-ecs-lineno-list (cons (list (tuple-elt x 1) tag) erl-ecs-lineno-list))
+
+      (erl-ecs-display-overlay
+       (erl-ecs-goto-beg-of-line (tuple-elt x 1))
+       (erl-ecs-goto-end-of-line (tuple-elt x 1))
+       (if (not lesser)
+	   (if (string= (tuple-elt x 2) "error")
+	       'erl-ecs-error-line
+	     'erl-ecs-warning-line)
+	 (if lesser-face lesser-face 'erl-ecs-warning-line))
+       (format "%s: %s @line %s " (tuple-elt x 2) (tuple-elt x 3) (tuple-elt x 1))
+       lesser))))
+
+(defun erl-ecs-display-overlay (beg end face tooltip-text &optional lesser)
+  "Display the overlays."
+  (let ((ov (make-overlay beg end nil t t)))
+    (overlay-put ov 'face face)
+    (overlay-put ov 'help-echo tooltip-text)
+    (overlay-put ov (if (not lesser)
+			'erl-ecs-overlay
+		      lesser) t)
+    (overlay-put ov 'priority (if (not lesser) 100 90))
+    ov))
+
+
+(defun erl-ecs-goto-error (&optional prev pos)
+  (let ((delta (line-number-at-pos (if prev (point-min) (point-max))))
+	(pt (line-number-at-pos pos)))
+    (dolist (it erl-ecs-lineno-list delta) (when (or (and (not prev)
+						    (> (car it) pt)
+						    (< (car it) delta))
+					       (and prev
+						    (< (car it) pt)
+						    (> (car it) delta)))
+				       (setq delta (car it))))))
+
+(defun erl-ecs-next-error ()
+  (interactive)
+  (let ((max (line-number-at-pos (point-max)))
+	(next (erl-ecs-goto-error)))
+
+    (goto-char
+     (erl-ecs-goto-beg-of-line
+      (if (= next max)
+	  (erl-ecs-goto-error nil (point-min))
+	next)))))
+
+(defun erl-ecs-prev-error ()
+  (interactive)
+  (let ((min (line-number-at-pos (point-min)))
+	(prev (erl-ecs-goto-error t)))
+
+    (goto-char
+     (erl-ecs-goto-beg-of-line
+      (if (= prev min)
+	  (erl-ecs-goto-error t (point-max))
+	prev)))))
+
+(defun erl-ecs-message (msg &rest r)
+  (when erl-ecs-verbose (message msg r)))
+
+(defun erl-ecs-delete-items (tag erl-ecs-list)
+ "Deletes all items that has a value matching 'tag' from a list"
+ (let ((new-list '()))
+   (dolist (it erl-ecs-list new-list)
+       (unless (equal tag (cdr it)) (setq new-list (nconc new-list it))))
+   (setq erl-ecs-lineno-list new-list)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;            TODO            ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun erl-ecs-start-interval ())
+
+(erl-ecs-setup)
 
 (provide 'erlang-compile-server)
