@@ -43,24 +43,24 @@
     (((class color) (background light)) (:background "LightPink1"))
     (t (:bold t)))
   "Face used for marking error lines."
-  :group 'ecs)
+  :group 'erl-ecs)
 
 (defface erl-ecs-warning-line
   '((((class color) (background dark)) (:background "dark blue"))
     (((class color) (background light)) (:background "light blue"))
     (t (:bold t)))
   "Face used for marking warning lines."
-  :group 'ecs)
+  :group 'erl-ecs)
 
 (defface erl-ecs-lesser-line
   '((((class color) (background dark)) (:background "green"))
     (((class color) (background light)) (:background "pale green"))
     (t (:bold t)))
   "Face used for marking lesser warning lines."
-  :group 'ecs)
+  :group 'erl-ecs)
 
 ;; Check that module is loaded else load it
-(add-hook 'erl-nodeup-hook 'ecs-check-backend)
+(add-hook 'erl-nodeup-hook 'erl-ecs-check-backend)
 
 (defun erl-ecs-check-backend (node _fsm)
   "Reloads 'erlang_compile_server' module to `node'."
@@ -206,13 +206,13 @@ erl-ecs-interval (120) (not supported yet)
 	    (erl-ecs-message "ECS Dialyzer: No warnings.")
 	    (setq erl-ecs-dialyzer-list '())
 	    (erl-ecs-delete-items 'dialyzer erl-ecs-lineno-list)
-	    (erl-ecs-remove-overlays 'ecs-dialyzer-overlay))
+	    (erl-ecs-remove-overlays 'erl-ecs-dialyzer-overlay))
 
 	   ;; dialyzer warnings
 	   (['rex ['w warnings]]
 	    (erl-ecs-message "ECS Dialyzer: Warnings found.")
 	    (setq erl-ecs-dialyzer-list warnings)
-	    (erl-ecs-print-errors 'dialyzer erl-ecs-dialyzer-list 'ecs-dialyzer-overlay))
+	    (erl-ecs-print-errors 'dialyzer erl-ecs-dialyzer-list 'erl-ecs-dialyzer-overlay))
 
 	   (else))))))
 
@@ -233,13 +233,13 @@ erl-ecs-interval (120) (not supported yet)
 	    (erl-ecs-message "ECS XREF: No warnings.")
 	    (setq erl-ecs-xref-list '())
 	    (erl-ecs-delete-items 'xref erl-ecs-lineno-list)
-	    (erl-ecs-remove-overlays 'ecs-xref-overlay))
+	    (erl-ecs-remove-overlays 'erl-ecs-xref-overlay))
 	   
 	   ;; xref warnings
 	   (['rex ['w warnings]]
 	    (erl-ecs-message "ECS XREF: Warnings found.")
 	    (setq erl-ecs-xref-list (list (tuple expline 'warning (tuple 'exported_unused_function warnings))))
-	    (erl-ecs-print-errors 'xref erl-ecs-xref-list 'ecs-xref-overlay))
+	    (erl-ecs-print-errors 'xref erl-ecs-xref-list 'erl-ecs-xref-overlay))
 
 	   (else))))))
 
@@ -252,7 +252,7 @@ erl-ecs-interval (120) (not supported yet)
   ;; reset eunit errors
   (setq erl-ecs-eunit-list '())
   (erl-ecs-delete-items 'eunit erl-ecs-lineno-list)
-  (erl-ecs-remove-overlays 'ecs-eunit-overlay)
+  (erl-ecs-remove-overlays 'erl-ecs-eunit-overlay)
   
   (let ((node (erl-target-node))
 	(path (buffer-name)))
@@ -268,12 +268,12 @@ erl-ecs-interval (120) (not supported yet)
 	(erl-ecs-eunit-receive))
 
        (['e error]
-	(add-to-list 'ecs-eunit-list error)
+	(add-to-list 'erl-ecs-eunit-list error)
 	(erl-ecs-eunit-receive))
 
        (['klar]))
 
-    (erl-ecs-print-errors 'eunit erl-ecs-eunit-list 'ecs-eunit-overlay)))
+    (erl-ecs-print-errors 'eunit erl-ecs-eunit-list 'erl-ecs-eunit-overlay)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;          Helpers           ;;
@@ -329,21 +329,23 @@ erl-ecs-interval (120) (not supported yet)
 (defun erl-ecs-print-errors (tag errors &optional lesser lesser-face)
   "Makes the overlays."
   (set-buffer erl-ecs-current-buffer)
-  (dolist (x errors)
-    (progn
-      ;; bug here, on every other check; adds items to list strange
-      (setq erl-ecs-lineno-list (cons (list (tuple-elt x 1) tag) erl-ecs-lineno-list))
+  (let ((err-list '()))
+    (dolist (x errors err-list)
+      (progn
+	;; bug here, on every other check; adds items to list strange
+	(setq err-list (cons (cons (tuple-elt x 1) tag) err-list))
 
-      (erl-ecs-display-overlay
-       (erl-ecs-goto-beg-of-line (tuple-elt x 1))
-       (erl-ecs-goto-end-of-line (tuple-elt x 1))
-       (if (not lesser)
-	   (if (string= (tuple-elt x 2) "error")
-	       'erl-ecs-error-line
-	     'erl-ecs-warning-line)
-	 (if lesser-face lesser-face 'erl-ecs-warning-line))
-       (format "%s: %s @line %s " (tuple-elt x 2) (tuple-elt x 3) (tuple-elt x 1))
-       lesser))))
+	(erl-ecs-display-overlay
+	 (erl-ecs-goto-beg-of-line (tuple-elt x 1))
+	 (erl-ecs-goto-end-of-line (tuple-elt x 1))
+	 (if (not lesser)
+	     (if (string= (tuple-elt x 2) "error")
+		 'erl-ecs-error-line
+	       'erl-ecs-warning-line)
+	   (if lesser-face lesser-face 'erl-ecs-warning-line))
+	 (format "%s: %s @line %s " (tuple-elt x 2) (tuple-elt x 3) (tuple-elt x 1))
+	 lesser)) err-list)
+    (setq erl-ecs-lineno-list (append erl-ecs-lineno-list err-list))))
 
 (defun erl-ecs-display-overlay (beg end face tooltip-text &optional lesser)
   "Display the overlays."
