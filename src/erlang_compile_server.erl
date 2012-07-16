@@ -6,7 +6,7 @@
 	 , get_warnings/3
 	 , get_warnings_from_string/2
 	 , check_eunit/2
-	 , eunit_loop/1
+	 , eunit_loop/2
 	 , xref/1
 	 , xref_start/1
 	 , check_dialyzer/1
@@ -73,35 +73,47 @@ create_list(ErrorList, Info) ->
 
 check_eunit(Path, Caller) ->
     Mod = list_to_atom(filename:rootname(Path)),
-    Pid = spawn(?MODULE, eunit_loop, [Caller]),
+    Pid = spawn(?MODULE, eunit_loop, [Mod, Caller]),
     eunit:test(Mod, [{report, {ecs_listener, [{pid, Pid}, {no_tty, true}]}}]).
 
-eunit_loop(Caller) ->
+eunit_loop(Mod, Caller) ->
     receive
 	R ->
-	    get_errors_and_send_back(R, Caller),
-	    eunit_loop(Caller)
+	    get_errors_and_send_back(Mod, R, Caller),
+	    eunit_loop(Mod, Caller)
     after 1500 ->
 	    Caller ! {klar}
     end.
 
-get_errors_and_send_back([], _) ->
+get_errors_and_send_back(_, [], _) ->
     void;
-get_errors_and_send_back([{status, S}|_Ls], I) ->
+get_errors_and_send_back(Mod, [{status, S}|Ls], I) ->
     case S of
-	ok -> void;
-	{error, {_What, {Why, How}, Where}} -> I ! {e, {get_line(How), Why, Where}}
+	ok -> I ! {ok, get_ok_test(Ls)};
+	{error, {_What, {Why, How}, [{M, F, A}|R]}} ->
+		case M == Mod of
+		    true -> I ! {e, {get_line(How), Why, [{M,F,A}|R]}};
+		    false -> I ! {e, {0, Why, {get_line(How), [{M,F,A}|R]}}}
+		end
     end;
-get_errors_and_send_back([_L|Ls], I) ->
-    get_errors_and_send_back(Ls, I).
+get_errors_and_send_back(Mod, [_L|Ls], I) ->
+    get_errors_and_send_back(Mod, Ls, I).
 
 %% get the line for the error
 get_line([]) ->
-    "unknown"; %% maybe 0 or 1?
+    0;
 get_line([{line, L}|_]) ->
     L;
 get_line([_L|Ls]) ->
     get_line(Ls).
+
+get_ok_test([]) ->
+    void;
+get_ok_test([{source, MFA}|Ls]) ->
+    {get_line(Ls), MFA};
+get_ok_test([_L|Ls]) ->
+    get_ok_test(Ls).
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%        XREF       %%%%

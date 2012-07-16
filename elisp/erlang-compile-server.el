@@ -53,7 +53,7 @@
   :group 'erl-ecs)
 
 (defface erl-ecs-lesser-line
-  '((((class color) (background dark)) (:background "green"))
+  '((((class color) (background dark)) (:background "dark olive green"))
     (((class color) (background light)) (:background "pale green"))
     (t (:bold t)))
   "Face used for marking lesser warning lines."
@@ -117,10 +117,10 @@ erl-ecs-interval (120) (not supported yet)
 \\[erl-ecs-prev-error] - goto previous error"
   nil
   nil
-  '(("\C-x\C-a" 'undefined)))
+  '(("\C-c\C-dq" 'undefined)))
 
 (defconst erl-ecs-key-binding
-  '(("\C-C\C-dq" erl-ecs-evaluate)
+  '(("\C-c\C-dq" erl-ecs-evaluate)
     ("\C-c\C-n" erl-ecs-next-error)
     ("\C-c\C-p" erl-ecs-prev-error))
   "Erlang compile server key binding")
@@ -135,14 +135,15 @@ erl-ecs-interval (120) (not supported yet)
   (interactive)
   (erl-ecs-message "ECS: Evaluating...")
   (setq erl-ecs-lineno-list '())
-
   ;; seems to only work when recompiled full _plt
-  (when erl-ecs-enable-dialyzer (erl-ecs-check-dialyzer))
+  (if erl-ecs-enable-dialyzer (erl-ecs-check-dialyzer)
+    (erl-ecs-remove-overlays 'erl-ecs-dialyzer-overlay))
   (erl-ecs-check-compile)
-
   ;; seems to only work when recompiled file
-  (when erl-ecs-enable-xref (erl-ecs-check-xref))
-  (when erl-ecs-enable-eunit (erl-ecs-check-eunit)))
+  (if erl-ecs-enable-xref (erl-ecs-check-xref)
+    (erl-ecs-remove-overlays 'erl-ecs-xref-overlay))
+  (if erl-ecs-enable-eunit (erl-ecs-check-eunit)
+    (erl-ecs-remove-overlays 'erl-ecs-eunit-overlay)))
 
 (defun erl-ecs-check-compile ()
   "Checks for compilation errors and warnings."
@@ -210,7 +211,7 @@ erl-ecs-interval (120) (not supported yet)
 
 	   ;; dialyzer warnings
 	   (['rex ['w warnings]]
-	    (erl-ecs-message "ECS Dialyzer: Warnings found.")
+	    (erl-ecs-message "ECS Dialyzer err at %s." warnings)
 	    (setq erl-ecs-dialyzer-list warnings)
 	    (erl-ecs-print-errors 'dialyzer erl-ecs-dialyzer-list 'erl-ecs-dialyzer-overlay))
 
@@ -237,9 +238,10 @@ erl-ecs-interval (120) (not supported yet)
 	   
 	   ;; xref warnings
 	   (['rex ['w warnings]]
-	    (erl-ecs-message "ECS XREF: Warnings found.")
-	    (setq erl-ecs-xref-list (list (tuple expline 'warning (tuple 'exported_unused_function warnings))))
-	    (erl-ecs-print-errors 'xref erl-ecs-xref-list 'erl-ecs-xref-overlay))
+	    (let ((a (list (tuple expline 'warning (tuple 'exported_unused_function warnings)))))
+	      (erl-ecs-message "ECS XREF err at %s." a)
+	      (setq erl-ecs-xref-list a)
+	      (erl-ecs-print-errors 'xref erl-ecs-xref-list 'erl-ecs-xref-overlay)))
 
 	   (else))))))
 
@@ -263,11 +265,11 @@ erl-ecs-interval (120) (not supported yet)
 (defun erl-ecs-eunit-receive ()
   (erl-receive ()
       ((['ok which]
-	;; kommer inte handa da de inte skickas fran noden,
-	;; men valdigt latt att implementera i framtiden
+	(erl-ecs-message "ECS EUNIT ok at %s." which)
 	(erl-ecs-eunit-receive))
 
        (['e error]
+	(erl-ecs-message "ECS EUNIT err at %s." error)
 	(add-to-list 'erl-ecs-eunit-list error)
 	(erl-ecs-eunit-receive))
 
@@ -293,7 +295,7 @@ erl-ecs-interval (120) (not supported yet)
       include-list)))
 
 (defun erl-ecs-find-exportline ()
-  "Find the exportline."
+  "Find out which line the exports are made."
   (save-excursion
     (set-buffer erl-ecs-current-buffer)
     (goto-char (or (string-match "^-export\\|^-compile" (buffer-string))
@@ -332,8 +334,7 @@ erl-ecs-interval (120) (not supported yet)
   (let ((err-list '()))
     (dolist (x errors err-list)
       (progn
-	;; bug here, on every other check; adds items to list strange
-	(setq err-list (cons (cons (tuple-elt x 1) tag) err-list))
+	(setq err-list (cons (vector (tuple-elt x 1) tag) err-list))
 
 	(erl-ecs-display-overlay
 	 (erl-ecs-goto-beg-of-line (tuple-elt x 1))
@@ -363,12 +364,12 @@ erl-ecs-interval (120) (not supported yet)
   (let ((delta (line-number-at-pos (if prev (point-min) (point-max))))
 	(pt (line-number-at-pos pos)))
     (dolist (it erl-ecs-lineno-list delta) (when (or (and (not prev)
-						    (> (car it) pt)
-						    (< (car it) delta))
+						    (> (elt it 0) pt)
+						    (< (elt it 0) delta))
 					       (and prev
-						    (< (car it) pt)
-						    (> (car it) delta)))
-				       (setq delta (car it))))))
+						    (< (elt it 0) pt)
+						    (> (elt it 0) delta)))
+				       (setq delta (elt it 0))))))
 
 (defun erl-ecs-next-error ()
   (interactive)
@@ -379,7 +380,8 @@ erl-ecs-interval (120) (not supported yet)
      (erl-ecs-goto-beg-of-line
       (if (= next max)
 	  (erl-ecs-goto-error nil (point-min))
-	next)))))
+	next)))
+    (erl-ecs-which-error)))
 
 (defun erl-ecs-prev-error ()
   (interactive)
@@ -390,7 +392,32 @@ erl-ecs-interval (120) (not supported yet)
      (erl-ecs-goto-beg-of-line
       (if (= prev min)
 	  (erl-ecs-goto-error t (point-max))
-	prev)))))
+	prev)))
+     (erl-ecs-which-error)))
+
+(defun erl-ecs-which-error ()
+  (interactive)
+  (let* ((line (line-number-at-pos))
+	 (tag (erl-ecs-get-tag line))
+	 ret)
+    (message "%s"
+	     (cond ((equal tag 'compile)
+		    (erl-ecs-get-item-match line erl-ecs-error-list 1))
+		   ((equal tag 'eunit)
+		    (erl-ecs-get-item-match line erl-ecs-eunit-list 1))
+		   ((equal tag 'xref)
+		    (erl-ecs-get-item-match line erl-ecs-xref-list 1))
+		   ((equal tag 'dialyzer)
+		    (erl-ecs-get-item-match line erl-ecs-dialyzer-list 1))
+		   (t "Couldn't find the error.")))))
+
+(defun erl-ecs-get-tag (line)
+  (let (tag)
+    (dolist (it erl-ecs-lineno-list tag) (when (equal (elt it 0) line) (setq tag (elt it 1))))))
+
+(defun erl-ecs-get-item-match (match lista vectpos)
+  (let (item)
+    (dolist (it lista item) (when (equal (tuple-elt it vectpos) match) (setq item it)))))
 
 (defun erl-ecs-message (msg &rest r)
   (when erl-ecs-verbose (message msg r)))
@@ -399,7 +426,7 @@ erl-ecs-interval (120) (not supported yet)
  "Deletes all items that has a value matching 'tag' from a list"
  (let ((new-list '()))
    (dolist (it erl-ecs-list new-list)
-       (unless (equal tag (cdr it)) (setq new-list (nconc new-list it))))
+       (unless (equal tag (elt it 1)) (setq new-list (cons it new-list))))
    (setq erl-ecs-lineno-list new-list)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
