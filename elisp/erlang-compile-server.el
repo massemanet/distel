@@ -29,11 +29,19 @@
 (defvar erl-ecs-interval 120
 "Seconds between checks if `erl-ecs-check-on-interval' is set.")
 
+(defvar erl-ecs-compile-options '()
+"A list of compile options that should be run when testing and compiling.
+For more info, check out the variable `erlang-compile-extra-opts'.")
+
 ;;; Error lists
 (defvar erl-ecs-error-list '())
 (defvar erl-ecs-eunit-list '())
 (defvar erl-ecs-xref-list '())
 (defvar erl-ecs-dialyzer-list '())
+(defvar erl-ecs-user-specified-errors '()
+"Must be a list of tuples with lineno, type and an error tuple.
+Erlang example: [{35, warning, {err_type, \"There is a cat in the ceiling.\"}}],
+Elisp : (list (tuple 35 'warning (tuple err_type \"There is a cat in the ceiling.\"))).")
 
 (defvar erl-ecs-lineno-list '())
 
@@ -58,6 +66,14 @@
     (t (:bold t)))
   "Face used for marking lesser warning lines."
   :group 'erl-ecs)
+
+(defface erl-ecs-user-specified-line
+  '((((class color) (background dark)) (:background "orange red"))
+    (((class color) (background light)) (:background "yellow"))
+    (t (:bold t)))
+  "Face used for marking lesser warning lines."
+  :group 'erl-ecs)
+
 
 ;; Check that module is loaded else load it
 (add-hook 'erl-nodeup-hook 'erl-ecs-check-backend)
@@ -101,17 +117,24 @@ Add the following lines to your .emacs file (after distel is initialized):
 \(require 'erlang-compile-server)
 
 And then set one or more of the following variables (defaults):
-erl-ecs-enable-eunit (t)
-erl-ecs-enable-xref (t)
-erl-ecs-enable-dialyzer (t)
+`erl-ecs-enable-eunit' (t) - enable eunit
+`erl-ecs-enable-xref' (t) - enable xref
+`erl-ecs-enable-dialyzer' (t) - enable dialyzer
 
-erl-ecs-check-on-save (t)
-erl-ecs-compile-if-ok (nil)
-erl-ecs-verbose (nil)
+`erl-ecs-check-on-save' (t) - check on save
+`erl-ecs-compile-if-ok' (nil) - if no compile fails, compile
+`erl-ecs-verbose' (nil) - prints alot of messages
 
-erl-ecs-check-on-interval (nil) (not supported yet)
-erl-ecs-interval (120) (not supported yet)
+`erl-ecs-check-on-interval' (nil) (not supported yet)
+`erl-ecs-interval' (120) (not supported yet)
 
+`erl-ecs-compile-options' (nil) - to specify what extra compile options to be runned
+`erl-ecs-user-specified-errors' (nil) - specify own errors, must be a list of tuples of lineno, type,and error tuple
+
+For custom colors define the faces:
+`erl-ecs-error-line', `erl-ecs-warning-line', `erl-ecs-lesser-line' and `erl-ecs-user-specified-line'
+
+Bindings:
 \\[erl-ecs-evaluate] - check for errors/warnings/testfails etc
 \\[erl-ecs-next-error] - goto next error
 \\[erl-ecs-prev-error] - goto previous error"
@@ -137,28 +160,40 @@ erl-ecs-interval (120) (not supported yet)
   (interactive)
   (erl-ecs-message "ECS: Evaluating...")
   (setq erl-ecs-lineno-list '())
+
   ;; seems to only work when recompiled full _plt
   (if erl-ecs-enable-dialyzer (erl-ecs-check-dialyzer)
     (erl-ecs-remove-overlays 'erl-ecs-dialyzer-overlay))
+
   (erl-ecs-check-compile)
+
   ;; seems to only work when recompiled file
   (if erl-ecs-enable-xref (erl-ecs-check-xref)
     (erl-ecs-remove-overlays 'erl-ecs-xref-overlay))
-  (if erl-ecs-enable-eunit (erl-ecs-check-eunit)
-    (erl-ecs-remove-overlays 'erl-ecs-eunit-overlay)))
 
-(defun erl-ecs-check-compile ()
-  "Checks for compilation errors and warnings."
+  (if erl-ecs-enable-eunit (erl-ecs-check-eunit)
+    (erl-ecs-remove-overlays 'erl-ecs-eunit-overlay))
+
+  (if erl-ecs-user-specified-errors
+      (erl-ecs-print-errors 'user-specified-error erl-ecs-user-specified-errors 'erl-ecs-user-spec-overlay 'erl-ecs-user-specified-line)
+    (erl-ecs-remove-overlays 'erl-ecs-user-spec-overlay)))
+
+(defun erl-ecs-check-compile (&optional compile-options)
+  "Checks for compilation errors and warnings.
+
+Optional parameter `compile-options' should be a list of compile options.
+Extra compile options could also be specified by setting the `erl-ecs-compile-options'-variable."
   (interactive)
   (setq erl-ecs-current-buffer (current-buffer))
   (erl-ecs-message "ECS: Checking erlang faults.")
 
   (let ((node (erl-target-node))
 	(path (buffer-file-name))
-	(incstring (erl-ecs-get-includes)))
-      
+	(incstring (erl-ecs-get-includes))
+	(options (or compile-options erl-ecs-compile-options)))
+
     (erl-spawn
-      (erl-send-rpc node 'erlang_compile_server 'get_warnings (list path incstring))
+      (erl-send-rpc node 'erlang_compile_server 'get_warnings (list path incstring options))
       
       (erl-receive ()
 	  ;; no errors
@@ -182,15 +217,18 @@ erl-ecs-interval (120) (not supported yet)
 (defun erl-ecs-if-no-compile-faults ()
   "Compile if compile-if-ok is set."
   (let ((incstring (erl-ecs-get-includes))
+	(inclist '())
 	tempopts)
     (set-buffer erl-ecs-current-buffer)
 
     (when (and (not (buffer-modified-p))
 	       erl-ecs-compile-if-ok)
       
+      (dolist (i incstring inclist) (setq inclist (cons (cons 'i i) inclist)))
+
       (progn (erl-ecs-message "ECS: Compiling.")
 	     (setq tempopts erlang-compile-extra-opts)
-	     (setq erlang-compile-extra-opts incstring)
+	     (setq erlang-compile-extra-opts inclist)
 	     (erlang-compile)
 	     (setq erlang-compile-extra-opts tempopts)))))
 
@@ -217,7 +255,7 @@ erl-ecs-interval (120) (not supported yet)
 	    (setq erl-ecs-dialyzer-list warnings)
 	    (erl-ecs-print-errors 'dialyzer erl-ecs-dialyzer-list 'erl-ecs-dialyzer-overlay))
 
-	   (else))))))
+	   (else (erl-ecs-remove-overlays 'erl-ecs-dialyzer-overlay)))))))
 
 (defun erl-ecs-check-xref ()
   "Checks for exported function that is not used outside the module."
@@ -245,7 +283,7 @@ erl-ecs-interval (120) (not supported yet)
 	      (setq erl-ecs-xref-list a)
 	      (erl-ecs-print-errors 'xref erl-ecs-xref-list 'erl-ecs-xref-overlay)))
 
-	   (else))))))
+	   (else (erl-ecs-remove-overlays 'erl-ecs-xref-overlay)))))))
 
 (defun erl-ecs-check-eunit ()
   "Checks eunit tests."
@@ -292,7 +330,7 @@ erl-ecs-interval (120) (not supported yet)
 	  (include-list '())
 	  (pt (point-min)))
       (while (string-match inc-regexp (buffer-string) pt)
-	(add-to-list 'include-list (substring (match-string 2) 1))
+	(add-to-list 'include-list (file-name-directory (substring (match-string 2) 1)))
 	(setq pt (match-end 0)))
       include-list)))
 
@@ -305,7 +343,8 @@ erl-ecs-interval (120) (not supported yet)
     (line-number-at-pos (forward-char))))
 
 (defun erl-ecs-remove-overlays (which)
-  "Removes all overlays with the name \\[which]"
+  "Removes all overlays with the name `WHICH'"
+  (interactive)
   (set-buffer erl-ecs-current-buffer)
   (dolist (ol (overlays-in (point-min) (point-max)))
     (when (and (overlayp ol)
@@ -355,12 +394,11 @@ erl-ecs-interval (120) (not supported yet)
   (let ((ov (make-overlay beg end nil t t)))
     (overlay-put ov 'face face)
     (overlay-put ov 'help-echo tooltip-text)
-    (overlay-put ov (if (not lesser)
-			'erl-ecs-overlay
-		      lesser) t)
+    (overlay-put ov (if lesser
+			lesser
+			'erl-ecs-overlay) t)
     (overlay-put ov 'priority (if (not lesser) 100 90))
     ov))
-
 
 (defun erl-ecs-goto-error (&optional prev pos)
   (let ((delta (line-number-at-pos (if prev (point-min) (point-max))))
@@ -383,7 +421,7 @@ erl-ecs-interval (120) (not supported yet)
       (if (= next max)
 	  (erl-ecs-goto-error nil (point-min))
 	next)))
-    (erl-ecs-which-error)))
+    (erl-ecs-show-error-on-line)))
 
 (defun erl-ecs-prev-error ()
   (interactive)
@@ -395,21 +433,21 @@ erl-ecs-interval (120) (not supported yet)
       (if (= prev min)
 	  (erl-ecs-goto-error t (point-max))
 	prev)))
-     (erl-ecs-which-error)))
+     (erl-ecs-show-error-on-line)))
 
 (defun erl-ecs-next-line ()
   (interactive)
   (next-line)
-  (erl-ecs-which-error))
+  (erl-ecs-show-error-on-line))
 
 (defun erl-ecs-prev-line ()
   (interactive)
   (previous-line)
-  (erl-ecs-which-error))
+  (erl-ecs-show-error-on-line))
 
-(defun erl-ecs-which-error ()
+(defun erl-ecs-show-error-on-line (&optional line)
   (interactive)
-  (let* ((line (line-number-at-pos))
+  (let* ((line (or line (line-number-at-pos)))
 	 (tag (erl-ecs-get-tag line))
 	 (ret (cond ((equal tag 'compile)
 		     (erl-ecs-get-item-match line erl-ecs-error-list 1))
@@ -418,7 +456,8 @@ erl-ecs-interval (120) (not supported yet)
 		    ((equal tag 'xref)
 		     (erl-ecs-get-item-match line erl-ecs-xref-list 1))
 		    ((equal tag 'dialyzer)
-		     (erl-ecs-get-item-match line erl-ecs-dialyzer-list 1)))))
+		     (erl-ecs-get-item-match line erl-ecs-dialyzer-list 1))
+		    ((equal tag 'user-specified-error) (erl-ecs-get-item-match line erl-ecs-user-specified-errors 1)))))
     (when ret (message "%s %s" tag (erl-ecs-format-output ret)))))
 
 (defun erl-ecs-get-tag (line)

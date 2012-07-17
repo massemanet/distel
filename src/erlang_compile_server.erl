@@ -2,28 +2,24 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
--export([get_warnings/2
-	 , get_warnings/3
-	 , get_warnings_from_string/2
-	 , check_eunit/2
-	 , eunit_loop/2
-	 , xref/1
-	 , xref_start/1
-	 , check_dialyzer/1
+-export([get_warnings/3,
+	 get_warnings_from_string/3,
+	 check_eunit/2,
+	 eunit_loop/2,
+	 xref/1,
+	 xref_start/1,
+	 check_dialyzer/1
 	]).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Erlang Compile Server %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-get_warnings(Path, Includes) ->
-    get_warnings(Path, [], Includes).
-get_warnings(Path, Outdir, Includes) ->
+get_warnings(Path, Includes, Options) ->
     Module = filename:absname(Path),
-    %% todo; this list with includes
     Incs = [{i, I} || I <- Includes],
 
-    case compile:file(Module, [Outdir, Incs, binary, verbose, return]) of
+    case compile:file(Module, [Incs, binary, verbose, return, debug_info]++Options) of
 	{ok, _Mod, _Binary, []} ->
 	    {ok};
 	{ok, _Modulename, _Binary, Warnings} ->
@@ -32,10 +28,9 @@ get_warnings(Path, Outdir, Includes) ->
 	    {e, lists:keymerge(1, create_list(Errors, error),
 			   create_list(Warnings, warning))}
     end.
-    
 
 %% Does not work.
-get_warnings_from_string(Textstring, Includes) ->
+get_warnings_from_string(Textstring, Includes, Options) ->
 %%    {ok, Tokens, _} = erl_scan:string(Textstring),
 %%    {ok, Parse} = erl_parse:parse_form(Tokens),
 %%    case compile:forms(Parse, [Includes, binary, verbose, return]) of
@@ -54,7 +49,7 @@ get_warnings_from_string(Textstring, Includes) ->
     Tmpfile = "Tmp901835",
     case file:write_file(Tmpfile, Textstring) of
 	ok ->
-	    Tested = get_warnings(Tmpfile, [], Includes),
+	    Tested = get_warnings(Tmpfile, Includes, Options),
 	    file:delete(Tmpfile), %% maybe warning?
 	    Tested;
 	{error, R} ->
