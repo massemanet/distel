@@ -44,6 +44,7 @@ Erlang example: [{35, warning, {err_type, \"There is a cat in the ceiling.\"}}],
 Elisp : (list (tuple 35 'warning (tuple err_type \"There is a cat in the ceiling.\"))).")
 
 (defvar erl-ecs-lineno-list '())
+(defvar erl-ecs-error-index 0)
 
 ;; Faces for highlighting
 (defface erl-ecs-error-line
@@ -384,7 +385,7 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 	     (if (string= (tuple-elt x 2) "error")
 		 'erl-ecs-error-line
 	       'erl-ecs-warning-line)
-	   (if lesser-face lesser-face 'erl-ecs-warning-line))
+	   (if lesser-face lesser-face 'erl-ecs-lesser-line))
 	 (format "%s: %s @line %s " (tuple-elt x 2) (tuple-elt x 3) (tuple-elt x 1))
 	 lesser)) err-list)
     (setq erl-ecs-lineno-list (append erl-ecs-lineno-list err-list))))
@@ -401,41 +402,70 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
     ov))
 
 (defun erl-ecs-goto-error (&optional prev pos)
-  (let ((delta (line-number-at-pos (if prev (point-min) (point-max))))
-	(pt (line-number-at-pos pos)))
-    (dolist (it erl-ecs-lineno-list delta) (when (or (and (not prev)
-						    (> (elt it 0) pt)
-						    (< (elt it 0) delta))
-					       (and prev
-						    (< (elt it 0) pt)
-						    (> (elt it 0) delta)))
-				       (setq delta (elt it 0))))))
+  (let* ((delta (line-number-at-pos (if prev (point-min) (point-max))))
+	(pt (line-number-at-pos pos))
+	(skip-counter 0)
+	(min-max delta)
+	(comparison delta))
+    (dolist (it erl-ecs-lineno-list delta)
+      ;; set the first/last err
+      (when (or (and prev
+		     (> (elt it 0) min-max))
+		(and (not prev)
+		     (< (elt it 0) min-max)))
+	(setq min-max (elt it 0)))
+      ;; set how many errors on the given line
+      (when (= (elt it 0) pt) (setq skip-counter (+ 1 skip-counter)))
+      ;; set the next/prev error
+      (when (or (and (not prev)
+		     (> (elt it 0) pt)
+		     (< (elt it 0) delta))
+		(and prev
+		     (< (elt it 0) pt)
+		     (> (elt it 0) delta)))
+	(setq delta (elt it 0))))
+      (cons (if (= delta comparison) min-max delta) skip-counter)))
 
 (defun erl-ecs-next-error ()
+  "Moves point to the next error and prints the error."
   (interactive)
-  (let ((max (line-number-at-pos (point-max)))
-	(next (erl-ecs-goto-error)))
+  (let* ((max (line-number-at-pos (point-max)))
+	 (next-pair (erl-ecs-goto-error))
+	 (next-err-line (car next-pair))
+	 (total-errs-on-line (cdr next-pair)))
 
-    (goto-char
-     (erl-ecs-goto-beg-of-line
-      (if (= next max)
-	  (erl-ecs-goto-error nil (point-min))
-	next)))
+    (if (>= erl-ecs-error-index total-errs-on-line)
+	(progn
+	  (setq erl-ecs-error-index 1)
+	  (goto-char
+	   (erl-ecs-goto-beg-of-line
+	      next-err-line)))
+      (setq erl-ecs-error-index (+ 1 erl-ecs-error-index)))
+    
     (erl-ecs-show-error-on-line)))
 
 (defun erl-ecs-prev-error ()
+  "Moves point to the previous error and prints the error."
   (interactive)
-  (let ((min (line-number-at-pos (point-min)))
-	(prev (erl-ecs-goto-error t)))
+  (let* ((min (line-number-at-pos (point-min)))
+	(prev-pair (erl-ecs-goto-error t))
+	(prev-err-line (car prev-pair))
+	(total-errs-on-line (cdr prev-pair)))
 
-    (goto-char
-     (erl-ecs-goto-beg-of-line
-      (if (= prev min)
-	  (erl-ecs-goto-error t (point-max))
-	prev)))
-     (erl-ecs-show-error-on-line)))
+    (if (>= erl-ecs-error-index total-errs-on-line)
+	(progn
+	  (setq erl-ecs-error-index 1)
+	  (goto-char
+	   (erl-ecs-goto-beg-of-line
+	    (if (= prev-err-line min)
+		(erl-ecs-goto-error t (point-max))
+	      prev-err-line))))
+      (setq erl-ecs-error-index (+ erl-ecs-error-index 1)))
+
+    (erl-ecs-show-error-on-line)))
 
 (defun erl-ecs-next-line ()
+  "Moves point to the next line using `next-line' and then prints the error if there is one."
   (interactive)
   (next-line)
   (erl-ecs-show-error-on-line))
@@ -446,6 +476,7 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
   (erl-ecs-show-error-on-line))
 
 (defun erl-ecs-show-error-on-line (&optional line)
+  "Prints the error for a certain line. If more than one error, prints the one given by `erl-ecs-error-index'."
   (interactive)
   (let* ((line (or line (line-number-at-pos)))
 	 (tag (erl-ecs-get-tag line))
@@ -461,8 +492,13 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
     (when ret (message "%s %s" tag (erl-ecs-format-output ret)))))
 
 (defun erl-ecs-get-tag (line)
-  (let (tag)
-    (dolist (it erl-ecs-lineno-list tag) (when (equal (elt it 0) line) (setq tag (elt it 1))))))
+  (let ((skip 0)
+	tag)
+    (dolist (it erl-ecs-lineno-list tag)
+      (when (equal (elt it 0) line)
+	(setq skip (+ 1 skip))
+	(when (= skip erl-ecs-error-index)
+	  (setq tag (elt it 1)))))))
 
 (defun erl-ecs-get-item-match (match lista vectpos)
   (let (item)
@@ -475,7 +511,7 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
   (when erl-ecs-verbose (message msg r)))
 
 (defun erl-ecs-delete-items (tag erl-ecs-list)
- "Deletes all items that has a value matching 'tag' from a list"
+ "Deletes all items that has a value matching `TAG' from a list"
  (let ((new-list '()))
    (dolist (it erl-ecs-list new-list)
        (unless (equal tag (elt it 1)) (setq new-list (cons it new-list))))
