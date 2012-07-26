@@ -5,6 +5,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; Customization
+(defvar erl-ecs-backends '(compiler xref dialyzer eunit)
+  "These backends will be activated.")
+
 (defvar erl-ecs-enable-eunit t
 "If non-nil also checks the eunit tests in the module-file.")
 
@@ -46,6 +49,9 @@ Elisp : (list (tuple 35 'warning (tuple err_type \"There is a cat in the ceiling
 (defvar erl-ecs-lineno-list '())
 (defvar erl-ecs-error-index 0)
 
+(defvar erl-ecs-before-eval-hooks '())
+(defvar erl-ecs-after-eval-hooks '())
+
 ;; Faces for highlighting
 (defface erl-ecs-error-line
   '((((class color) (background dark)) (:background "Firebrick"))
@@ -75,7 +81,6 @@ Elisp : (list (tuple 35 'warning (tuple err_type \"There is a cat in the ceiling
   "Face used for marking lesser warning lines."
   :group 'erl-ecs)
 
-
 ;; Check that module is loaded else load it
 (add-hook 'erl-nodeup-hook 'erl-ecs-check-backend)
 
@@ -95,6 +100,11 @@ Elisp : (list (tuple 35 'warning (tuple err_type \"There is a cat in the ceiling
 
 (defun erl-ecs-setup ()
   (add-hook 'erlang-mode-hook 'erl-ecs-mode-hook)
+
+  ;; for now, just set the enables on each backend
+  (unless (member 'xref erl-ecs-backends) (setq erl-ecs-enable-xref nil))
+  (unless (member 'eunit erl-ecs-backends) (setq erl-ecs-enable-eunit nil))
+  (unless (member 'dialyzer erl-ecs-backends) (setq erl-ecs-enable-dialyzer nil))
 
   (erl-ecs-message "ECS loaded.")
 
@@ -118,9 +128,7 @@ Add the following lines to your .emacs file (after distel is initialized):
 \(require 'erlang-compile-server)
 
 And then set one or more of the following variables (defaults):
-`erl-ecs-enable-eunit' (t) - enable eunit
-`erl-ecs-enable-xref' (t) - enable xref
-`erl-ecs-enable-dialyzer' (t) - enable dialyzer
+`erl-ecs-backends' (compiler xref dialyzer eunit)
 
 `erl-ecs-check-on-save' (t) - check on save
 `erl-ecs-compile-if-ok' (nil) - if no compile fails, compile
@@ -159,8 +167,12 @@ Bindings:
 
 (defun erl-ecs-evaluate ()
   (interactive)
+  (setq erl-ecs-current-buffer (current-buffer))
+
   (erl-ecs-message "ECS: Evaluating...")
   (setq erl-ecs-lineno-list '())
+
+  (run-hooks 'erl-ecs-before-eval-hooks)
 
   ;; seems to only work when recompiled full _plt
   (if erl-ecs-enable-dialyzer (erl-ecs-check-dialyzer)
@@ -177,15 +189,15 @@ Bindings:
 
   (if erl-ecs-user-specified-errors
       (erl-ecs-print-errors 'user-specified-error erl-ecs-user-specified-errors 'erl-ecs-user-spec-overlay 'erl-ecs-user-specified-line)
-    (erl-ecs-remove-overlays 'erl-ecs-user-spec-overlay)))
+    (erl-ecs-remove-overlays 'erl-ecs-user-spec-overlay))
+
+  (run-hooks 'erl-ecs-after-eval-hooks))
 
 (defun erl-ecs-check-compile (&optional compile-options)
   "Checks for compilation errors and warnings.
 
 Optional parameter `compile-options' should be a list of compile options.
 Extra compile options could also be specified by setting the `erl-ecs-compile-options'-variable."
-  (interactive)
-  (setq erl-ecs-current-buffer (current-buffer))
   (erl-ecs-message "ECS: Checking erlang faults.")
 
   (let ((node (erl-target-node))
@@ -235,7 +247,6 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 
 (defun erl-ecs-check-dialyzer ()
   "Checks type and function warnings."
-  (interactive)
   (erl-ecs-message "ECS: Checking Dialyzer.")
 
   (let ((path (buffer-file-name))
@@ -260,7 +271,7 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 
 (defun erl-ecs-check-xref ()
   "Checks for exported function that is not used outside the module."
-  (interactive)
+
   (erl-ecs-message "ECS: Checking XREF.")
 
   (let ((node (erl-target-node))
@@ -288,7 +299,7 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 
 (defun erl-ecs-check-eunit ()
   "Checks eunit tests."
-  (interactive)
+
 
   (erl-ecs-message "ECS: Checking EUNIT.")
 
@@ -517,11 +528,29 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
        (unless (equal tag (elt it 1)) (setq new-list (cons it new-list))))
    (setq erl-ecs-lineno-list new-list)))
 
+(defun erl-ecs-check-backends ()
+  (interactive)
+  (unless (member 'xref erl-ecs-backends)
+    (erl-ecs-message "xref not set")
+    (setq erl-ecs-enable-xref nil))
+  (unless (member 'eunit erl-ecs-backends)
+    (erl-ecs-message "eunit not set")
+    (setq erl-ecs-enable-eunit nil))
+  (unless (member 'dialyzer erl-ecs-backends)
+    (erl-ecs-message "dialyzer not set")
+    (setq erl-ecs-enable-dialyzer nil)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;            TODO            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun erl-ecs-start-interval ())
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;           Last             ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(add-hook 'erl-ecs-before-eval-hooks 'erl-ecs-check-backends)
 
 (erl-ecs-setup)
 

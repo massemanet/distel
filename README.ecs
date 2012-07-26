@@ -9,9 +9,8 @@ setting the list `erl-ecs-user-specified-errors'.
 
 To execute ECS, run `erl-ecs-evaluate' (C-c C-d q). This is also
 done when saving the file (`erl-ecs-check-on-save'). As default it
-will check compilation errors/warnings, xref (`erl-ecs-enable-xref')
-and dialyzer warnings (`erl-ecs-enable-dialyzer') and
-eunit tests (`erl-ecs-enable-eunit').
+will check compilation errors/warnings, xref and dialyzer warnings and
+eunit tests (`erl-ecs-backends').
 
 You can skip to the next error using `erl-ecs-next-error' (C-c C-n)
 or previous error by `erl-ecs-prev-error' (C-c C-p).
