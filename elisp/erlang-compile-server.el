@@ -205,6 +205,8 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 	(incstring (erl-ecs-get-includes))
 	(options (or compile-options erl-ecs-compile-options)))
 
+    (erl-ecs-remove-overlays 'erl-ecs-overlay)
+
     (erl-spawn
       (erl-send-rpc node 'erlang_compile_server 'get_warnings (list path incstring options))
       
@@ -212,9 +214,8 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 	  ;; no errors
 	  ((['rex ['ok]]
 	    (erl-ecs-message "ECS erlang: No faults.")
-	    (erl-ecs-delete-items 'compile erl-ecs-lineno-list)
 	    (setq erl-ecs-error-list '())
-	    (erl-ecs-remove-overlays 'erl-ecs-overlay)
+	    (erl-ecs-delete-items 'compile erl-ecs-lineno-list)
 	    (erl-ecs-if-no-compile-faults))
 	   
 	   ;; errors
@@ -225,7 +226,6 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 	   
 	   (else
 	    (erl-ecs-message "ECS erlang unexpected end: %s" else)))))))
-
 
 (defun erl-ecs-if-no-compile-faults ()
   "Compile if compile-if-ok is set."
@@ -251,6 +251,9 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 
   (let ((path (buffer-file-name))
 	(node (erl-target-node)))
+
+    (erl-ecs-remove-overlays 'erl-ecs-dialyzer-overlay)
+
     (erl-spawn
       (erl-send-rpc node 'erlang_compile_server 'check_dialyzer (list path))
       (erl-receive ()
@@ -258,8 +261,7 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 	  ((['rex ['ok]]
 	    (erl-ecs-message "ECS Dialyzer: No warnings.")
 	    (setq erl-ecs-dialyzer-list '())
-	    (erl-ecs-delete-items 'dialyzer erl-ecs-lineno-list)
-	    (erl-ecs-remove-overlays 'erl-ecs-dialyzer-overlay))
+	    (erl-ecs-delete-items 'dialyzer erl-ecs-lineno-list))
 
 	   ;; dialyzer warnings
 	   (['rex ['w warnings]]
@@ -267,7 +269,7 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 	    (setq erl-ecs-dialyzer-list warnings)
 	    (erl-ecs-print-errors 'dialyzer erl-ecs-dialyzer-list 'erl-ecs-dialyzer-overlay))
 
-	   (else (erl-ecs-remove-overlays 'erl-ecs-dialyzer-overlay)))))))
+	   (else))))))
 
 (defun erl-ecs-check-xref ()
   "Checks for exported function that is not used outside the module."
@@ -278,6 +280,8 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 	(path (buffer-file-name))
 	(expline (erl-ecs-find-exportline)))
 
+    (erl-ecs-remove-overlays 'erl-ecs-xref-overlay)
+
     (erl-spawn
       (erl-send-rpc node 'erlang_compile_server 'xref (list path))
       (erl-receive (expline)
@@ -285,8 +289,7 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 	  ((['rex ['ok]]
 	    (erl-ecs-message "ECS XREF: No warnings.")
 	    (setq erl-ecs-xref-list '())
-	    (erl-ecs-delete-items 'xref erl-ecs-lineno-list)
-	    (erl-ecs-remove-overlays 'erl-ecs-xref-overlay))
+	    (erl-ecs-delete-items 'xref erl-ecs-lineno-list))
 	   
 	   ;; xref warnings
 	   (['rex ['w warnings]]
@@ -295,11 +298,10 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 	      (setq erl-ecs-xref-list a)
 	      (erl-ecs-print-errors 'xref erl-ecs-xref-list 'erl-ecs-xref-overlay)))
 
-	   (else (erl-ecs-remove-overlays 'erl-ecs-xref-overlay)))))))
+	   (else))))))
 
 (defun erl-ecs-check-eunit ()
   "Checks eunit tests."
-
 
   (erl-ecs-message "ECS: Checking EUNIT.")
 
@@ -337,7 +339,6 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
   "Find the includefiles for an erlang module."
   (save-excursion
     (set-buffer erl-ecs-current-buffer)
-    (goto-char (point-min))
     (let ((inc-regexp (concat "^-include\\(_lib\\)?(\"\\([^\)]*\\)"))
 	  (include-list '())
 	  (pt (point-min)))
@@ -499,7 +500,8 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 		     (erl-ecs-get-item-match line erl-ecs-xref-list 1))
 		    ((equal tag 'dialyzer)
 		     (erl-ecs-get-item-match line erl-ecs-dialyzer-list 1))
-		    ((equal tag 'user-specified-error) (erl-ecs-get-item-match line erl-ecs-user-specified-errors 1)))))
+		    ((equal tag 'user-specified-error)
+		     (erl-ecs-get-item-match line erl-ecs-user-specified-errors 1)))))
     (when ret (message "%s %s" tag (erl-ecs-format-output ret)))))
 
 (defun erl-ecs-get-tag (line)
