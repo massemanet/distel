@@ -1,3 +1,13 @@
+%%%-------------------------------------------------------------
+%%% File    : erlang_compile_server.erl
+%%% Author  : Sebastian Weddmark Olsson
+%%%           github.com/sebastiw
+%%% Purpose : Used with distel as a backend for erlang-compile-server
+%%% 
+%%% Created : June 2012 as an internship at Klarna AB
+%%% Comment : Please let me know if you find any bugs or you
+%%%           want some feature or something
+%%%-------------------------------------------------------------
 -module(erlang_compile_server).
 
 -include_lib("eunit/include/eunit.hrl").

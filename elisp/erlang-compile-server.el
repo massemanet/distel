@@ -1,3 +1,15 @@
+;;;-------------------------------------------------------------
+;;; File    : erlang-compile-server.el
+;;; Author  : Sebastian Weddmark Olsson
+;;;           github.com/sebastiw
+;;; Purpose : Used with distel to mark compilation/xref/dialyzer
+;;;           & eunit errors and warnings while writing, in the
+;;;           current buffer.
+;;; 
+;;; Created : June 2012 as an internship at Klarna AB
+;;; Comment : Please let me know if you find any bugs or you
+;;;           want some feature or something
+;;;------------------------------------------------------------
 (require 'distel)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -81,11 +93,15 @@ Elisp : (list (tuple 35 'warning (tuple err_type \"There is a cat in the ceiling
   "Face used for marking lesser warning lines."
   :group 'erl-ecs)
 
+(defvar erl-node-isup nil)
+
 ;; Check that module is loaded else load it
 (add-hook 'erl-nodeup-hook 'erl-ecs-check-backend)
+(add-hook 'erl-nodedown-hook 'erl-ecs-nodedown)
 
 (defun erl-ecs-check-backend (node _fsm)
   "Reloads 'erlang_compile_server' module to `node'."
+  (setq erl-node-isup t)
   (unless distel-inhibit-backend-check
     (progn (erl-ecs-message "ECS: reloading 'erlang_compile_server' onto %s" node)
 	   (erl-spawn
@@ -98,6 +114,9 @@ Elisp : (list (tuple 35 'warning (tuple err_type \"There is a cat in the ceiling
 		   (&erl-load-backend node))
 		  (_ t)))))))
 
+(defun erl-ecs-nodedown (node)
+  (setq erl-node-isup))
+
 (defun erl-ecs-setup ()
   (add-hook 'erlang-mode-hook 'erl-ecs-mode-hook)
 
@@ -107,10 +126,6 @@ Elisp : (list (tuple 35 'warning (tuple err_type \"There is a cat in the ceiling
   (unless (member 'dialyzer erl-ecs-backends) (setq erl-ecs-enable-dialyzer nil))
 
   (erl-ecs-message "ECS loaded.")
-
-  (add-to-list 'minor-mode-alist
-	       '(erl-ecs-mode
-		 " ECS"))
 
   (when erl-ecs-check-on-interval (erl-ecs-start-interval)))
 
@@ -147,9 +162,12 @@ Bindings:
 \\[erl-ecs-evaluate] - check for errors/warnings/testfails etc
 \\[erl-ecs-next-error] - goto next error
 \\[erl-ecs-prev-error] - goto previous error"
-  nil
-  nil
-  '(("\C-c\C-dq" 'undefined)))
+  :lighter " ECS"
+  :keymap '(("\C-c\C-dq" undefined))
+  (if erl-ecs-mode
+      (setq erl-ecs-temp-output erl-popup-on-output
+	    erl-popup-on-output)
+    (setq erl-popup-on-output erl-ecs-temp-output)))
 
 (defconst erl-ecs-key-binding
   '(("\C-c\C-dq" erl-ecs-evaluate)
@@ -165,33 +183,41 @@ Bindings:
 ;;           Main             ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defvar erl-ecs-temp-output nil)
+(defvar erl-ecs-have-already-run-once nil)
+
 (defun erl-ecs-evaluate ()
+  "Checks for errors in current buffer. If this function have been executed and the node wasn't up, you need to connect with distels ping command \\[erl-ping]."
   (interactive)
-  (setq erl-ecs-current-buffer (current-buffer))
 
-  (erl-ecs-message "ECS: Evaluating...")
-  (setq erl-ecs-lineno-list '())
+  (when (or (not erl-ecs-have-already-run-once) erl-node-isup)
+    (setq erl-ecs-current-buffer (current-buffer)
+	  erl-ecs-have-already-run-once t)
 
-  (run-hooks 'erl-ecs-before-eval-hooks)
+      (erl-ecs-message "ECS: Evaluating...")
+      (setq erl-ecs-lineno-list '())
 
-  ;; seems to only work when recompiled full _plt
-  (if erl-ecs-enable-dialyzer (erl-ecs-check-dialyzer)
-    (erl-ecs-remove-overlays 'erl-ecs-dialyzer-overlay))
+      (run-hooks 'erl-ecs-before-eval-hooks)
 
-  (erl-ecs-check-compile)
+      ;; seems to only work when recompiled full _plt
+      (if erl-ecs-enable-dialyzer (erl-ecs-check-dialyzer)
+	(erl-ecs-remove-overlays 'erl-ecs-dialyzer-overlay))
 
-  ;; seems to only work when recompiled file
-  (if erl-ecs-enable-xref (erl-ecs-check-xref)
-    (erl-ecs-remove-overlays 'erl-ecs-xref-overlay))
+      (erl-ecs-check-compile)
 
-  (if erl-ecs-enable-eunit (erl-ecs-check-eunit)
-    (erl-ecs-remove-overlays 'erl-ecs-eunit-overlay))
+      ;; seems to only work when recompiled file
+      (if erl-ecs-enable-xref (erl-ecs-check-xref)
+	(erl-ecs-remove-overlays 'erl-ecs-xref-overlay))
 
-  (if erl-ecs-user-specified-errors
-      (erl-ecs-print-errors 'user-specified-error erl-ecs-user-specified-errors 'erl-ecs-user-spec-overlay 'erl-ecs-user-specified-line)
-    (erl-ecs-remove-overlays 'erl-ecs-user-spec-overlay))
+      (if erl-ecs-enable-eunit (erl-ecs-check-eunit)
+	(erl-ecs-remove-overlays 'erl-ecs-eunit-overlay))
 
-  (run-hooks 'erl-ecs-after-eval-hooks))
+      (if erl-ecs-user-specified-errors
+	  (erl-ecs-print-errors 'user-specified-error erl-ecs-user-specified-errors 'erl-ecs-user-spec-overlay 'erl-ecs-user-specified-line)
+	(erl-ecs-remove-overlays 'erl-ecs-user-spec-overlay))
+
+      (run-hooks 'erl-ecs-after-eval-hooks))
+)
 
 (defun erl-ecs-check-compile (&optional compile-options)
   "Checks for compilation errors and warnings.

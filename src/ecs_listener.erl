@@ -1,3 +1,14 @@
+%%%-------------------------------------------------------------
+%%% File    : ecs_listener.erl
+%%% Author  : Sebastian Weddmark Olsson
+%%%           github.com/sebastiw
+%%% Purpose : Listener for eunit, to be used with distel and
+%%%           erlang_compile_server
+%%% 
+%%% Created : June 2012 as an internship at Klarna AB
+%%% Comment : Please let me know if you find any bugs or you
+%%%           want some feature or something
+%%%-------------------------------------------------------------
 -module(ecs_listener).
 
 -behaviour(eunit_listener).
