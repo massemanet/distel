@@ -181,7 +181,7 @@ check_dialyzer(Path) ->
 
     Ret = try dialyzer:run(DiaOpts) of
 	      [] -> [];
-	      Warnings when is_list(Warnings) -> {w, [{L, warning, Msg} || {_, {_, L}, Msg} <- Warnings]};
+	      Warnings when is_list(Warnings) -> {w, [{L, warning, format_msg(Msg)} || {_, {_, L}, Msg} <- Warnings]};
 	      E -> E
 	  catch
 	      E -> E
@@ -191,3 +191,8 @@ check_dialyzer(Path) ->
 	{w, _} = R -> R;
 	C -> {error, C}
     end.
+
+format_msg({Type, Msg}) ->
+  {Header, Messages} = lists:split(3, Msg),
+  FormattedMessages = lists:map(fun erlang:iolist_to_binary/1, Messages),
+  {Type, lists:append([Header, FormattedMessages])}.
