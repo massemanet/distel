@@ -165,16 +165,36 @@ Bindings:
   :lighter " ECS"
   :keymap '(("\C-c\C-dq" undefined))
   (if erl-ecs-mode
-      (setq erl-ecs-temp-output erl-popup-on-output
-	    erl-popup-on-output)
-    (setq erl-popup-on-output erl-ecs-temp-output)))
+      (progn (setq erl-ecs-temp-output erl-popup-on-output
+		   erl-popup-on-output)
+	     (ad-activate-regexp "erl-ecs-.*"))
+    (setq erl-popup-on-output erl-ecs-temp-output)
+    (ad-deactivate-regexp "erl-ecs-.*")))
+
+(defun erl-ecs-activate-advices (&optional list)
+  (let ((list (or list '(next-line previous-line forward-paragraph backward-paragraph))))
+    (dolist (advice list) (ad-activate advice))))
+(defun erl-ecs-activate-advices (&optional list)
+  (let ((list (or list '(next-line previous-line forward-paragraph backward-paragraph))))
+    (dolist (advice list) (ad-activate advice))))
+
+(defadvice next-line (after erl-ecs-next-line)
+  "Moves point to the next line using `next-line' and then prints the error if there is one."
+  (when erl-ecs-mode (erl-ecs-show-error-on-line)))
+(defadvice previous-line (after erl-ecs-previous-line)
+  "Moves point to previous line and prints error if there is one."
+  (when erl-ecs-mode (erl-ecs-show-error-on-line)))
+(defadvice forward-paragraph (after erl-ecs-next-paragraph)
+  "Next paragraph, then check and print if there is errors."
+  (when erl-ecs-mode (erl-ecs-show-error-on-line)))
+(defadvice backward-paragraph (after erl-ecs-previous-paragraph)
+  "Previous paragraph, check if there is errors."
+  (when erl-ecs-mode (erl-ecs-show-error-on-line)))
 
 (defconst erl-ecs-key-binding
   '(("\C-c\C-dq" erl-ecs-evaluate)
     ("\C-c\C-n" erl-ecs-next-error)
-    ("\C-c\C-p" erl-ecs-prev-error)
-    ("\C-n" erl-ecs-next-line)
-    ("\C-p" erl-ecs-prev-line))
+    ("\C-c\C-p" erl-ecs-prev-error))
   "Erlang compile server key binding")
 
 (dolist (k erl-ecs-key-binding) (define-key erl-ecs-mode-map (car k) (cadr k)))
@@ -185,6 +205,12 @@ Bindings:
 
 (defvar erl-ecs-temp-output nil)
 (defvar erl-ecs-have-already-run-once nil)
+
+(defvar erl-ecs-xref-string "Xref")
+(defvar erl-ecs-dialyzer-string "Dialyzer")
+(defvar erl-ecs-eunit-string "Eunit")
+(defvar erl-ecs-default-string "Erlang")
+(defvar erl-ecs-user-specified-string "User specified")
 
 (defun erl-ecs-evaluate ()
   "Checks for errors in current buffer. If this function have been executed and the node wasn't up, you need to connect with distels ping command \\[erl-ping]."
@@ -201,20 +227,20 @@ Bindings:
 
       ;; seems to only work when recompiled full _plt
       (if erl-ecs-enable-dialyzer (erl-ecs-check-dialyzer)
-	(erl-ecs-remove-overlays 'erl-ecs-dialyzer-overlay))
+	(erl-ecs-remove-overlays erl-ecs-dialyzer-string))
 
       (erl-ecs-check-compile)
 
       ;; seems to only work when recompiled file
       (if erl-ecs-enable-xref (erl-ecs-check-xref)
-	(erl-ecs-remove-overlays 'erl-ecs-xref-overlay))
+	(erl-ecs-remove-overlays erl-ecs-xref-string))
 
       (if erl-ecs-enable-eunit (erl-ecs-check-eunit)
-	(erl-ecs-remove-overlays 'erl-ecs-eunit-overlay))
+	(erl-ecs-remove-overlays erl-ecs-eunit-string))
 
       (if erl-ecs-user-specified-errors
-	  (erl-ecs-print-errors 'user-specified-error erl-ecs-user-specified-errors 'erl-ecs-user-spec-overlay 'erl-ecs-user-specified-line)
-	(erl-ecs-remove-overlays 'erl-ecs-user-spec-overlay))
+	  (erl-ecs-print-errors 'user-specified-error erl-ecs-user-specified-errors erl-ecs-user-specified-string 'erl-ecs-user-specified-line)
+	(erl-ecs-remove-overlays erl-ecs-user-specified-string))
 
       (run-hooks 'erl-ecs-after-eval-hooks))
 )
@@ -231,7 +257,7 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 	(incstring (erl-ecs-get-includes))
 	(options (or compile-options erl-ecs-compile-options)))
 
-    (erl-ecs-remove-overlays 'erl-ecs-overlay)
+    (erl-ecs-remove-overlays erl-ecs-default-string)
 
     (erl-spawn
       (erl-send-rpc node 'erlang_compile_server 'get_warnings (list path incstring options))
@@ -278,7 +304,7 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
   (let ((path (buffer-file-name))
 	(node (erl-target-node)))
 
-    (erl-ecs-remove-overlays 'erl-ecs-dialyzer-overlay)
+    (erl-ecs-remove-overlays erl-ecs-dialyzer-string)
 
     (erl-spawn
       (erl-send-rpc node 'erlang_compile_server 'check_dialyzer (list path))
@@ -293,7 +319,7 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 	   (['rex ['w warnings]]
 	    (erl-ecs-message "ECS Dialyzer err at %s." warnings)
 	    (setq erl-ecs-dialyzer-list warnings)
-	    (erl-ecs-print-errors 'dialyzer erl-ecs-dialyzer-list 'erl-ecs-dialyzer-overlay))
+	    (erl-ecs-print-errors 'dialyzer erl-ecs-dialyzer-list erl-ecs-dialyzer-string))
 
 	   (else))))))
 
@@ -306,7 +332,7 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 	(path (buffer-file-name))
 	(expline (erl-ecs-find-exportline)))
 
-    (erl-ecs-remove-overlays 'erl-ecs-xref-overlay)
+    (erl-ecs-remove-overlays erl-ecs-xref-string)
 
     (erl-spawn
       (erl-send-rpc node 'erlang_compile_server 'xref (list path))
@@ -322,7 +348,7 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 	    (let ((a (list (tuple expline 'warning (tuple 'exported_unused_function warnings)))))
 	      (erl-ecs-message "ECS XREF err at %s." a)
 	      (setq erl-ecs-xref-list a)
-	      (erl-ecs-print-errors 'xref erl-ecs-xref-list 'erl-ecs-xref-overlay)))
+	      (erl-ecs-print-errors 'xref erl-ecs-xref-list erl-ecs-xref-string)))
 
 	   (else))))))
 
@@ -334,7 +360,7 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
   ;; reset eunit errors
   (setq erl-ecs-eunit-list '())
   (erl-ecs-delete-items 'eunit erl-ecs-lineno-list)
-  (erl-ecs-remove-overlays 'erl-ecs-eunit-overlay)
+  (erl-ecs-remove-overlays erl-ecs-eunit-string)
   
   (let ((node (erl-target-node))
 	(path (buffer-name)))
@@ -355,7 +381,7 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 
        (['klar]))
 
-    (erl-ecs-print-errors 'eunit erl-ecs-eunit-list 'erl-ecs-eunit-overlay)))
+    (erl-ecs-print-errors 'eunit erl-ecs-eunit-list erl-ecs-eunit-string)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;          Helpers           ;;
@@ -387,7 +413,7 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
   (set-buffer erl-ecs-current-buffer)
   (dolist (ol (overlays-in (point-min) (point-max)))
     (when (and (overlayp ol)
-	       (overlay-get ol which))
+	       (eql (overlay-get ol 'erl-ecs-type) which))
       (delete-overlay ol))))
 
 (defun erl-ecs-goto-beg-of-line (line-no)
@@ -413,30 +439,35 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
   (set-buffer erl-ecs-current-buffer)
   (let ((err-list '()))
     (dolist (x errors err-list)
-      (progn
 	(setq err-list (cons (vector (tuple-elt x 1) tag) err-list))
 
 	(erl-ecs-display-overlay
-	 (erl-ecs-goto-beg-of-line (tuple-elt x 1))
-	 (erl-ecs-goto-end-of-line (tuple-elt x 1))
-	 (if (not lesser)
+	 (erl-ecs-goto-beg-of-line (tuple-elt x 1)) ; beginning
+	 (erl-ecs-goto-end-of-line (tuple-elt x 1)) ; end
+	 (if (not lesser) ; face
 	     (if (string= (tuple-elt x 2) "error")
 		 'erl-ecs-error-line
 	       'erl-ecs-warning-line)
 	   (if lesser-face lesser-face 'erl-ecs-lesser-line))
-	 (format "%s: %s @line %s " (tuple-elt x 2) (tuple-elt x 3) (tuple-elt x 1))
-	 lesser)) err-list)
+	 (format "%s %s: %s @line %s "
+		 lesser
+		 (tuple-elt x 2)
+		 (tuple-elt x 3)
+		 (tuple-elt x 1)) ; help-echo
+	 lesser) ;; lesser-type
+	err-list)
     (setq erl-ecs-lineno-list (append erl-ecs-lineno-list err-list))))
 
 (defun erl-ecs-display-overlay (beg end face tooltip-text &optional lesser)
   "Display the overlays."
   (let ((ov (make-overlay beg end nil t t)))
+    (overlay-put ov 'erl-ecs t)
     (overlay-put ov 'face face)
     (overlay-put ov 'help-echo tooltip-text)
-    (overlay-put ov (if lesser
-			lesser
-			'erl-ecs-overlay) t)
-    (overlay-put ov 'priority (if (not lesser) 100 90))
+    (overlay-put ov 'erl-ecs-type (if lesser lesser
+			    erl-ecs-default-string))
+    (overlay-put ov 'priority (if lesser 90 100))
+;    (overlay-put ov 'keymap '(()))
     ov))
 
 (defun erl-ecs-goto-error (&optional prev pos)
@@ -475,9 +506,10 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
     (if (>= erl-ecs-error-index total-errs-on-line)
 	(progn
 	  (setq erl-ecs-error-index 1)
-	  (goto-char
-	   (erl-ecs-goto-beg-of-line
-	      next-err-line)))
+	  (when erl-ecs-lineno-list
+	    (goto-char
+	     (erl-ecs-goto-beg-of-line
+	      next-err-line))))
       (setq erl-ecs-error-index (+ 1 erl-ecs-error-index)))
     
     (erl-ecs-show-error-on-line)))
@@ -493,58 +525,29 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
     (if (>= erl-ecs-error-index total-errs-on-line)
 	(progn
 	  (setq erl-ecs-error-index 1)
-	  (goto-char
-	   (erl-ecs-goto-beg-of-line
-	    (if (= prev-err-line min)
-		(erl-ecs-goto-error t (point-max))
-	      prev-err-line))))
+	  (when erl-ecs-lineno-list
+	    (goto-char
+	     (erl-ecs-goto-beg-of-line
+	      (if (= prev-err-line min)
+		  (erl-ecs-goto-error t (point-max))
+		prev-err-line)))))
       (setq erl-ecs-error-index (+ erl-ecs-error-index 1)))
 
     (erl-ecs-show-error-on-line)))
 
-(defun erl-ecs-next-line ()
-  "Moves point to the next line using `next-line' and then prints the error if there is one."
-  (interactive)
-  (next-line)
-  (erl-ecs-show-error-on-line))
-
-(defun erl-ecs-prev-line ()
-  (interactive)
-  (previous-line)
-  (erl-ecs-show-error-on-line))
-
 (defun erl-ecs-show-error-on-line (&optional line)
-  "Prints the error for a certain line. If more than one error, prints the one given by `erl-ecs-error-index'."
+  "Prints the errors for a certain line."
   (interactive)
-  (let* ((line (or line (line-number-at-pos)))
-	 (tag (erl-ecs-get-tag line))
-	 (ret (cond ((equal tag 'compile)
-		     (erl-ecs-get-item-match line erl-ecs-error-list 1))
-		    ((equal tag 'eunit)
-		     (erl-ecs-get-item-match line erl-ecs-eunit-list 1))
-		    ((equal tag 'xref)
-		     (erl-ecs-get-item-match line erl-ecs-xref-list 1))
-		    ((equal tag 'dialyzer)
-		     (erl-ecs-get-item-match line erl-ecs-dialyzer-list 1))
-		    ((equal tag 'user-specified-error)
-		     (erl-ecs-get-item-match line erl-ecs-user-specified-errors 1)))))
-    (when ret (message "%s %s" tag (erl-ecs-format-output ret)))))
-
-(defun erl-ecs-get-tag (line)
-  (let ((skip 0)
-	tag)
-    (dolist (it erl-ecs-lineno-list tag)
-      (when (equal (elt it 0) line)
-	(setq skip (+ 1 skip))
-	(when (= skip erl-ecs-error-index)
-	  (setq tag (elt it 1)))))))
-
-(defun erl-ecs-get-item-match (match lista vectpos)
-  (let (item)
-    (dolist (it lista item) (when (equal (tuple-elt it vectpos) match) (setq item (tuple-elt it 3))))))
-
-(defun erl-ecs-format-output (msg)
-  (replace-regexp-in-string "\n" "<newline>" (format "%s: %s" (elt msg 0) (elt msg 1))))
+  (let ((cut-at 200)
+	str)
+    (dolist (ov (overlays-at (point)) str)
+      (let ((help-echo (overlay-get ov 'help-echo)))
+	(when (overlay-get ov 'erl-ecs-type)
+	  (setq str (concat
+		     (replace-regexp-in-string "\n" "<newline>" (substring help-echo 0 cut-at))
+		     (when (> (length help-echo) cut-at) "...")
+		     (when str (concat "\n" str)))))))
+    (when str (message str))))
 
 (defun erl-ecs-message (msg &rest r)
   (when erl-ecs-verbose (message msg r)))
