@@ -20,32 +20,57 @@
 (defvar erl-ecs-backends '(compiler xref dialyzer eunit)
   "These backends will be activated.")
 
-(defvar erl-ecs-enable-eunit t
-"If non-nil also checks the eunit tests in the module-file.")
+(defcustom erl-ecs-enable-eunit t
+  "If non-nil also checks the eunit tests in the module-file."
+  :type '(boolean)
+  :group 'erl-ecs)
 
-(defvar erl-ecs-enable-xref t
-"If non-nil also checks for exported functions that isn't used externally through xref.")
+(defcustom erl-ecs-enable-xref t
+  "If non-nil also checks for exported functions that isn't used externally through xref."
+  :type '(boolean)
+  :group 'erl-ecs)
 
-(defvar erl-ecs-enable-dialyzer t
-"If non-nil also checks Dialyzer for type warnings.")
+(defcustom erl-ecs-enable-dialyzer t
+  "If non-nil also checks Dialyzer for type warnings."
+  :type '(boolean)
+  :group 'erl-ecs)
 
-(defvar erl-ecs-check-on-save t
-"Checks errors and warnings on save.")
+(defcustom erl-ecs-check-on-save t
+  "Checks errors and warnings on save."
+  :type '(boolean)
+  :group 'erl-ecs)
 
-(defvar erl-ecs-compile-if-ok nil
-"Compiles the module if it doesn't have any errors or warnings.")
+(defcustom erl-ecs-compile-if-ok nil
+  "Compiles the module if it doesn't have any errors or warnings."
+  :type '(boolean)
+  :group 'erl-ecs)
 
-(defvar erl-ecs-verbose nil
-"Writes output to *Messages* buffer.")
+(defcustom erl-ecs-verbose nil
+  "Writes output to *Messages* buffer."
+  :type '(boolean)
+  :group 'erl-ecs)
 
-(defvar erl-ecs-check-on-interval nil
-"Checks errors and warnings on given intervals.")
+(defcustom erl-ecs-cut-at-mouseover 100
+  "The distance between the newlines for the message when hovering over at an error."
+  :type '(number)
+  :group 'erl-ecs)
+(defcustom erl-ecs-cut-at-distance 200
+  "When inserting a newline, this is the distance between the insertions."
+  :type '(number)
+  :group 'erl-ecs)
 
-(defvar erl-ecs-interval 120
-"Seconds between checks if `erl-ecs-check-on-interval' is set.")
+(defcustom erl-ecs-check-on-interval nil
+  "Checks errors and warnings on given intervals."
+  :type '(boolean)
+  :group 'erl-ecs)
+
+(defcustom erl-ecs-interval 120
+  "Seconds between checks if `erl-ecs-check-on-interval' is set."
+  :type '(integer)
+  :group 'erl-ecs)
 
 (defvar erl-ecs-compile-options '()
-"A list of compile options that should be run when testing and compiling.
+  "A list of compile options that should be run when testing and compiling.
 For more info, check out the variable `erlang-compile-extra-opts'.")
 
 ;;; Error lists
@@ -58,8 +83,8 @@ For more info, check out the variable `erlang-compile-extra-opts'.")
 Erlang example: [{35, warning, {err_type, \"There is a cat in the ceiling.\"}}],
 Elisp : (list (tuple 35 'warning (tuple err_type \"There is a cat in the ceiling.\"))).")
 
-(defvar erl-ecs-lineno-list '())
-(defvar erl-ecs-error-index 0)
+(defvar erl-ecs-lineno-list '()
+  "Short list, specifies which linenumber the errors appear on and what type of error.")
 
 (defvar erl-ecs-before-eval-hooks '())
 (defvar erl-ecs-after-eval-hooks '())
@@ -93,7 +118,8 @@ Elisp : (list (tuple 35 'warning (tuple err_type \"There is a cat in the ceiling
   "Face used for marking lesser warning lines."
   :group 'erl-ecs)
 
-(defvar erl-node-isup nil)
+(defvar erl-node-isup nil
+  "To track if the node is up or not.")
 
 ;; Check that module is loaded else load it
 (add-hook 'erl-nodeup-hook 'erl-ecs-check-backend)
@@ -115,6 +141,7 @@ Elisp : (list (tuple 35 'warning (tuple err_type \"There is a cat in the ceiling
 		  (_ t)))))))
 
 (defun erl-ecs-nodedown (node)
+  "Track if the node goes down."
   (setq erl-node-isup))
 
 (defun erl-ecs-setup ()
@@ -134,6 +161,7 @@ Elisp : (list (tuple 35 'warning (tuple err_type \"There is a cat in the ceiling
   (add-hook 'after-save-hook 'erl-ecs-on-save t t))
 
 (defun erl-ecs-on-save ()
+  "Check for warnings on save."
   (when erl-ecs-check-on-save (erl-ecs-evaluate)))
 
 (define-minor-mode erl-ecs-mode
@@ -171,12 +199,12 @@ Bindings:
     (setq erl-popup-on-output erl-ecs-temp-output)
     (ad-deactivate-regexp "erl-ecs-.*")))
 
-(defun erl-ecs-activate-advices (&optional list)
-  (let ((list (or list '(next-line previous-line forward-paragraph backward-paragraph))))
-    (dolist (advice list) (ad-activate advice))))
-(defun erl-ecs-activate-advices (&optional list)
-  (let ((list (or list '(next-line previous-line forward-paragraph backward-paragraph))))
-    (dolist (advice list) (ad-activate advice))))
+;(defun erl-ecs-activate-advices (&optional list)
+;  (let ((list (or list '(next-line previous-line forward-paragraph backward-paragraph))))
+;    (dolist (advice list) (ad-activate advice))))
+;(defun erl-ecs-deactivate-advices (&optional list)
+;  (let ((list (or list '(next-line previous-line forward-paragraph backward-paragraph))))
+;    (dolist (advice list) (ad-deactivate advice))))
 
 (defadvice next-line (after erl-ecs-next-line)
   "Moves point to the next line using `next-line' and then prints the error if there is one."
@@ -197,20 +225,23 @@ Bindings:
     ("\C-c\C-p" erl-ecs-prev-error))
   "Erlang compile server key binding")
 
+;; rebinds the keys
 (dolist (k erl-ecs-key-binding) (define-key erl-ecs-mode-map (car k) (cadr k)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;           Main             ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar erl-ecs-temp-output nil)
-(defvar erl-ecs-have-already-run-once nil)
+(defvar erl-ecs-temp-output nil
+  "Take care of the original value of the variable `erl-popup-on-output'. This is to keep eunit from popup and leave unwanted output.")
+(defvar erl-ecs-have-already-run-once nil
+  "If the evaluation function have already been run one time, and you are still not connected, it should stop evaluate.")
 
-(defvar erl-ecs-xref-string "Xref")
-(defvar erl-ecs-dialyzer-string "Dialyzer")
-(defvar erl-ecs-eunit-string "Eunit")
-(defvar erl-ecs-default-string "Erlang")
-(defvar erl-ecs-user-specified-string "User specified")
+(defconst erl-ecs-xref-string "Xref")
+(defconst erl-ecs-dialyzer-string "Dialyzer")
+(defconst erl-ecs-eunit-string "Eunit")
+(defconst erl-ecs-default-string "Erlang")
+(defconst erl-ecs-user-specified-string "User specified")
 
 (defun erl-ecs-evaluate ()
   "Checks for errors in current buffer. If this function have been executed and the node wasn't up, you need to connect with distels ping command \\[erl-ping]."
@@ -242,8 +273,7 @@ Bindings:
 	  (erl-ecs-print-errors 'user-specified-error erl-ecs-user-specified-errors erl-ecs-user-specified-string 'erl-ecs-user-specified-line)
 	(erl-ecs-remove-overlays erl-ecs-user-specified-string))
 
-      (run-hooks 'erl-ecs-after-eval-hooks))
-)
+      (run-hooks 'erl-ecs-after-eval-hooks)))
 
 (defun erl-ecs-check-compile (&optional compile-options)
   "Checks for compilation errors and warnings.
@@ -449,11 +479,11 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 		 'erl-ecs-error-line
 	       'erl-ecs-warning-line)
 	   (if lesser-face lesser-face 'erl-ecs-lesser-line))
-	 (format "%s %s: %s @line %s "
-		 lesser
+	 (format "%s %s @line %s: %s "
+		 (if lesser lesser erl-ecs-default-string)
 		 (tuple-elt x 2)
-		 (tuple-elt x 3)
-		 (tuple-elt x 1)) ; help-echo
+		 (tuple-elt x 1)
+		 (tuple-elt x 3)) ; help-echo
 	 lesser) ;; lesser-type
 	err-list)
     (setq erl-ecs-lineno-list (append erl-ecs-lineno-list err-list))))
@@ -463,17 +493,23 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
   (let ((ov (make-overlay beg end nil t t)))
     (overlay-put ov 'erl-ecs t)
     (overlay-put ov 'face face)
-    (overlay-put ov 'help-echo tooltip-text)
+    (overlay-put ov 'help-echo (erl-ecs-add-newline tooltip-text erl-ecs-cut-at-mouseover))
     (overlay-put ov 'erl-ecs-type (if lesser lesser
 			    erl-ecs-default-string))
     (overlay-put ov 'priority (if lesser 90 100))
-;    (overlay-put ov 'keymap '(()))
     ov))
 
+(defun erl-ecs-add-newline (string distance)
+  "Adds a newline at every `distance' chars in `string'."
+    (if (> (length string) distance)
+	(concat (substring string 0 distance)
+		"\n" (erl-ecs-add-newline (substring string distance) distance))
+      string))
+
 (defun erl-ecs-goto-error (&optional prev pos)
+  "Leave point at the next error and print the message. If `prev' is set goto the previous error. If `pos' is set, goto that line."
   (let* ((delta (line-number-at-pos (if prev (point-min) (point-max))))
 	(pt (line-number-at-pos pos))
-	(skip-counter 0)
 	(min-max delta)
 	(comparison delta))
     (dolist (it erl-ecs-lineno-list delta)
@@ -483,8 +519,6 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 		(and (not prev)
 		     (< (elt it 0) min-max)))
 	(setq min-max (elt it 0)))
-      ;; set how many errors on the given line
-      (when (= (elt it 0) pt) (setq skip-counter (+ 1 skip-counter)))
       ;; set the next/prev error
       (when (or (and (not prev)
 		     (> (elt it 0) pt)
@@ -493,63 +527,48 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 		     (< (elt it 0) pt)
 		     (> (elt it 0) delta)))
 	(setq delta (elt it 0))))
-      (cons (if (= delta comparison) min-max delta) skip-counter)))
+    (if (= delta comparison) min-max delta)))
 
 (defun erl-ecs-next-error ()
   "Moves point to the next error and prints the error."
   (interactive)
   (let* ((max (line-number-at-pos (point-max)))
-	 (next-pair (erl-ecs-goto-error))
-	 (next-err-line (car next-pair))
-	 (total-errs-on-line (cdr next-pair)))
-
-    (if (>= erl-ecs-error-index total-errs-on-line)
-	(progn
-	  (setq erl-ecs-error-index 1)
+	 (next-err-line (erl-ecs-goto-error)))
 	  (when erl-ecs-lineno-list
 	    (goto-char
 	     (erl-ecs-goto-beg-of-line
-	      next-err-line))))
-      (setq erl-ecs-error-index (+ 1 erl-ecs-error-index)))
-    
+	      next-err-line)))
     (erl-ecs-show-error-on-line)))
 
 (defun erl-ecs-prev-error ()
   "Moves point to the previous error and prints the error."
   (interactive)
   (let* ((min (line-number-at-pos (point-min)))
-	(prev-pair (erl-ecs-goto-error t))
-	(prev-err-line (car prev-pair))
-	(total-errs-on-line (cdr prev-pair)))
-
-    (if (>= erl-ecs-error-index total-errs-on-line)
-	(progn
-	  (setq erl-ecs-error-index 1)
+	 (prev-err-line (erl-ecs-goto-error t)))
 	  (when erl-ecs-lineno-list
 	    (goto-char
 	     (erl-ecs-goto-beg-of-line
-	      (if (= prev-err-line min)
-		  (erl-ecs-goto-error t (point-max))
-		prev-err-line)))))
-      (setq erl-ecs-error-index (+ erl-ecs-error-index 1)))
-
+		prev-err-line)))
     (erl-ecs-show-error-on-line)))
 
 (defun erl-ecs-show-error-on-line (&optional line)
-  "Prints the errors for a certain line."
+  "Prints the errors for a certain line. If `line' is nil use the current line."
   (interactive)
-  (let ((cut-at 200)
-	str)
+  (let (str)
     (dolist (ov (overlays-at (point)) str)
       (let ((help-echo (overlay-get ov 'help-echo)))
 	(when (overlay-get ov 'erl-ecs-type)
 	  (setq str (concat
-		     (replace-regexp-in-string "\n" "<newline>" (substring help-echo 0 cut-at))
-		     (when (> (length help-echo) cut-at) "...")
+		     (replace-regexp-in-string "\n" ""
+		      (substring help-echo 0
+		       (when (> (length help-echo) erl-ecs-cut-at-distance)
+			 erl-ecs-cut-at-distance)))
+		     (when (> (length help-echo) erl-ecs-cut-at-distance) "...")
 		     (when str (concat "\n" str)))))))
     (when str (message str))))
 
 (defun erl-ecs-message (msg &rest r)
+  "Prints message if `erl-ecs-verbose' is non-nil."
   (when erl-ecs-verbose (message msg r)))
 
 (defun erl-ecs-delete-items (tag erl-ecs-list)
@@ -560,6 +579,7 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
    (setq erl-ecs-lineno-list new-list)))
 
 (defun erl-ecs-check-backends ()
+  "See which backends should be used."
   (interactive)
   (unless (member 'xref erl-ecs-backends)
     (erl-ecs-message "xref not set")
