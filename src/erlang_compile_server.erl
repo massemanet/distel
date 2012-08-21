@@ -41,24 +41,9 @@ get_warnings(Path, Includes, Options) ->
 			   create_list(Warnings, warning))}
     end.
 
-%% Does not work.
+%% get_warnings_from_string/3 uses a temporary file to store the buffer-string in
 get_warnings_from_string(Textstring, Includes, Options) ->
-%%    {ok, Tokens, _} = erl_scan:string(Textstring),
-%%    {ok, Parse} = erl_parse:parse_form(Tokens),
-%%    case compile:forms(Parse, [Includes, binary, verbose, return]) of
-%%	{ok, _Mod, _Binary, []} ->
-%%	    {ok};
-%%
-%%	{ok, _Modulename, _Binary, Warnings} ->
-%%	    {w, create_list(Warnings, warning)};
-%%
-%%	{error, Errors, Warnings} ->
-%%	    {e, lists:keymerge(1, create_list(Errors, error), create_list(Warnings, warning))};
-%%
-%%	E ->
-%%	    {ok, distel:fmt("Something happend: ~p.", [E])}
-%%    end.	
-    Tmpfile = "Tmp901835",
+    Tmpfile = "Tmp901835.erl",
     case file:write_file(Tmpfile, Textstring) of
 	ok ->
 	    Tested = get_warnings(Tmpfile, Includes, Options),

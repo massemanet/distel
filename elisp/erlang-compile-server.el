@@ -68,6 +68,8 @@
   "Seconds between checks if `erl-ecs-check-on-interval' is set."
   :type '(integer)
   :group 'erl-ecs)
+(defvar erl-ecs-timer '()
+  "Holds the timer as soon as it is started.")
 
 (defvar erl-ecs-compile-options '()
   "A list of compile options that should be run when testing and compiling.
@@ -199,13 +201,6 @@ Bindings:
     (setq erl-popup-on-output erl-ecs-temp-output)
     (ad-deactivate-regexp "erl-ecs-.*")))
 
-;(defun erl-ecs-activate-advices (&optional list)
-;  (let ((list (or list '(next-line previous-line forward-paragraph backward-paragraph))))
-;    (dolist (advice list) (ad-activate advice))))
-;(defun erl-ecs-deactivate-advices (&optional list)
-;  (let ((list (or list '(next-line previous-line forward-paragraph backward-paragraph))))
-;    (dolist (advice list) (ad-deactivate advice))))
-
 (defadvice next-line (after erl-ecs-next-line)
   "Moves point to the next line using `next-line' and then prints the error if there is one."
   (when erl-ecs-mode (erl-ecs-show-error-on-line)))
@@ -247,7 +242,9 @@ Bindings:
   "Checks for errors in current buffer. If this function have been executed and the node wasn't up, you need to connect with distels ping command \\[erl-ping]."
   (interactive)
 
-  (when (or (not erl-ecs-have-already-run-once) erl-node-isup)
+  (when (and
+	 erl-ecs-mode
+	 (or (not erl-ecs-have-already-run-once) erl-node-isup))
     (setq erl-ecs-current-buffer (current-buffer)
 	  erl-ecs-have-already-run-once t)
 
@@ -289,9 +286,16 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 
     (erl-ecs-remove-overlays erl-ecs-default-string)
 
-    (erl-spawn
-      (erl-send-rpc node 'erlang_compile_server 'get_warnings (list path incstring options))
-      
+      (if (buffer-modified-p)
+	  (let ((bfr-str (buffer-string)))
+	    (erl-spawn
+	      (erl-send-rpc node 'erlang_compile_server 'get_warnings_from_string (list bfr-str incstring options))
+	      (erl-ecs-receive-compile)))
+	(erl-spawn
+	  (erl-send-rpc node 'erlang_compile_server 'get_warnings (list path incstring options))
+	  (erl-ecs-receive-compile)))))
+
+(defun erl-ecs-receive-compile ()
       (erl-receive ()
 	  ;; no errors
 	  ((['rex ['ok]]
@@ -307,7 +311,7 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 	    (erl-ecs-print-errors 'compile erl-ecs-error-list))
 	   
 	   (else
-	    (erl-ecs-message "ECS erlang unexpected end: %s" else)))))))
+	    (erl-ecs-message "ECS erlang unexpected end: %s" else)))))
 
 (defun erl-ecs-if-no-compile-faults ()
   "Compile if compile-if-ok is set."
@@ -416,6 +420,18 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;          Helpers           ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun erl-ecs-start-interval ()
+  "Defines a timer that runs (erl-ecs-evaluate) every `erl-ecs-interval' second."
+  (interactive)
+  (erl-ecs-stop-interval)
+  (setq erl-ecs-timer (run-at-time (format "%s sec" erl-ecs-interval) erl-ecs-interval 'erl-ecs-evaluate)))
+
+(defun erl-ecs-stop-interval ()
+  "Stops the timer."
+  (interactive)
+  (when erl-ecs-timer (cancel-timer erl-ecs-timer))
+  (setq erl-ecs-timer))
 
 (defun erl-ecs-get-includes ()
   "Find the includefiles for an erlang module."
@@ -595,7 +611,6 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
 ;;            TODO            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun erl-ecs-start-interval ())
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;           Last             ;;
