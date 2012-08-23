@@ -29,9 +29,8 @@
 %%% returns the compile warnings.
 get_warnings(Path, Includes, Options) ->
     Module = filename:absname(Path),
-    Incs = [{i, I} || I <- Includes],
-
-    case compile:file(Module, [Incs, binary, verbose, return, debug_info]++Options) of
+    Incs = [{i, I} || I <- Includes, I =/= []],
+    case compile:file(Module, Incs++[binary, verbose, return, debug_info]++Options) of
 	{ok, _Mod, _Binary, []} ->
 	    {ok};
 	{ok, _Modulename, _Binary, Warnings} ->
