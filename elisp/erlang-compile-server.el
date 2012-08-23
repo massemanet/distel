@@ -75,6 +75,9 @@
   "A list of compile options that should be run when testing and compiling.
 For more info, check out the variable `erlang-compile-extra-opts'.")
 
+(defvar erl-ecs-compile-includes '()
+  "A list of compile include paths that should be run when testing and compiling.")
+
 ;;; Error lists
 (defvar erl-ecs-error-list '())
 (defvar erl-ecs-eunit-list '())
@@ -183,6 +186,7 @@ And then set one or more of the following variables (defaults):
 `erl-ecs-interval' (120) (not supported yet)
 
 `erl-ecs-compile-options' (nil) - to specify what extra compile options to be runned
+`erl-ecs-compile-includes' (nil) - to specify what compile include paths to be used
 `erl-ecs-user-specified-errors' (nil) - specify own errors, must be a list of tuples of lineno, type,and error tuple
 
 For custom colors define the faces:
@@ -438,7 +442,7 @@ Extra compile options could also be specified by setting the `erl-ecs-compile-op
   (save-excursion
     (set-buffer erl-ecs-current-buffer)
     (let ((inc-regexp (concat "^-include\\(_lib\\)?(\"\\([^\)]*\\)"))
-	  (include-list '())
+	  (include-list erl-ecs-compile-includes)
 	  (pt (point-min)))
       (while (string-match inc-regexp (buffer-string) pt)
 	(add-to-list 'include-list (file-name-directory (substring (match-string 2) 1)))
