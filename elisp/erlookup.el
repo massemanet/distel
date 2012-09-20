@@ -97,6 +97,21 @@
     )
    )
   )
+(defun erl-extract-include-paths-from-buffer-recursively(buffer)
+  "Collects included paths from a file and returns them in a list,
+only '-include(' ,no 'include_lib('"
+  (let (stack extracted-stack cur-file file-visiting-p cur-buf)
+    (push (buffer-file-name buffer) stack)
+    stack
+    (while (> (length stack) 0)
+      (setq cur-file (pop stack))
+      (unless (member cur-file  extracted-stack)
+        (push cur-file extracted-stack)
+        (setq file-visiting-p (find-buffer-visiting cur-file))
+        (setq cur-buf  (or file-visiting-p (find-file-noselect cur-file)))
+        (setq stack (append stack (erl-extract-include-paths-from-buffer cur-buf)))
+        (unless file-visiting-p (kill-buffer cur-buf))))
+    extracted-stack))
 
 (defun erl-extract-include-paths-from-buffer (buffer)
   "Collects included paths from a file and returns them in a list,
@@ -243,8 +258,7 @@ or   (nil header-file-already-opened-in-emacs-p)"
   (ring-insert-at-beginning erl-find-history-ring (copy-marker (point-marker)))
   (let (buf  buf-exists found tmp-result)
     (setq found (catch 'found
-                  (dolist (header-file (cons (buffer-file-name (current-buffer))
-                                             (erl-extract-include-paths-from-buffer (current-buffer))))
+                  (dolist (header-file (erl-extract-include-paths-from-buffer-recursively (current-buffer)))
                     (setq tmp-result (erl-find-source-pattern-in-file pattern header-file))
                     (if (equal (caar tmp-result) 'ok)
                         (throw 'found `(,header-file ,(nth 1 (car tmp-result)))) ;return (header-file new-position)
