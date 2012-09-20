@@ -101,23 +101,23 @@
 (defun erl-extract-include-paths-from-buffer (buffer)
   "Collects included paths from a file and returns them in a list,
 only '-include(' ,no 'include_lib('"
-  (let (paths path)
+  (let ((project-root (erl-guess-app-dir))
+        paths path tmp-include-file)
     (save-excursion
       (with-current-buffer buffer
         (goto-char (point-min))
         (while (re-search-forward erl-include-pattern nil t)
           (setq path (match-string 1))
-          (if (file-exists-p (expand-file-name path ))
-              (push (expand-file-name path ) paths)
-            (when (file-exists-p (expand-file-name (concat  "../include/" path)))
-              (push (expand-file-name (concat  "../include/" path)) paths)
-              )
-            )
-
-          )
-        )
-      )
-    (nreverse paths)))
+          (cond
+           ((file-exists-p (expand-file-name path ))
+            (push (expand-file-name path ) paths))
+           ((file-exists-p (expand-file-name (concat  "../include/" path)))
+            (push (expand-file-name (concat  "../include/" path)) paths))
+           ((file-exists-p (expand-file-name (concat  "include/" path) project-root))
+            (push  (expand-file-name (concat  "include/" path) project-root) paths))
+           ))))
+    paths
+    ))
 
  ;; (erl-extract-include-lib-paths-from-buffer (current-buffer) (lambda (header-files) (print header-files) ))
 (defun erl-extract-include-lib-paths-from-buffer (buffer hook)
