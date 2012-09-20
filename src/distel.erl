@@ -198,11 +198,12 @@ guess_source_file(Mod, BeamFName) ->
             join([DotDot, "esrc", "*","*", Erl]),
             join([DotDot, "esrc", "*","*","*", Erl]),
             join([DotDot, "esrc", "*","*","*","*", Erl]),
-            join([DotDot, "erl", Erl])]),
+            join([DotDot, "erl", Erl]),
             join([DotDot, "erl", "*", Erl]),
             join([DotDot, "erl", "*","*", Erl]),
             join([DotDot, "erl", "*","*","*", Erl]),
-            join([DotDot, "erl", "*","*","*","*", Erl]).
+            join([DotDot, "erl", "*","*","*","*", Erl])
+           ]).
 
 try_srcs([]) -> throw(nothing);
 try_srcs(["" | T]) -> try_srcs(T);
