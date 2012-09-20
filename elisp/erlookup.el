@@ -46,6 +46,19 @@
         (when header-file (find-file header-file)))
       ))
   )
+(defun erl-guess-app-dir()
+  "guess app-root dir."
+  (cond
+   ((locate-dominating-file default-directory "Emakefile")
+    (expand-file-name (locate-dominating-file default-directory "Emakefile")))
+   ((locate-dominating-file default-directory "rebar")
+    (expand-file-name (locate-dominating-file default-directory "rebar")))
+   ((locate-dominating-file default-directory "Makefile")
+    (expand-file-name (locate-dominating-file default-directory "Makefile")))
+   ((locate-dominating-file default-directory "makefile")
+    (expand-file-name (locate-dominating-file default-directory "makefile")))
+   (t (file-name-directory (directory-file-name
+                            (file-name-directory (buffer-file-name)))))))
 
 ;; http://www.erlang.org/doc/reference_manual/macros.html
 ;; (erl-locate-header-file "head.hrl")
@@ -65,12 +78,10 @@
       (when (file-exists-p header-file) header-file)))
 
    (t                                   ; in project-root/include ,or project/deps/app-name/include
-    (let* ((current-src-file (buffer-file-name (current-buffer)))
-           (project-root (expand-file-name "../.." current-src-file))
+    (let* ((project-root (erl-guess-app-dir))
            (header-in-default-include-path (expand-file-name (concat  "include/" extracted-header-file-path) project-root))
            (default-deps-path (expand-file-name "deps/" project-root))
-           tmp-include-file
-           )
+           tmp-include-file)
       (if (file-exists-p header-in-default-include-path)
           header-in-default-include-path
         (when (file-exists-p default-deps-path)
