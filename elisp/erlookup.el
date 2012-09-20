@@ -48,17 +48,18 @@
   )
 (defun erl-guess-app-dir()
   "guess app-root dir."
-  (cond
-   ((locate-dominating-file default-directory "Emakefile")
-    (expand-file-name (locate-dominating-file default-directory "Emakefile")))
-   ((locate-dominating-file default-directory "rebar")
-    (expand-file-name (locate-dominating-file default-directory "rebar")))
-   ((locate-dominating-file default-directory "Makefile")
-    (expand-file-name (locate-dominating-file default-directory "Makefile")))
-   ((locate-dominating-file default-directory "makefile")
-    (expand-file-name (locate-dominating-file default-directory "makefile")))
-   (t (file-name-directory (directory-file-name
-                            (file-name-directory (buffer-file-name)))))))
+  (let (app-root)
+    (cond
+     ((setq app-root (locate-dominating-file default-directory "Emakefile"))
+      (expand-file-name app-root))
+     ((setq app-root (locate-dominating-file default-directory "rebar"))
+      (expand-file-name app-root))
+     ((setq app-root (locate-dominating-file default-directory "Makefile"))
+      (expand-file-name app-root))
+     ((setq app-root (locate-dominating-file default-directory "makefile"))
+      (expand-file-name app-root))
+     (t (file-name-directory
+         (directory-file-name (file-name-directory (buffer-file-name))))))))
 
 ;; http://www.erlang.org/doc/reference_manual/macros.html
 ;; (erl-locate-header-file "head.hrl")
