@@ -721,6 +721,18 @@ all_modules()->
                           end
                   end,[X|| X <- code:get_path()]),
     {ok,flatten_hrls(ModuleNames,[])}.
+
+prefix_matched_modules(Prefix)->
+    {ok,AllMods}=all_modules(),
+    MatchedMods=
+        lists:filter(fun(Mod)->
+                             case string:str(Mod,Prefix) of
+                                 1 -> true;%Mod starts with Prefix
+                                 _->false
+                             end
+                     end ,AllMods),
+    {ok,MatchedMods}.
+
 loaded_modules() ->
   Mods = erlang:loaded(),
   {ok, Mods}.
