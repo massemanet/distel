@@ -993,7 +993,7 @@ prompts for an mfa."
           (prefix (match-string 1 ))
           (beg (match-beginning 1)))
       (erl-spawn
-        (erl-send-rpc node 'distel 'modules (list prefix))
+        (erl-send-rpc node 'distel 'prefix_matched_modules (list prefix))
         (&erl-receive-completions "module" beg end prefix buf
                                   #'erl-complete-sole-module))
       )
