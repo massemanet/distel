@@ -86,21 +86,26 @@ assert(Props) ->
 %% gen_server callbacks
 init(Props) -> 
   %% Dir = "/usr/share/doc/erlang-15.2/html",
-  {ok,Docs}=file:list_dir("/usr/share/doc/"),
-  ErlangDocPaths=lists:filter(fun(Doc)->
-                                  case Doc of
-                                    "erlang-"++_Version->
-                                      true;
-                                    _ ->
-                                      false
-                                  end
-                              end,Docs),
-  case ErlangDocPaths of
-    []->
-      Dir =  proplists:get_value(root_dir, Props, code:root_dir());  
-    [ErlangDocPath]->
-      Dir=filename:join(["/usr/share/doc/",ErlangDocPath, "html/"]) 
-  end,
+  Dir= case filelib:is_dir("/usr/share/doc/") of
+         false->
+           proplists:get_value(root_dir, Props, code:root_dir());
+         true ->
+           {ok,Docs}=file:list_dir("/usr/share/doc/"),
+           ErlangDocPaths=lists:filter(fun(Doc)->
+                                           case Doc of
+                                             "erlang-"++_Version->
+                                               true;
+                                             _ ->
+                                               false
+                                           end
+                                       end,Docs),
+           case ErlangDocPaths of
+             []->
+               proplists:get_value(root_dir, Props, code:root_dir());
+             [ErlangDocPath]->
+               filename:join(["/usr/share/doc/",ErlangDocPath, "html/"])
+           end
+       end,
   %% Dir =  proplists:get_value(root_dir, Props, code:root_dir()),
 
   Prot = proplists:get_value(prot, Props, file),
