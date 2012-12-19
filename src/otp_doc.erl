@@ -102,7 +102,8 @@ init(Props) ->
            case ErlangDocPaths of
              []->
                proplists:get_value(root_dir, Props, code:root_dir());
-             [ErlangDocPath]->
+             _->
+               ErlangDocPath=hd(ErlangDocPaths),
                filename:join(["/usr/share/doc/",ErlangDocPath, "html/"])
            end
        end,
