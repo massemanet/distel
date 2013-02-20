@@ -242,6 +242,10 @@ scan_lines([], _) ->
 scan_lines(S0, Acc) when hd(S0) == $% ->
     {CommentLine, S1} = take_line(S0),
     scan_lines(S1, [CommentLine|Acc]);
+scan_lines(S0 = "-spec" ++ _, Acc) ->
+    %% A -spec counts as a comment
+    {SpecLine, S1} = take_line(S0),
+    scan_lines(S1, [SpecLine|Acc]);
 scan_lines("\n"++S, _Acc) when hd(S) == $% ->
     %% Blank followed by a new comment: flush old comment
     scan_lines(S, []);
