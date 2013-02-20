@@ -243,9 +243,27 @@ scan_lines(S0, Acc) when hd(S0) == $% ->
     {CommentLine, S1} = take_line(S0),
     scan_lines(S1, [CommentLine|Acc]);
 scan_lines(S0 = "-spec" ++ _, Acc) ->
-    %% A -spec counts as a comment
-    {SpecLine, S1} = take_line(S0),
-    scan_lines(S1, [SpecLine|Acc]);
+    %% A -spec counts as a comment.  Use erl_scan to find the end of it.
+    case erl_scan:tokens([], S0, 1, [text, return_white_spaces, return_comments]) of
+	{done, Result, S1} ->
+	    case Result of
+		{ok, Tokens, _EndLocation} ->
+		    Text = lists:flatten(
+			     lists:map(
+			       fun(Token) ->
+				       {text, Text} = erl_scan:token_info(Token, text),
+				       Text
+			       end, Tokens)),
+		    scan_lines(S1, [Text|Acc]);
+		_ ->
+		    %% Couldn't parse: ignore the spec
+		    scan_lines(S1, Acc)
+	    end;
+	{more, _} ->
+	    %% Incomplete -spec?  Let's just drop the line.
+	    S1 = drop_line(S0),
+	    scan_lines(S1, Acc)
+    end;
 scan_lines("\n"++S, _Acc) when hd(S) == $% ->
     %% Blank followed by a new comment: flush old comment
     scan_lines(S, []);
