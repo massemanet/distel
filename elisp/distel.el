@@ -33,6 +33,7 @@
 (require 'edb)
 
 (require 'distel-ie)
+(require 'erlookup)
 
 (defun distel-setup ()
   (add-hook 'erlang-mode-hook 'distel-erlang-mode-hook))
