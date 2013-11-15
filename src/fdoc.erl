@@ -10,14 +10,14 @@
 -author('luke@bluetail.com').
 
 -import(lists,
-	[reverse/1, splitwith/2, takewhile/2, flatten/1, map/2,
-	 foreach/2, member/2, sort/1, any/2]).
+        [reverse/1, splitwith/2, takewhile/2, flatten/1, map/2,
+         foreach/2, member/2, sort/1, any/2]).
 
 %% Server-based interface
 -export([apropos/1, get_apropos/1,
-	 describe/1, describe/2, describe/3,
-	 description/1, description/2, description/3,
-	 stop/0]).
+         describe/1, describe/2, describe/3,
+         description/1, description/2, description/3,
+         stop/0]).
 
 %% Function-based interface
 -export([describe_file/1, file/1, string/1]).
@@ -37,23 +37,23 @@
 %% Print apropos information by regexp.
 apropos(Regexp) ->
     case get_apropos(Regexp) of
-	{ok, Matches} ->
-	    print_matches(Matches);
-	Err ->
-	    Err
+        {ok, Matches} ->
+            print_matches(Matches);
+        Err ->
+            Err
     end.
 
 get_apropos(Regexp) ->
     ensure_started(),
-    case regexp:parse(Regexp) of
-	{ok, RE} ->
-	    fdoc ! {apropos, self(), RE},
-	    receive
-		{apropos, Matches} ->
-		    {ok, Matches}
-	    end;
-	Err ->
-	    Err
+    case re:compile(Regexp) of
+        {ok, RE} ->
+            fdoc ! {apropos, self(), RE},
+            receive
+                {apropos, Matches} ->
+                    {ok, Matches}
+            end;
+        Err ->
+            Err
     end.
 
 %% Print a description of all functions matching Module, Function, and
@@ -77,7 +77,7 @@ description(M, F, A) ->
     ensure_started(),
     fdoc ! {describe, self(), M, F, A},
     receive
-	{describe, Matches} -> {ok, Matches}
+        {describe, Matches} -> {ok, Matches}
     end.
 
 %% This function does not use the cache
@@ -87,23 +87,23 @@ describe2(M, F) ->
     describe2(M, F, '_').
 describe2(M, F, A) ->
     case distel:find_source(M) of
-	{ok, Sourcefile} ->
-	    case file(Sourcefile) of
-		{ok, Docs} ->
-		    {ok, lists:zf(fun({Fn, Arity, DocStr}) when F=='_'; Fn==F ->
-					  if A == '_'; A == Arity ->
-						  {true, {M,Fn, Arity, DocStr}};
-					     true ->
-						  false
-					  end;
-				     (_) ->
-					  false
-				  end, Docs)};
-		Error ->
-		    Error
-	    end;
-	Error ->
-	    Error
+        {ok, Sourcefile} ->
+            case file(Sourcefile) of
+                {ok, Docs} ->
+                    {ok, lists:zf(fun({Fn, Arity, DocStr}) when F=='_'; Fn==F ->
+                                          if A == '_'; A == Arity ->
+                                                  {true, {M,Fn, Arity, DocStr}};
+                                             true ->
+                                                  false
+                                          end;
+                                     (_) ->
+                                          false
+                                  end, Docs)};
+                Error ->
+                    Error
+            end;
+        Error ->
+            Error
     end.
 
 
@@ -116,20 +116,20 @@ stop() ->
 
 print_matches(Ms) ->
     foreach(fun({Mod, Fn, Arity, Doc}) ->
-		    io:format("~p:~p/~p:~n~s~n",
-			      [Mod, Fn, Arity, indent(Doc, "  ")])
-	    end,
-	    sort(Ms)).
+                    io:format("~p:~p/~p:~n~s~n",
+                              [Mod, Fn, Arity, indent(Doc, "  ")])
+            end,
+            sort(Ms)).
 
 %% Ensure that the 'fdoc' server has started.
 ensure_started() ->
     case whereis(?MODULE) of
-	undefined ->
-	    Pid = proc_lib:spawn(?MODULE, init, []),
-	    register(?MODULE, Pid),
-	    {ok, Pid};
-	Pid ->
-	    {ok, Pid}
+        undefined ->
+            Pid = proc_lib:spawn(?MODULE, init, []),
+            register(?MODULE, Pid),
+            {ok, Pid};
+        Pid ->
+            {ok, Pid}
     end.
 
 init() ->
@@ -142,52 +142,52 @@ init_db() ->
 
 loop() ->
     receive
-	{stop, From} ->
-	    From ! {stop, ok},
-	    ok;
-	{apropos, From, RE} ->
-	    Matches = [{M,F,A,D} || {M,F,A,D} <- ets:tab2list(?MODULE),
-				    any(fun(S) ->
-						regexp:match(S, RE) /= nomatch
-					end,
-					[D,
-					 atom_to_list(M),
-					 atom_to_list(F)])],
-	    From ! {apropos, Matches},
-	    ?MODULE:loop();
-	{describe, From, M, F, A} ->
-	    case code:is_loaded(M) of
-		false ->
-		    %% Have to reload the database first..
-		    code:ensure_loaded(M),
-		    ets:delete(?MODULE),
-		    init_db();
-		_ ->
-		    ok
-	    end,
-	    From ! {describe, ets:match_object(?MODULE, {M, F, A, '_'})},
-	    ?MODULE:loop()
+        {stop, From} ->
+            From ! {stop, ok},
+            ok;
+        {apropos, From, RE} ->
+            Matches = [{M,F,A,D} || {M,F,A,D} <- ets:tab2list(?MODULE),
+                                    any(fun(S) ->
+                                                re:run(S, RE) =/= nomatch
+                                        end,
+                                        [D,
+                                         atom_to_list(M),
+                                         atom_to_list(F)])],
+            From ! {apropos, Matches},
+            ?MODULE:loop();
+        {describe, From, M, F, A} ->
+            case code:is_loaded(M) of
+                false ->
+                    %% Have to reload the database first..
+                    code:ensure_loaded(M),
+                    ets:delete(?MODULE),
+                    init_db();
+                _ ->
+                    ok
+            end,
+            From ! {describe, ets:match_object(?MODULE, {M, F, A, '_'})},
+            ?MODULE:loop()
     end.
 
 import_module(Mod) ->
     case distel:find_source(Mod) of
-	{ok, Sourcefile} ->
-	    case file(Sourcefile) of
-		{ok, Docs} ->
-		    foreach(fun({Fn, Arity, DocStr}) ->
-				    ets:insert(?MODULE,{Mod,Fn,Arity,DocStr})
-			    end,
-			    just_exports(Mod, Docs));
-		{error, _Reason} ->
-		    skipped
-	    end;
-	{error, _Reason} ->
-	    skipped
+        {ok, Sourcefile} ->
+            case file(Sourcefile) of
+                {ok, Docs} ->
+                    foreach(fun({Fn, Arity, DocStr}) ->
+                                    ets:insert(?MODULE,{Mod,Fn,Arity,DocStr})
+                            end,
+                            just_exports(Mod, Docs));
+                {error, _Reason} ->
+                    skipped
+            end;
+        {error, _Reason} ->
+            skipped
     end.
 
 just_exports(Mod, Docs) ->
     [{F,A,D} || {F,A,D} <- Docs,
-		member({F, A}, Mod:module_info(exports))].
+                member({F, A}, Mod:module_info(exports))].
 
 %% ----------------------------------------------------------------------
 %% Function half, for extracting documentation from files and strings.
@@ -199,14 +199,14 @@ just_exports(Mod, Docs) ->
 %% file.
 describe_file(Name) ->
     case file(Name) of
-	{ok, Docs} ->
-	    foreach(fun({Fn, Arity, Doc}) ->
-			    io:format("~p/~p:~n~s~n",
-				      [Fn, Arity, indent(Doc, "  ")])
-		    end,
-		    Docs);
-	{error, Rsn} ->
-	    {error, Rsn}
+        {ok, Docs} ->
+            foreach(fun({Fn, Arity, Doc}) ->
+                            io:format("~p/~p:~n~s~n",
+                                      [Fn, Arity, indent(Doc, "  ")])
+                    end,
+                    Docs);
+        {error, Rsn} ->
+            {error, Rsn}
     end.
 
 %% Return a description of all documented exported functions in
@@ -214,10 +214,10 @@ describe_file(Name) ->
 %% Returns: {Function, Arity, Documentation}
 file(Name) ->
     case file:read_file(Name) of
-	{ok, Bin} ->
-	    {ok, string(binary_to_list(Bin))};
-	{error, Reason} ->
-	    {error, Reason}
+        {ok, Bin} ->
+            {ok, string(binary_to_list(Bin))};
+        {error, Reason} ->
+            {error, Reason}
     end.
 
 %% Return a description of all documented exported functions in
@@ -245,24 +245,24 @@ scan_lines(S0, Acc) when hd(S0) == $% ->
 scan_lines(S0 = "-spec" ++ _, Acc) ->
     %% A -spec counts as a comment.  Use erl_scan to find the end of it.
     case erl_scan:tokens([], S0, 1, [text, return_white_spaces, return_comments]) of
-	{done, Result, S1} ->
-	    case Result of
-		{ok, Tokens, _EndLocation} ->
-		    Text = lists:flatten(
-			     lists:map(
-			       fun(Token) ->
-				       {text, Text} = erl_scan:token_info(Token, text),
-				       Text
-			       end, Tokens)),
-		    scan_lines(S1, [Text|Acc]);
-		_ ->
-		    %% Couldn't parse: ignore the spec
-		    scan_lines(S1, Acc)
-	    end;
-	{more, _} ->
-	    %% Incomplete -spec?  Let's just drop the line.
-	    S1 = drop_line(S0),
-	    scan_lines(S1, Acc)
+        {done, Result, S1} ->
+            case Result of
+                {ok, Tokens, _EndLocation} ->
+                    Text = lists:flatten(
+                             lists:map(
+                               fun(Token) ->
+                                       {text, Text} = erl_scan:token_info(Token, text),
+                                       Text
+                               end, Tokens)),
+                    scan_lines(S1, [Text|Acc]);
+                _ ->
+                    %% Couldn't parse: ignore the spec
+                    scan_lines(S1, Acc)
+            end;
+        {more, _} ->
+            %% Incomplete -spec?  Let's just drop the line.
+            S1 = drop_line(S0),
+            scan_lines(S1, Acc)
     end;
 scan_lines("\n"++S, _Acc) when hd(S) == $% ->
     %% Blank followed by a new comment: flush old comment
@@ -272,28 +272,28 @@ scan_lines("\n"++S, Acc) ->
     scan_lines(S, Acc);
 scan_lines(S0, Acc) ->
     case function_start_char(hd(S0)) of
-	true ->
-	    scan_function(S0, comments_to_doc(reverse(Acc)));
-	false ->
-	    scan_lines(drop_line(S0), [])
+        true ->
+            scan_function(S0, comments_to_doc(reverse(Acc)));
+        false ->
+            scan_lines(drop_line(S0), [])
     end.
 
 scan_function(S0, Comments) ->
     case take_function_head(S0) of
-	{ok, Head, S1} ->
-	    S2 = drop_line(S1),		% skip to next fresh line
-	    case parse_function_head(Head) of
-		{ok, Function, Arity} ->
-		    if Comments == [] ->
-			    scan_lines(S2, []);
-		       true ->
-			    [{Function, Arity, Comments} | scan_lines(S2, [])]
-		    end;
-		error ->
-		    scan_lines(S2, [])
-	    end;
-	eos ->
-	    []
+        {ok, Head, S1} ->
+            S2 = drop_line(S1),         % skip to next fresh line
+            case parse_function_head(Head) of
+                {ok, Function, Arity} ->
+                    if Comments == [] ->
+                            scan_lines(S2, []);
+                       true ->
+                            [{Function, Arity, Comments} | scan_lines(S2, [])]
+                    end;
+                error ->
+                    scan_lines(S2, [])
+            end;
+        eos ->
+            []
     end.
 
 function_start_char(Ch) when Ch >= $a, Ch =< $z -> true;
@@ -308,15 +308,15 @@ parse_function_head(S0) ->
     %% '.', and see if we can parse it as a function call.
     S1 = takewhile(fun(Ch) -> Ch /= $) end, S0) ++ ").",
     case erl_scan:string(S1) of
-	{ok, Scan, _} ->
-	    case erl_parse:parse_exprs(Scan) of
-		{ok, [{call,_,{atom,_,Fname},Args}]} ->
-		    {ok, Fname, length(Args)};
-		_ ->
-		    error
-	    end;
-	_ ->
-	    error
+        {ok, Scan, _} ->
+            case erl_parse:parse_exprs(Scan) of
+                {ok, [{call,_,{atom,_,Fname},Args}]} ->
+                    {ok, Fname, length(Args)};
+                _ ->
+                    error
+            end;
+        _ ->
+            error
     end.
 
 %% Keep going until we see a "->". FIXME, should be clever about "->"
@@ -352,7 +352,7 @@ comments_to_doc([]) ->
 %    "(undocumented)\n";
 comments_to_doc(Comments) ->
     flatten([Line || Line <- map(fun clean_comment/1, Comments),
-		     not boring_comment(Line)]).
+                     not boring_comment(Line)]).
 
 boring_comment("\n") -> true;
 boring_comment(S) ->
