@@ -9,6 +9,7 @@
 ;; erlang module, which does most of the work for us.
 
 (require 'erlang)
+(require 'thingatpt)
 (eval-when-compile (require 'cl))
 (require 'erl)
 
@@ -26,9 +27,9 @@ commands. Using C-u to bypasses the cache.")
 (defun erl-target-node ()
   "Return the name of the default target node for commands.
 Force node selection if no such node has been choosen yet, or when
-invoked with a prefix argument." 
+invoked with a prefix argument."
   (or (and (not current-prefix-arg) erl-nodename-cache)
-      (erl-choose-nodename)))
+      (call-interactively 'erl-choose-nodename)))
 
 (defun erl-set-cookie ()
   "Prompt the user for the cookie."
@@ -43,28 +44,32 @@ invoked with a prefix argument."
   (interactive)
   (message "Cookie: %s" derl-cookie))
 
-(defun erl-choose-nodename ()
-  "Prompt the user for the nodename to connect to in future."
-  (interactive)
-  (let* ((nodename-string (if erl-nodename-cache
-			      (symbol-name erl-nodename-cache)
-			    nil))
-	 (name-string (read-string (if nodename-string
-				       (format "Node (default %s): "
-					       nodename-string)
-				     "Node: ")
-				   nil
-				   'erl-nodename-history
-				   nodename-string))
-         (name (intern (if (string-match "@" name-string)
-                           name-string
-			 (concat name-string
-				 "@" (erl-determine-hostname))))))
-    (when (string= name-string "")
-      (error "No node name given"))
+(defun erl-choose-nodename (name-string)
+  "Change the value of the nodename in `erl-nodename-cache'.
+NAME-STRING can be a fully qualified or short name."
+  (interactive
+   (let* ((nodename-string (if erl-nodename-cache
+                               (symbol-name erl-nodename-cache)
+                             nil))
+          (name-string (read-string (if nodename-string
+                                        (format "Node (default %s): "
+                                                nodename-string)
+                                      "Node: ")
+                                    nil
+                                    'erl-nodename-history
+                                    nodename-string)))
+     (list name-string)))
+  ;; sanity check the nodename
+  (when (string= name-string "")
+    (error "No node name given"))
+  (let ((name (intern (if (string-match "@" name-string)
+                          name-string
+                        (concat name-string
+                                "@" (erl-determine-hostname))))))
     (setq erl-nodename-cache name)
     (setq distel-modeline-node name-string)
-    (force-mode-line-update))
+    (when (called-interactively-p)
+      (force-mode-line-update)))
   erl-nodename-cache)
 
 ;;;;; Call MFA lookup
@@ -78,10 +83,10 @@ integer."
          (mfa (if (or (null mfa-at-point)
                       current-prefix-arg
                       distel-tags-compliant)
-                  (erl-parse-mfa 
-		   (read-string 
-		    "Function reference: "
-		    (if current-prefix-arg nil (erl-format-mfa mfa-at-point))))
+                  (erl-parse-mfa
+           (read-string
+            "Function reference: "
+            (if current-prefix-arg nil (erl-format-mfa mfa-at-point))))
                 mfa-at-point)))
     mfa))
 
@@ -113,9 +118,9 @@ If not module-qualified then use DEFAULT-MODULE."
   (save-excursion
     (erl-goto-end-of-call-name)
     (let ((arity (erl-arity-at-point))
-	  (mf (erlang-get-function-under-point)))
+      (mf (erlang-get-function-under-point)))
       (if (null mf)
-	  nil
+      nil
         (destructuring-bind (module function) mf
           (list (or module default-module) function arity))))))
 
@@ -126,33 +131,33 @@ Should be called with point directly before the opening ( or /."
   ;; Adapted from erlang-get-function-arity.
   (save-excursion
     (cond ((looking-at "/")
-	   ;; form is /<n>, like the /2 in foo:bar/2
-	   (forward-char)
-	   (let ((start (point)))
-	     (if (re-search-forward "[0-9]+" nil t)
+       ;; form is /<n>, like the /2 in foo:bar/2
+       (forward-char)
+       (let ((start (point)))
+         (if (re-search-forward "[0-9]+" nil t)
                  (ignore-errors (car (read-from-string (match-string 0)))))))
-	  ((looking-at "[\n\r ]*(")
-	   (goto-char (match-end 0))
-	   (condition-case nil
-	       (let ((res 0)
-		     (cont t))
-		 (while cont
-		   (cond ((eobp)
-			  (setq res nil)
-			  (setq cont nil))
-			 ((looking-at "\\s *)")
-			  (setq cont nil))
-			 ((looking-at "\\s *\\($\\|%\\)")
-			  (forward-line 1))
-			 ((looking-at "\\s *,")
-			  (incf res)
-			  (goto-char (match-end 0)))
-			 (t
-			  (when (zerop res)
-			    (incf res))
-			  (forward-sexp 1))))
-		 res)
-	     (error nil))))))
+      ((looking-at "[\n\r ]*(")
+       (goto-char (match-end 0))
+       (condition-case nil
+           (let ((res 0)
+             (cont t))
+         (while cont
+           (cond ((eobp)
+              (setq res nil)
+              (setq cont nil))
+             ((looking-at "\\s *)")
+              (setq cont nil))
+             ((looking-at "\\s *\\($\\|%\\)")
+              (forward-line 1))
+             ((looking-at "\\s *,")
+              (incf res)
+              (goto-char (match-end 0)))
+             (t
+              (when (zerop res)
+                (incf res))
+              (forward-sexp 1))))
+         res)
+         (error nil))))))
 
 ;;;; Backend code checking
 
@@ -164,17 +169,17 @@ If not then try to send the module over as a binary and load it in."
   (unless distel-inhibit-backend-check
     (erl-spawn
       (erl-send `[rex ,node]
-		`[,erl-self [call
-			     code ensure_loaded (distel)
-			     ,(erl-group-leader)]])
+        `[,erl-self [call
+                 code ensure_loaded (distel)
+                 ,(erl-group-leader)]])
       (erl-receive (node)
-	  ((['rex ['error _]]
-	    (&erl-load-backend node))
-	   (_ t))))))
+      ((['rex ['error _]]
+        (&erl-load-backend node))
+       (_ t))))))
 
 (defvar distel-ebin-directory
   (file-truename
-   (concat (file-name-directory 
+   (concat (file-name-directory
             (or (locate-library "distel") load-file-name)) "../ebin"))
    "Directory where beam files are located.")
 
@@ -182,11 +187,11 @@ If not then try to send the module over as a binary and load it in."
   (let ((modules '()))
     (dolist (file (directory-files distel-ebin-directory))
       (when (string-match "^\\(.*\\)\\.beam$" file)
-	(let ((module (intern (match-string 1 file)))
-	      (filename (concat distel-ebin-directory "/" file)))
-	  (push (list module filename) modules))))
+    (let ((module (intern (match-string 1 file)))
+          (filename (concat distel-ebin-directory "/" file)))
+      (push (list module filename) modules))))
     (if (null modules)
-	(erl-warn-backend-problem "don't have beam files")
+    (erl-warn-backend-problem "don't have beam files")
       (&erl-load-backend-modules node modules))))
 
 (defun &erl-load-backend-modules (node modules)
@@ -194,18 +199,18 @@ If not then try to send the module over as a binary and load it in."
   (if (null modules)
       (message "(Successfully uploaded backend modules into node)")
     (let* ((module (caar modules))
-	   (filename (cadar modules))
-	   (content (erl-file-to-string filename))
-	   (binary (erl-binary content)))
+       (filename (cadar modules))
+       (content (erl-file-to-string filename))
+       (binary (erl-binary content)))
       (erl-send `[rex ,node]
-		`[,erl-self [call
-			     code load_binary ,(list module filename binary)
-			     ,(erl-group-leader)]])
+        `[,erl-self [call
+                 code load_binary ,(list module filename binary)
+                 ,(erl-group-leader)]])
       (erl-receive (node modules)
-	  ((['rex ['error reason]]
-	    (erl-warn-backend-problem reason))
-	   (['rex _]
-	    (&erl-load-backend-modules node (rest modules))))))))
+      ((['rex ['error reason]]
+        (erl-warn-backend-problem reason))
+       (['rex _]
+        (&erl-load-backend-modules node (rest modules))))))))
 
 (defun erl-warn-backend-problem (reason)
   (with-current-buffer (get-buffer-create "*Distel Warning*")
@@ -228,7 +233,7 @@ The most likely cause of this problem is either:
 To disable this warning in future, set `distel-inhibit-backend-check' to t.
 
 "
-		    node))
+            node))
     (display-buffer (current-buffer))
     (error "Unable to load or upload distel backend: %S" reason)))
 
@@ -253,11 +258,11 @@ The reply will be sent back as an asynchronous message of the form:
     [rex Result]
 On an error, Result will be [badrpc Reason]."
   (let ((m 'distel)
-	(f 'rpc_entry)
-	(a (list mod fun args)))
+    (f 'rpc_entry)
+    (a (list mod fun args)))
     (erl-send (tuple 'rex node)
-	      ;; {Who, {call, M, F, A, GroupLeader}}
-	      (tuple erl-self (tuple 'call m f a (erl-group-leader))))))
+          ;; {Who, {call, M, F, A, GroupLeader}}
+          (tuple erl-self (tuple 'call m f a (erl-group-leader))))))
 
 (defun erl-rpc-receive (k kargs)
   "Receive the reply to an `erl-rpc'."
@@ -267,13 +272,13 @@ On an error, Result will be [badrpc Reason]."
 (defun erpc (node m f a)
   "Make an RPC to an erlang node."
   (interactive (list (erl-target-node)
-		     (intern (read-string "Module: "))
-		     (intern (read-string "Function: "))
-		     (eval-minibuffer "Args: ")))
+             (intern (read-string "Module: "))
+             (intern (read-string "Function: "))
+             (eval-minibuffer "Args: ")))
   (erl-rpc (lambda (result) (message "RPC result: %S" result))
-	   nil
-	   node
-	   m f a))
+       nil
+       node
+       m f a))
 
 (defun erl-ping (node)
   "Ping the NODE, uploading distel code as a side effect."
@@ -281,7 +286,7 @@ On an error, Result will be [badrpc Reason]."
   (erl-spawn
     (erl-send-rpc node 'erlang 'node nil)
     (erl-receive (node)
-	((['rex response]
+    ((['rex response]
           (if (equal node response)
               (message "Successfully communicated with remote node %S"
                        node)
@@ -296,7 +301,7 @@ The listing is requested asynchronously, and popped up in a buffer
 when ready."
   (interactive (list (erl-target-node)))
   (erl-rpc #'erl-show-process-list (list node)
-	   node 'distel 'process_list '()))
+       node 'distel 'process_list '()))
 
 (defun erl-show-process-list (reply node)
   (with-current-buffer (get-buffer-create (format "*plist %S*" node))
@@ -305,10 +310,10 @@ when ready."
     (let ((buffer-read-only nil))
       (erase-buffer)
       (let ((header (tuple-elt reply 1))
-	    (infos (tuple-elt reply 2)))
-	(put-text-property 0 (length header) 'face 'bold header)
-	(insert header)
-	(mapc #'erl-insert-process-info infos))
+        (infos (tuple-elt reply 2)))
+    (put-text-property 0 (length header) 'face 'bold header)
+    (insert header)
+    (mapc #'erl-insert-process-info infos))
       (goto-char (point-min))
       (next-line 1))
     (select-window (display-buffer (current-buffer)))))
@@ -317,7 +322,7 @@ when ready."
   "Insert INFO into the buffer.
 INFO is [PID SUMMARY-STRING]."
   (let ((pid (tuple-elt info 1))
-	(text (tuple-elt info 2)))
+    (text (tuple-elt info 2)))
     (put-text-property 0 (length text) 'erl-pid pid text)
     (insert text)))
 
@@ -336,7 +341,7 @@ When BURY is non-nil, buries the buffer instead of killing it."
   (interactive)
   (let ((cfg erl-old-window-configuration))
     (if bury
-	(bury-buffer)
+    (bury-buffer)
       (kill-this-buffer))
     (set-window-configuration cfg)))
 
@@ -357,20 +362,22 @@ When BURY is non-nil, buries the buffer instead of killing it."
   (define-key process-list-mode-map [(control m)] 'erl-show-process-info)
   (define-key process-list-mode-map [?i] 'erl-show-process-info-item)
   (define-key process-list-mode-map [?b] 'erl-show-process-backtrace)
-  (define-key process-list-mode-map [?m] 'erl-show-process-messages))
+  (define-key process-list-mode-map [?m] 'erl-show-process-messages)
+  (define-key process-list-mode-map [?n] 'next-line)
+  (define-key process-list-mode-map [?p] 'previous-line))
 
 (defun process-list-mode ()
   "Major mode for viewing Erlang process listings.
 
 Available commands:
 
-\\[erl-quit-viewer]	- Quit the process listing viewer, restoring old window config.
-\\[erl-process-list]	- Update the process list.
-\\[erl-pman-kill-process]	- Send an EXIT signal with reason 'kill' to process at point.
-\\[erl-show-process-info]	- Show process_info for process at point.
-\\[erl-show-process-info-item]	- Show a piece of process_info for process at point.
-\\[erl-show-process-backtrace]	- Show a backtrace for the process at point.
-\\[erl-show-process-messages]	- Show the message queue for the process at point."
+\\[erl-quit-viewer]    - Quit the process listing viewer, restoring old window config.
+\\[erl-process-list]    - Update the process list.
+\\[erl-pman-kill-process]    - Send an EXIT signal with reason 'kill' to process at point.
+\\[erl-show-process-info]    - Show process_info for process at point.
+\\[erl-show-process-info-item]    - Show a piece of process_info for process at point.
+\\[erl-show-process-backtrace]    - Show a backtrace for the process at point.
+\\[erl-show-process-messages]    - Show the message queue for the process at point."
   (interactive)
   (kill-all-local-variables)
   (use-local-map process-list-mode-map)
@@ -384,7 +391,7 @@ Available commands:
   (interactive)
   (let ((pid (get-text-property (point) 'erl-pid)))
     (if (null pid)
-	(message "No process at point.")
+    (message "No process at point.")
       (erl-view-process pid))))
 
 (defun erl-show-process-info-item (item)
@@ -392,19 +399,19 @@ Available commands:
   (interactive (list (intern (read-string "Item: "))))
   (let ((pid (get-text-property (point) 'erl-pid)))
     (cond ((null pid)
-	   (message "No process at point."))
-	  ((string= "" item)
-	   (erl-show-process-info))
-	  (t
-	   (erl-spawn
-	     (erl-send-rpc (erl-pid-node pid)
-			   'distel 'process_info_item (list pid item))
-	     (erl-receive (item pid)
-		 ((['rex ['ok string]]
-		   (display-message-or-view string "*pinfo item*"))
-		  (other
-		   (message "Error from erlang side of process_info:\n  %S"
-			    other)))))))))
+       (message "No process at point."))
+      ((string= "" item)
+       (erl-show-process-info))
+      (t
+       (erl-spawn
+         (erl-send-rpc (erl-pid-node pid)
+               'distel 'process_info_item (list pid item))
+         (erl-receive (item pid)
+         ((['rex ['ok string]]
+           (display-message-or-view string "*pinfo item*"))
+          (other
+           (message "Error from erlang side of process_info:\n  %S"
+                other)))))))))
 
 (defun display-message-or-view (msg bufname &optional select)
   "Like `display-buffer-or-message', but with `view-buffer-other-window'.
@@ -418,13 +425,13 @@ truncate to fit on the screen."
       ;; Contains a newline with actual text after it, so display as a
       ;; buffer
       (with-current-buffer (get-buffer-create bufname)
-	(setq buffer-read-only t)
-	(let ((inhibit-read-only t))
-	  (erase-buffer)
-	  (insert msg)
-	  (goto-char (point-min))
-	  (let ((win (display-buffer (current-buffer))))
-	    (when select (select-window win)))))
+    (setq buffer-read-only t)
+    (let ((inhibit-read-only t))
+      (erase-buffer)
+      (insert msg)
+      (goto-char (point-min))
+      (let ((win (display-buffer (current-buffer))))
+        (when select (select-window win)))))
     ;; Print only the part before the newline (if there is
     ;; one). Newlines in messages are displayed as "^J" in emacs20,
     ;; which is ugly
@@ -443,7 +450,7 @@ truncate to fit on the screen."
   (interactive)
   (let ((pid (get-text-property (point) 'erl-pid)))
     (if (null pid)
-	(message "No process at point.")
+    (message "No process at point.")
       (message "Sent EXIT (kill) signal ")
       (erl-exit 'kill pid))))
 
@@ -452,32 +459,32 @@ truncate to fit on the screen."
 (defun erl-view-process (pid)
   (let ((buf (get-buffer (erl-process-view-buffer-name pid))))
     (if buf
-	(select-window (display-buffer buf))
+    (select-window (display-buffer buf))
       (erl-spawn
-	(process-view-mode)
-	(setq erl-old-window-configuration (current-window-configuration))
-	(setq erl-viewed-pid pid)
-	(erl-send-rpc (erl-pid-node pid)
-		      'distel 'process_summary_and_trace (list erl-self pid))
-	(erl-receive (pid)
-	    ((['rex ['error reason]]
-	      (message "%s" reason))
-	     (['rex ['badrpc reason]]
-	      (message "Bad RPC: %s" reason))
-	     (['rex summary]
-	      (rename-buffer (erl-process-view-buffer-name pid))
-	      (erase-buffer)
-	      (insert summary)
-	      (setq buffer-read-only t)
-	      (goto-char (point-min))
-	      (select-window (display-buffer (current-buffer)))
-	      (&erl-process-trace-loop))
-	     (other
-	      (message "Unexpected reply: %S" other))))))))
+    (process-view-mode)
+    (setq erl-old-window-configuration (current-window-configuration))
+    (setq erl-viewed-pid pid)
+    (erl-send-rpc (erl-pid-node pid)
+              'distel 'process_summary_and_trace (list erl-self pid))
+    (erl-receive (pid)
+        ((['rex ['error reason]]
+          (message "%s" reason))
+         (['rex ['badrpc reason]]
+          (message "Bad RPC: %s" reason))
+         (['rex summary]
+          (rename-buffer (erl-process-view-buffer-name pid))
+          (erase-buffer)
+          (insert summary)
+          (setq buffer-read-only t)
+          (goto-char (point-min))
+          (select-window (display-buffer (current-buffer)))
+          (&erl-process-trace-loop))
+         (other
+          (message "Unexpected reply: %S" other))))))))
 
 (defun erl-process-view-buffer-name (pid)
   (format "*pinfo %S on %S*"
-	  (erl-pid-id pid) (erl-pid-node pid)))
+      (erl-pid-id pid) (erl-pid-node pid)))
 
 (defvar process-view-mode-map nil
   "Keymap for Process View mode.")
@@ -498,9 +505,9 @@ truncate to fit on the screen."
 (defun &erl-process-trace-loop ()
   (erl-receive ()
       ((['trace_msg text]
-	(goto-char (point-max))
-	(let ((buffer-read-only nil))
-	  (insert text))))
+    (goto-char (point-max))
+    (let ((buffer-read-only nil))
+      (insert text))))
     (&erl-process-trace-loop)))
 
 ;;;; fprof
@@ -521,7 +528,7 @@ This is received from the Erlang module.")
 (defun fprof (node expr)
   "Profile a function and summarise the results."
   (interactive (list (erl-target-node)
-		     (erl-add-terminator (read-string "Expression: "))))
+             (erl-add-terminator (read-string "Expression: "))))
   (erl-spawn
     (erl-send-rpc node 'distel 'fprof (list expr))
     (fprof-receive-analysis)))
@@ -529,7 +536,7 @@ This is received from the Erlang module.")
 (defun fprof-analyse (node filename)
   "View an existing profiler analysis from a file."
   (interactive (list (erl-target-node)
-		     (read-string "Filename: ")))
+             (read-string "Filename: ")))
   (erl-spawn
     (erl-send-rpc node 'distel 'fprof_analyse (list filename))
     (fprof-receive-analysis)))
@@ -538,8 +545,8 @@ This is received from the Erlang module.")
   (message "Waiting for fprof reply...")
   (erl-receive ()
       ((['rex ['ok preamble header entries]]
-	(message "Got fprof reply, drawing...")
-	(fprof-display preamble header entries))
+    (message "Got fprof reply, drawing...")
+    (fprof-display preamble header entries))
        (other (message "Unexpected reply: %S" other)))))
 
 
@@ -571,12 +578,12 @@ This is received from the Erlang module.")
        (insert "  " info "\n"))
      (insert "\n"))
     (['tracepoint tag mfa text callers callees beamfile]
-     (push `(,tag . ((text 	. ,text)
-		     (mfa 	. ,mfa)
-		     (callers 	. ,callers)
-		     (callees 	. ,callees)
-		     (beamfile 	. ,beamfile)))
-	   fprof-entries)
+     (push `(,tag . ((text     . ,text)
+             (mfa     . ,mfa)
+             (callers     . ,callers)
+             (callees     . ,callees)
+             (beamfile     . ,beamfile)))
+       fprof-entries)
      (fprof-insert text tag))))
 
 (defun fprof-insert (text tag)
@@ -590,11 +597,11 @@ time the function spent while called from each caller, and how much
 time it spent in subfunctions."
   (interactive)
   (let* ((tag     (fprof-tag-at-point))
-	 (props   (cdr (assq tag fprof-entries)))
-	 (text    (cdr (assq 'text    props)))
-	 (callers (cdr (assq 'callers props)))
-	 (callees (cdr (assq 'callees props)))
-	 (buf     (get-buffer-create "*fprof detail*")))
+     (props   (cdr (assq tag fprof-entries)))
+     (text    (cdr (assq 'text    props)))
+     (callers (cdr (assq 'callers props)))
+     (callees (cdr (assq 'callees props)))
+     (buf     (get-buffer-create "*fprof detail*")))
     (with-current-buffer buf
       (erase-buffer)
       (insert fprof-header)
@@ -616,25 +623,25 @@ time it spent in subfunctions."
   (interactive)
   (let ((beamfile (fprof-lookup (fprof-tag-at-point) 'beamfile)))
     (if (eq beamfile 'undefined)
-	(message "Don't know where that's implemented.")
+    (message "Don't know where that's implemented.")
       (let* ((src (fprof-sourcefile beamfile))
-	     (mfa (fprof-lookup (fprof-tag-at-point) 'mfa))
-	     (arity (caddr mfa))
-	     (orig-window (selected-window)))
-	(when src
-	  (with-current-buffer (find-file-other-window src)
-	    (goto-char (point-min))
-	    ;; Find the right function/arity
-	    (let (found)
-	      (while (and (not found)
-			  (re-search-forward (concat "^" (symbol-name (cadr mfa)))))
-		(beginning-of-line)
-		(if (eq (erlang-get-function-arity) arity)
-		    (setq found t)
-		  (forward-line)))
-	      (if found
-		  (recenter 5))))
-	  (select-window orig-window))))))
+         (mfa (fprof-lookup (fprof-tag-at-point) 'mfa))
+         (arity (caddr mfa))
+         (orig-window (selected-window)))
+    (when src
+      (with-current-buffer (find-file-other-window src)
+        (goto-char (point-min))
+        ;; Find the right function/arity
+        (let (found)
+          (while (and (not found)
+              (re-search-forward (concat "^" (symbol-name (cadr mfa)))))
+        (beginning-of-line)
+        (if (eq (erlang-get-function-arity) arity)
+            (setq found t)
+          (forward-line)))
+          (if found
+          (recenter 5))))
+      (select-window orig-window))))))
 
 (defun fprof-tag-at-point ()
   (or (get-text-property (point) 'fprof-tag)
@@ -648,34 +655,34 @@ time it spent in subfunctions."
     (when (string-match "ebin" string)
       (setq string (replace-match "src" t t string)))
     (if (null (string-match "beam" string))
-	nil
+    nil
       (setq string (replace-match "erl" t t string))
       (if (file-exists-p string)
-	  string
-	nil))))
+      string
+    nil))))
 
 ;;
 
 (defun erl-eval-expression (node string)
   (interactive (list (erl-target-node)
-		     (erl-add-terminator (read-from-minibuffer
-					  "Expression: "
-					  (if (equal mark-active nil)
-					      ""
-					    (copy-region-as-kill (mark) (point))
-					    (current-kill 0))))))
+             (erl-add-terminator (read-from-minibuffer
+                      "Expression: "
+                      (if (equal mark-active nil)
+                          ""
+                        (copy-region-as-kill (mark) (point))
+                        (current-kill 0))))))
   (erl-spawn
     (erl-send-rpc node
-		  'distel
-		  'eval_expression
-		  (list string))
+          'distel
+          'eval_expression
+          (list string))
     (erl-receive ()
-	((['rex ['ok string]]
-	  (display-message-or-view string "*Expression Result*"))
-	 (['rex ['error reason]]
-	  (message "Error: %S" reason))
-	 (other
-	  (message "Unexpected: %S" other))))))
+    ((['rex ['ok string]]
+      (display-message-or-view string "*Expression Result*"))
+     (['rex ['error reason]]
+      (message "Error: %S" reason))
+     (other
+      (message "Unexpected: %S" other))))))
 
 (defun erl-add-terminator (s)
   "Make sure S terminates with a dot (.)"
@@ -686,12 +693,12 @@ time it spent in subfunctions."
 (defun erl-reload-modules (node)
   "reload all out-of-date modules"
   (interactive (list (erl-target-node)))
-  (erl-rpc (lambda (result) (message "load: %s" result)) nil 
+  (erl-rpc (lambda (result) (message "load: %s" result)) nil
            node 'distel 'reload_modules ()))
 
 
 (defvar erl-reload-dwim nil
-  "Do What I Mean when reloading beam files. If erl-reload-dwim is non-nil, 
+  "Do What I Mean when reloading beam files. If erl-reload-dwim is non-nil,
 and the module cannot be found in the load path, we attempt to find the correct
 directory, add it to the load path and retry the load.
 We also don't prompt for the module name.")
@@ -699,35 +706,35 @@ We also don't prompt for the module name.")
 (defun erl-reload-module (node module)
   "Reload a module."
   (interactive (list (erl-target-node)
-		     (if erl-reload-dwim 
-			 (erlang-get-module)
-		       (let* ((module (erlang-get-module))
-			      (prompt (if module
-					  (format "Module (default %s): " module)
-					"Module: ")))
-			 (intern (read-string prompt nil nil module))))))
+             (if erl-reload-dwim
+             (erlang-get-module)
+               (let* ((module (erlang-get-module))
+                  (prompt (if module
+                      (format "Module (default %s): " module)
+                    "Module: ")))
+             (intern (read-string prompt nil nil module))))))
   (if (and (equal node edb-monitor-node)
-	   (assq module edb-interpreted-modules))
+       (assq module edb-interpreted-modules))
       (erl-reinterpret-module node module)
     ;;    (erl-eval-expression node (format "c:l('%s')." module))))
     (erl-do-reload node module)))
 
 (defun erl-do-reload (node module)
   (let ((fname (if erl-reload-dwim (buffer-file-name) nil)))
-    (erl-rpc (lambda (result) (message "load: %s" result)) nil 
-	     node 'distel 'reload_module (list module fname))))
+    (erl-rpc (lambda (result) (message "load: %s" result)) nil
+         node 'distel 'reload_module (list module fname))))
 
 (defun erl-reinterpret-module (node module)
   ;; int:i(SourcePath).
   (erl-send-rpc node
-		'int 'i (list (cadr (assq module edb-interpreted-modules)))))
+        'int 'i (list (cadr (assq module edb-interpreted-modules)))))
 
 ;;;; Definition finding
 
 (defvar erl-find-history-ring (make-ring 20)
   "History ring tracing for following functions to their definitions.")
 
-(defun erl-find-source-under-point ()
+(defun erl-find-function-under-point ()
   "Goto the source code that defines the function being called at point.
 For remote calls, contacts an Erlang node to determine which file to
 look in, with the following algorithm:
@@ -745,7 +752,7 @@ When `distel-tags-compliant' is non-nil, or a numeric prefix argument
 is given, the user is prompted for the function to lookup (with a
 default.)"
   (interactive)
-  (apply #'erl-find-source
+  (apply #'erl-find-function
          (or (erl-read-call-mfa) (error "No call at point."))))
 
 (defun erl-find-source-unwind ()
@@ -753,12 +760,12 @@ default.)"
   (interactive)
   (unless (ring-empty-p erl-find-history-ring)
     (let* ((marker (ring-remove erl-find-history-ring))
-	   (buffer (marker-buffer marker)))
+       (buffer (marker-buffer marker)))
       (if (buffer-live-p buffer)
-	  (progn (switch-to-buffer buffer)
-		 (goto-char (marker-position marker)))
-	;; If this buffer was deleted, recurse to try the next one
-	(erl-find-source-unwind)))))
+      (progn (switch-to-buffer buffer)
+         (goto-char (marker-position marker)))
+    ;; If this buffer was deleted, recurse to try the next one
+    (erl-find-source-unwind)))))
 
 (defun erl-goto-end-of-call-name ()
   "Go to the end of the function or module:function at point."
@@ -778,34 +785,65 @@ default.)"
   (when (eq (char-after) ?:)
     (forward-sexp)))
 
-(defun erl-find-module ()
-  (interactive)
-  (erl-find-source (read-string "module: ")))
- 
-(defun erl-find-source (module &optional function arity)
+(defun erl-find-module (&optional arg)
+  "find the source file of a module,with prefix `C-u' use symbol
+ under point as default module to find,if not lists all modules
+ for you to choose"
+  (interactive "P")
+  (if arg
+      (erl-find-module-under-point)
+    (erl-find-module-1)
+    )
+  )
+
+(defun erl-find-module-1 ()
+  "find the source file of a module"
+  (let ((module (erlang-get-module))
+        (node (or erl-nodename-cache (erl-target-node))))
+    (erl-spawn
+      (erl-send-rpc node 'distel 'all_modules '())
+      (erl-receive ()
+          ((['rex ['ok modules]]
+            (erl-find-function
+             (completing-read "find src of module: " modules nil nil "")))
+           (['rex ['error reason]]
+            (ring-remove erl-find-history-ring)
+            (message "Error: %s" reason)))))))
+
+(defun erl-find-module-under-point ()
+  "find the source file of a module,
+ use symbol under point as default module to find"
+  (cond
+   ( (looking-back   "\\([a-zA-Z0-9_]+\\):\\([a-zA-Z0-9_]*\\)(?[ \t]*[a-zA-Z0-9_]*" (line-beginning-position) t)
+     (erl-find-function (match-string 1)))
+   (t
+    (erl-find-function (thing-at-point 'symbol)))))
+
+
+(defun erl-find-function (module &optional function arity)
   "Find the source code for MODULE in a buffer, loading it if necessary.
 When FUNCTION is specified, the point is moved to its start."
   ;; Add us to the history list
   (ring-insert-at-beginning erl-find-history-ring
-			    (copy-marker (point-marker)))
+                (copy-marker (point-marker)))
   (if (equal module (erlang-get-module))
       (when function
-	(erl-search-function function arity))
+    (erl-search-function function arity))
     (let ((node (or erl-nodename-cache (erl-target-node))))
       (erl-spawn
-	(erl-send-rpc node 'distel 'find_source (list (intern module)))
-	(erl-receive (function arity)
-	    ((['rex ['ok path]]
-	      (find-file path)
-	      (when function
-		(erl-search-function function arity)))
-	     (['rex ['error reason]]
-	      ;; Remove the history marker, since we didn't go anywhere
-	      (ring-remove erl-find-history-ring)
-	      (message "Error: %s" reason))))))))
+    (erl-send-rpc node 'distel 'find_source (list (intern module)))
+    (erl-receive (function arity)
+        ((['rex ['ok path]]
+          (find-file path)
+          (when function
+        (erl-search-function function arity)))
+         (['rex ['error reason]]
+          ;; Remove the history marker, since we didn't go anywhere
+          (ring-remove erl-find-history-ring)
+          (message "Error: %s" reason))))))))
 
 (defun erl-find-doc-under-point ()
-  "Find the html documentation for the (possibly incomplete) OTP 
+  "Find the html documentation for the (possibly incomplete) OTP
 function under point"
   (interactive)
   (if (require 'w3m nil t)
@@ -815,7 +853,8 @@ function under point"
 (defun erl-find-doc ()
   (interactive)
   (if (require 'w3m nil t)
-      (erl-do-find-doc 'link nil)
+      (erl-do-find-doc-of-module)
+      ;; (erl-do-find-doc 'link nil)
     (erl-find-sig)))
 
 (defun erl-find-sig-under-point ()
@@ -827,113 +866,164 @@ function under point"
   (interactive)
   (erl-do-find-doc 'sig nil))
 
+
+(defun erl-do-find-doc-of-module ()
+  "completing read modules  ,and find document of a module with w3m"
+  (interactive)
+  (let ((module (erlang-get-module))
+        (node (or erl-nodename-cache (erl-target-node))))
+    (erl-spawn
+      (erl-send-rpc node 'otp_doc 'modules '(""))
+      (erl-receive (node)
+          ((['rex ['ok modules]]
+            (erl-spawn
+              (erl-send-rpc node 'otp_doc 'distel
+                            (list 'link
+                                  (completing-read
+                                   "find doc of module : " modules nil nil
+                                   "") "" -1))
+              (erl-receive ()
+                  ((['rex nil]
+                    (message "No doc found."))
+                   (['rex 'no_html]
+                    (message "no html docs installed"))
+                   (['rex ['mfas string]]
+                    (message "candidates: %s" string))
+                   (['rex ['sig string]]
+                    (message "%s" string))
+                   (['rex ['link link]]
+                    (w3m-browse-url link))
+                   (['rex [reaso reason]]
+                    (message "Error: %s %s" reaso reason)))))
+            )
+           (['rex ['error reason]]
+            (ring-remove erl-find-history-ring)
+            (message "Error: %s" reason))))))
+  )
+
 (defun erl-do-find-doc (what how &optional module function ari)
-  "Find the documentation for an OTP mfa. 
-if WHAT is 'link, tries to get a link to the html docs, and open 
-it in a w3m buffer. if WHAT is nil, prints the function signature 
+  "Find the documentation for an OTP mfa.
+if WHAT is 'link, tries to get a link to the html docs, and open
+it in a w3m buffer. if WHAT is nil, prints the function signature
 in the mini-buffer.
-If HOW is 'point, tries to find the mfa at point; if HOW is nil, 
+If HOW is 'point, tries to find the mfa at point; if HOW is nil,
 prompts for an mfa."
-  (destructuring-bind 
+  (destructuring-bind
       (mod fun ari)
       (or (if (null how)
-	      (erl-parse-mfa (read-string "Function reference: ") "-")
-	    (erl-mfa-at-point))
-	  (error "No call at point."))
+          (erl-parse-mfa (read-string "Function reference: ") "-")
+        (erl-mfa-at-point))
+      (error "No call at point."))
     (let ((node (or erl-nodename-cache (erl-target-node)))
-	  (arity (or ari -1))
-	  (module (if (equal mod "-") fun mod))
-	  (function (if (equal mod "-") nil fun)))
+      (arity (or ari -1))
+      (module (if (equal mod "-") fun mod))
+      (function (if (equal mod "-") nil fun)))
+      (print function)
       (erl-spawn
-	(erl-send-rpc node 'otp_doc 'distel (list what module function arity))
-	(erl-receive ()
-	    ((['rex nil]
-	      (message "No doc found."))
-	     (['rex 'no_html]
-	      (message "no html docs installed"))
-	     (['rex ['mfas string]]
-	      (message "candidates: %s" string))
-	     (['rex ['sig string]]
-	      (message "%s" string))
-	     (['rex ['link link]]
-	      (w3m-browse-url link))
-	     (['rex [reaso reason]]
-	      (message "Error: %s %s" reaso reason))))))))
+    (erl-send-rpc node 'otp_doc 'distel (list what module function arity))
+    (erl-receive ()
+        ((['rex nil]
+          (message "No doc found."))
+         (['rex 'no_html]
+          (message "no html docs installed"))
+         (['rex ['mfas string]]
+          (message "candidates: %s" string))
+         (['rex ['sig string]]
+          (message "%s" string))
+         (['rex ['link link]]
+          (w3m-browse-url link))
+         (['rex [reaso reason]]
+          (message "Error: %s %s" reaso reason))))))))
 
 (defun erl-search-function (function arity)
   "Goto the definition of FUNCTION/ARITY in the current buffer."
   (let ((origin (point))
-	(str (concat "\n" function "("))
-	(searching t))
+    (str (concat "\n" function "("))
+    (searching t))
     (goto-char (point-min))
     (while searching
       (cond ((search-forward str nil t)
-	     (backward-char)
-	     (when (or (null arity)
-		       (eq (erl-arity-at-point) arity))
-	       (beginning-of-line)
-	       (setq searching nil)))
-	    (t
-	     (setq searching nil)
-	     (goto-char origin)
-	     (if arity
-		 (message "Couldn't find function %S/%S" function arity)
-	       (message "Couldn't find function %S" function)))))))
+         (backward-char)
+         (when (or (null arity)
+               (eq (erl-arity-at-point) arity))
+           (beginning-of-line)
+           (setq searching nil)))
+        (t
+         (setq searching nil)
+         (goto-char origin)
+         (if arity
+         (message "Couldn't find function %S/%S" function arity)
+           (message "Couldn't find function %S" function)))))))
 
-(defun erl-read-symbol-or-nil (prompt)
-  "Read a symbol, or NIL on empty input."
-  (let ((s (read-string prompt)))
-    (if (string= s "")
-	nil
-      (intern s))))
+;; (defun erl-read-symbol-or-nil (prompt)
+;;   "Read a symbol, or NIL on empty input."
+;;   (let ((s (read-string prompt)))
+;;     (if (string= s "")
+;;     nil
+;;       (intern s))))
 
 ;;;; Completion
 
 (defun erl-complete (node)
-  "Complete the module or remote function name at point."
+  "Complete the include_lib(\"header file\") or module or function name at point."
   (interactive (list (erl-target-node)))
-  (let ((win (get-buffer-window "*Completions*" 0)))
-    (if win (with-selected-window win (bury-buffer))))
-  (let ((end (point))
-	(beg (ignore-errors 
-	       (save-excursion (backward-sexp 1)
-			       ;; FIXME: see erl-goto-end-of-call-name
-			       (when (eql (char-before) ?:)
-				 (backward-sexp 1))
-			       (point)))))
-    (when beg
-      (let* ((str (buffer-substring-no-properties beg end))
-	     (buf (current-buffer))
-	     (continuing (equal last-command (cons 'erl-complete str))))
-	(setq this-command (cons 'erl-complete str))
-	(if (string-match "^\\(.*\\):\\(.*\\)$" str)
-	    ;; completing function in module:function
-	    (let ((mod (intern (match-string 1 str)))
-		  (pref (match-string 2 str))
-		  (beg (+ beg (match-beginning 2))))
-	      (erl-spawn
-		(erl-send-rpc node 'distel 'functions (list mod pref))
-		(&erl-receive-completions "function" beg end pref buf
-					  continuing
-					  #'erl-complete-sole-function)))
-	  ;; completing just a module
-	  (erl-spawn
-	    (erl-send-rpc node 'distel 'modules (list str))
-	    (&erl-receive-completions "module" beg end str buf continuing
-				      #'erl-complete-sole-module)))))))
+  (cond
+   ((looking-back "-include_lib[ \t]*([ \t]*\"\\(.*\\)"  (line-beginning-position)) ;complete header file when (point) is in include_lib("-|-")
+    (let* ((end (match-end 1))
+           (beg (match-beginning 1))
+           (buf (current-buffer))
+           (str (match-string 1)))
+      (erl-spawn
+        (erl-send-rpc node 'distel 'find_matched_system_header_files (list str))
+        (&erl-receive-completions "header" beg end str buf
+                                  (lambda ()"do nothing" )))))
+   ((looking-back  "[ \t]*\\_<\\(.+\\):\\(.*\\)$" (line-beginning-position)  );complete module:fun
+    (let ((fun-end (point))
+          (buf (current-buffer))
+          (mod (intern (match-string 1 )))
+          (fun-prefix (match-string 2 ))
+          (fun-beg (match-beginning 2)))
+      (erl-spawn
+        (erl-send-rpc node 'distel 'functions (list mod fun-prefix))
+        (&erl-receive-completions "function" fun-beg fun-end fun-prefix buf
+                                  #'erl-complete-sole-function))))
+   ((looking-back  "[ \t]*\\_<\\(.+\\)$") ; completing just a module
+    (let ((end (point))
+          (buf (current-buffer))
+          (prefix (match-string 1 ))
+          (beg (match-beginning 1)))
+      (erl-spawn
+        (erl-send-rpc node 'distel 'prefix_matched_modules (list prefix))
+        (&erl-receive-completions "module" beg end prefix buf
+                                  #'erl-complete-sole-module))
+      )
+    )
+   )
+  )
 
-(defun &erl-receive-completions (what beg end prefix buf continuing sole)
-  (let ((state (erl-async-state buf)))
-    (erl-receive (what state beg end prefix buf continuing sole)
-	((['rex ['ok completions]]
-	  (when (equal state (erl-async-state buf))
-	    (with-current-buffer buf
-	      (erl-complete-thing what continuing beg end prefix
-				  completions sole))))
-	 (['rex ['error reason]]
-	  (message "Error: %s" reason))
-	 (other
-	  (message "Unexpected reply: %S" other))))))
+(defun &erl-receive-completions (what beg end prefix buf sole)
+  "`what' is just a flag ,we don't use it here, region between
+`beg' and `end' will be replaced by the completeion "
+  (let ((state (erl-async-state buf))
+        continue)
+    (erl-receive (what state beg end prefix buf  continue sole)
+        ((['rex ['ok completions]]
+          (when (equal state (erl-async-state buf))
+            (with-current-buffer buf
+              (let ((complete  (if (and completions (listp completions) (= 1 (length completions)))
+                                   (car completions)
+                                 (if completions
+                                     (completing-read "complete:" completions nil nil prefix)
+                                   nil))))
+                (when complete
+                  (delete-region beg end)
+                  (insert complete)
+                  (apply sole '())
+                  )))))
+         (['rex ['error reason]]
+          (message "Error: %s" reason))
+         (other
+          (message "Unexpected reply: %S" other))))))
 
 (defun erl-async-state (buffer)
   "Return an opaque state for BUFFER.
@@ -943,42 +1033,7 @@ done something - modified the buffer, or moved the point - so we may
 want to cancel the operation."
   (with-current-buffer buffer
     (cons (buffer-modified-tick)
-	  (point))))
-
-(defun erl-complete-thing (what scrollable beg end pattern completions sole)
-  "Complete a string in the buffer.
-WHAT is a string that says what we're completing.
-SCROLLABLE is a flag saying whether this is a repeated command that
-may scroll the completion list.
-BEG and END are the buffer positions around what we're completing.
-PATTERN is the string to complete from.
-COMPLETIONS is a list of potential completions (strings.)
-SOLE is a function which is called when a single completion is selected."
-  ;; This function, and `erl-maybe-scroll-completions', are basically
-  ;; cut and paste programming from `lisp-complete-symbol'. The fancy
-  ;; Emacs completion packages (hippie and pcomplete) looked too
-  ;; scary.
-  (or (and scrollable (erl-maybe-scroll-completions))
-      (let* ((completions (erl-make-completion-alist completions))
-	     (completion (try-completion pattern completions)))
-	(cond ((eq completion t)
-	       (message "Sole completion")
-	       (apply sole '()))
-	      ((null completion))
-;	       (message "Can't find completion for %s \"%s\"" what pattern)
-;	       (ding))
-	      ((not (string= pattern completion))
-	       (delete-region beg end)
-	       (insert completion)
-	       (if (eq t (try-completion completion completions))
-		   (apply sole '())))
-	      (t
-	       (message "Making completion list...")
-	       (let ((list (all-completions pattern completions)))
-		 (setq list (sort list 'string<))
-		 (with-output-to-temp-buffer "*Completions*"
-		   (display-completion-list list)))
-	       (message "Making completion list...%s" "done"))))))
+      (point))))
 
 (defun erl-complete-sole-module ()
   (insert ":"))
@@ -987,31 +1042,6 @@ SOLE is a function which is called when a single completion is selected."
   (let ((call (erlang-get-function-under-point)))
     (insert "(")
     (erl-print-arglist call (erl-target-node))))
-
-
-(defun erl-make-completion-alist (list)
-  "Make an alist out of list.
-The same elements go in the CAR, and nil in the CDR. To support the
-apparently very stupid `try-completions' interface, that wants an
-alist but ignores CDRs."
-  (mapcar (lambda (x) (cons x nil)) list))
-
-(defun erl-maybe-scroll-completions ()
-  "Scroll the completions buffer if it is visible.
-Returns non-nil iff the window was scrolled."
-  (let ((window (get-buffer-window "*Completions*")))
-    (when (and window (window-live-p window) (window-buffer window)
-	       (buffer-name (window-buffer window)))
-      ;; If this command was repeated, and
-      ;; there's a fresh completion window with a live buffer,
-      ;; and this command is repeated, scroll that window.
-      (with-current-buffer (window-buffer window)
-	(if (pos-visible-in-window-p (point-max) window)
-	    (set-window-start window (point-min))
-	  (save-selected-window
-	    (select-window window)
-	    (scroll-up))))
-      t)))
 
 ;;;; Refactoring
 
@@ -1031,9 +1061,9 @@ refactoring.
 This command requires Erlang syntax_tools package to be available in
 the node, version 1.2 (or perhaps later.)"
   (interactive (list (erl-target-node)
-		     (read-string "Function name: ")
-		     (region-beginning)
-		     (region-end)))
+             (read-string "Function name: ")
+             (region-beginning)
+             (region-end)))
   ;; Skip forward over whitespace
   (setq start (save-excursion
                 (goto-char start)
@@ -1045,33 +1075,33 @@ the node, version 1.2 (or perhaps later.)"
               (skip-chars-backward ". ,;\r\n\t")
               (point)))
   (let ((buffer (current-buffer))
-	(text   (erl-refactor-strip-macros
+    (text   (erl-refactor-strip-macros
                  (buffer-substring-no-properties start end))))
     (erl-spawn
       (erl-send-rpc node 'distel 'free_vars (list text))
       (erl-receive (name start end buffer text)
-	  ((['rex ['badrpc rsn]]
-	    (message "Refactor failed: %S" rsn))
-	   (['rex ['error rsn]]
-	    (message "Refactor failed: %s" rsn))
-	   (['rex ['ok free-vars]]
-	    (with-current-buffer buffer
-	      (let ((arglist
-		     (concat "(" (mapconcat 'symbol-name free-vars ", ") ")"))
-		    (body
-		     (buffer-substring-no-properties start end)))
-		;; rewrite the original as a call
-		(delete-region start end)
+      ((['rex ['badrpc rsn]]
+        (message "Refactor failed: %S" rsn))
+       (['rex ['error rsn]]
+        (message "Refactor failed: %s" rsn))
+       (['rex ['ok free-vars]]
+        (with-current-buffer buffer
+          (let ((arglist
+             (concat "(" (mapconcat 'symbol-name free-vars ", ") ")"))
+            (body
+             (buffer-substring-no-properties start end)))
+        ;; rewrite the original as a call
+        (delete-region start end)
                 (goto-char start)
-		(insert (format "%s%s" name arglist))
-		(indent-according-to-mode)
-		;; Now generate the function and stick it on the kill ring
-		(kill-new (with-temp-buffer
-			    (insert (format "%s%s ->\n%s.\n" name arglist body))
-			    (erlang-mode)
-			    (indent-region (point-min) (point-max) nil)
-			    (buffer-string)))
-		(message "Saved `%s' definition on kill ring." name)))))))))
+        (insert (format "%s%s" name arglist))
+        (indent-according-to-mode)
+        ;; Now generate the function and stick it on the kill ring
+        (kill-new (with-temp-buffer
+                (insert (format "%s%s ->\n%s.\n" name arglist body))
+                (erlang-mode)
+                (indent-region (point-min) (point-max) nil)
+                (buffer-string)))
+        (message "Saved `%s' definition on kill ring." name)))))))))
 
 (defun erl-refactor-strip-macros (text)
   "Removed all use of macros in TEXT.
@@ -1097,20 +1127,20 @@ variables."
 
 (defun erl-fdoc-apropos (node regexp rebuild-db)
   (interactive (list (erl-target-node)
-		     (read-string "Regexp: ")
+             (read-string "Regexp: ")
                      (maybe-select-db-rebuild)))
   (unless (string= regexp "")
     (erl-spawn
       (erl-send-rpc node 'distel 'apropos (list regexp
-						(if rebuild-db 'true 'false)))
+                        (if rebuild-db 'true 'false)))
       (message "Sent request; waiting for results..")
       (erl-receive ()
-	  ((['rex ['ok matches]]
-	    (erl-show-fdoc-matches matches))
-	   (['rex ['badrpc rsn]]
-	    (message "fdoc RPC failed: %S" rsn))
-	   (other
-	    (message "fdoc unexpected result: %S" other)))))))
+      ((['rex ['ok matches]]
+        (erl-show-fdoc-matches matches))
+       (['rex ['badrpc rsn]]
+        (message "fdoc RPC failed: %S" rsn))
+       (other
+        (message "fdoc unexpected result: %S" other)))))))
 
 (defun erl-show-fdoc-matches (matches)
   "Show MATCHES from fdoc. Each match is [MOD FUNC ARITY DOC]."
@@ -1119,28 +1149,28 @@ variables."
     (display-message-or-view
      (with-temp-buffer
        (dolist (match matches)
-	 (mlet [mod func arity doc] match
-	   (let ((entry (format "%s:%s/%s" mod func arity)))
-	     (put-text-property 0 (length entry)
-				'face 'erl-fdoc-name-face
-				entry)
-	     (insert entry ":\n"))
-	   (let ((start (point)))
-	     (insert doc)
-	     (indent-rigidly start (point) 2)
-	     (insert "\n"))))
+     (mlet [mod func arity doc] match
+       (let ((entry (format "%s:%s/%s" mod func arity)))
+         (put-text-property 0 (length entry)
+                'face 'erl-fdoc-name-face
+                entry)
+         (insert entry ":\n"))
+       (let ((start (point)))
+         (insert doc)
+         (indent-rigidly start (point) 2)
+         (insert "\n"))))
        (buffer-string))
      "*Erlang fdoc results*")))
 
 (defvar erl-module-function-arity-regexp
   ;; Nasty scary not-really-correct stuff.. now I know how perl guys feel
   (let* ((module-re   "[^:]*")
-	 (fun-re      "[^/]*")
-	 (arity-re    "[0-9]*")
-	 (the-module  (format "\\(%s\\)" module-re))
-	 (maybe-arity (format "\\(/\\(%s\\)\\)?" arity-re))
-	 (maybe-fun-and-maybe-arity
-	  (format "\\(:\\(%s\\)%s\\)?" fun-re maybe-arity)))
+     (fun-re      "[^/]*")
+     (arity-re    "[0-9]*")
+     (the-module  (format "\\(%s\\)" module-re))
+     (maybe-arity (format "\\(/\\(%s\\)\\)?" arity-re))
+     (maybe-fun-and-maybe-arity
+      (format "\\(:\\(%s\\)%s\\)?" fun-re maybe-arity)))
     (concat "^" the-module maybe-fun-and-maybe-arity "$"))
     "Regexp matching \"module[:function[/arity]]\".
 The match positions are erl-mfa-regexp-{module,function,arity}-match.")
@@ -1153,39 +1183,39 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
   (interactive (list (erl-target-node)
                      (maybe-select-db-rebuild)))
   (let* ((mfa (erl-read-call-mfa))
-	 (defaultstr (if (null mfa)
-			 nil
-		       (concat (if (first mfa)  (format "%s:" (first mfa)) "")
-			       (if (second mfa) (format "%s"  (second mfa)) "")
-			       (if (third mfa)  (format "/%S" (third mfa))))))
-	 (prompt (format "M[:F[/A]]: %s"
-			 (if defaultstr
-			     (format "(default %s) " defaultstr)
-			   "")))
-	 (mfastr (read-string prompt nil nil defaultstr)))
+     (defaultstr (if (null mfa)
+             nil
+               (concat (if (first mfa)  (format "%s:" (first mfa)) "")
+                   (if (second mfa) (format "%s"  (second mfa)) "")
+                   (if (third mfa)  (format "/%S" (third mfa))))))
+     (prompt (format "M[:F[/A]]: %s"
+             (if defaultstr
+                 (format "(default %s) " defaultstr)
+               "")))
+     (mfastr (read-string prompt nil nil defaultstr)))
     (if (not (string-match erl-module-function-arity-regexp mfastr))
-	(error "Bad input.")
+    (error "Bad input.")
       (let ((mod (match-string erl-mfa-regexp-module-match mfastr))
-	    (fun (ignore-errors (match-string erl-mfa-regexp-function-match mfastr)))
-	    (arity (ignore-errors (match-string erl-mfa-regexp-arity-match mfastr))))
-	(if (string= mod "")
-	    (error "Bad spec -- which module?")
-	  (erl-spawn
-	    (erl-send-rpc node 'distel 'describe
-			  (list (intern mod)
-				(if fun (intern fun) '_)
-				(if arity (string-to-int arity) '_)
-				(if rebuild-db 'true 'false)))
-	    (message "Sent request; waiting for results..")
-	    (erl-receive ()
-		((['rex ['ok matches]]
-		  (erl-show-fdoc-matches matches))
-		 (['rex ['badrpc rsn]]
-		  (message "fdoc RPC failed: %S" rsn))
-		 (['rex ['error rsn]]
-		  (message "fdoc failed: %S" rsn))
-		 (other
-		  (message "fdoc unexpected result: %S" other))))))))))
+        (fun (ignore-errors (match-string erl-mfa-regexp-function-match mfastr)))
+        (arity (ignore-errors (match-string erl-mfa-regexp-arity-match mfastr))))
+    (if (string= mod "")
+        (error "Bad spec -- which module?")
+      (erl-spawn
+        (erl-send-rpc node 'distel 'describe
+              (list (intern mod)
+                (if fun (intern fun) '_)
+                (if arity (string-to-int arity) '_)
+                (if rebuild-db 'true 'false)))
+        (message "Sent request; waiting for results..")
+        (erl-receive ()
+        ((['rex ['ok matches]]
+          (erl-show-fdoc-matches matches))
+         (['rex ['badrpc rsn]]
+          (message "fdoc RPC failed: %S" rsn))
+         (['rex ['error rsn]]
+          (message "fdoc failed: %S" rsn))
+         (other
+          (message "fdoc unexpected result: %S" other))))))))))
 
 ;;;; Argument lists
 
@@ -1206,22 +1236,22 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
     ;; Don't print arglists when we're defining a function (when the
     ;; "call" is at the start of the line)
     (unless (save-excursion
-	      (skip-chars-backward "a-zA-Z0-9_:'(")
-	      (bolp))
+          (skip-chars-backward "a-zA-Z0-9_:'(")
+          (bolp))
       (let* ((call-mod (car call))
-	     (mod (or call-mod (erlang-get-module)))
-	     (fun (cadr call)))
-	(when fun
-	  (erl-spawn
-	    (erl-send-rpc node 'distel 'get_arglists
-			  (list mod fun))
-	    (erl-receive (call-mod fun ins-buffer)
-		((['rex 'error])
-		 (['rex arglists]
-		  (let ((argss (erl-format-arglists arglists)))
-		    (if ins-buffer
-			(with-current-buffer ins-buffer (insert argss))
-		      (message "%s:%s%s"  call-mod fun argss))))))))))))
+         (mod (or call-mod (erlang-get-module)))
+         (fun (cadr call)))
+    (when fun
+      (erl-spawn
+        (erl-send-rpc node 'distel 'get_arglists
+              (list mod fun))
+        (erl-receive (call-mod fun ins-buffer)
+        ((['rex 'error])
+         (['rex arglists]
+          (let ((argss (erl-format-arglists arglists)))
+            (if ins-buffer
+            (with-current-buffer ins-buffer (insert argss))
+              (message "%s:%s%s"  call-mod fun argss))))))))))))
 
 (defun erl-format-arglists (arglists)
   (setq arglists (sort* arglists '< :key 'length))
@@ -1237,6 +1267,7 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
 
 (defun erl-who-calls (node)
   (interactive (list (erl-target-node)))
+  (ring-insert-at-beginning erl-find-history-ring (copy-marker (point-marker)))
   (apply #'erl-find-callers
          (or (erl-read-call-mfa) (error "No call at point."))))
 
@@ -1250,21 +1281,21 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
           (message "Error: %s" reason))
          (['rex calls]
           (with-current-buffer (get-buffer-create "*Erlang Calls*")
-	    (erl-who-calls-mode)
+        (erl-who-calls-mode)
             (setq buffer-read-only t)
             (let ((inhibit-read-only t))
               (erase-buffer)
               (dolist (call calls)
                 (mlet [m f a line] call
-		  (erl-propertize-insert (list 'module m
-					       'function f
-					       'arity a
-					       'line line
-					       'face 'bold)
-					 (format "%s:%s/%S\n" m f a))))
-	      ;; Remove the final newline to ensure all lines contain xref's
-	      (backward-char 1)
-	      (delete-char 1))
+          (erl-propertize-insert (list 'module m
+                           'function f
+                           'arity a
+                           'line line
+                           'face 'bold)
+                     (format "%s:%s/%S\n" m f a))))
+          ;; Remove the final newline to ensure all lines contain xref's
+          (backward-char 1)
+          (delete-char 1))
             (goto-char (point-min))
             (message "")
             (pop-to-buffer (current-buffer))))
@@ -1276,29 +1307,37 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
 
 \\{erl-who-calls-mode-map}")
 
+(define-key erl-who-calls-mode-map (kbd "q") 'kill-this-buffer)
 (define-key erl-who-calls-mode-map (kbd "RET") 'erl-goto-caller)
+(define-key erl-who-calls-mode-map (kbd "M-.") 'erl-goto-caller)
+(define-key erl-who-calls-mode-map (kbd "M-,") 'erl-find-source-unwind)
 
 (defun erl-goto-caller ()
   "Goto the caller that is at point."
   (interactive)
+  (ring-insert-at-beginning erl-find-history-ring (copy-marker (point-marker)))
   (let ((line (get-text-property (line-beginning-position) 'line))
-	(module (get-text-property (line-beginning-position) 'module))
-	(node (or erl-nodename-cache (erl-target-node))))
+    (module (get-text-property (line-beginning-position) 'module))
+    (node (or erl-nodename-cache (erl-target-node))))
     (erl-spawn
       (erl-send-rpc node 'distel 'find_source (list (intern module)))
       (erl-receive (line)
-	  ((['rex ['ok path]]
-	    (find-file path)
-	    (goto-line line))
-	   (['rex ['error reason]]
-	    (message "Error: %s" reason)))))))
+      ((['rex ['ok path]]
+        (find-file path)
+        (goto-line line))
+       (['rex ['error reason]]
+        (message "Error: %s" reason)))))))
 
 (defmacro erl-propertize-insert (props &rest body)
   "Execute and insert BODY and add PROPS to all the text that is inserted."
   (let ((start (gensym)))
     `(let ((,start (point)))
        (prog1 (progn (insert ,@body))
-	 (add-text-properties ,start (point) ,props)))))
+     (add-text-properties ,start (point) ,props)))))
+
+;; Local Variables:
+;; coding: utf-8
+;; indent-tabs-mode: nil
+;; End:
 
 (provide 'erl-service)
-

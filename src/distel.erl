@@ -21,7 +21,6 @@
                 , foreach/2
                 , keysearch/3
                 , map/2
-                , member/2
                 , prefix/2
                 , reverse/1
                 , sort/1
@@ -162,6 +161,26 @@ find_source(Mod) ->
       {error, fmt("Can't find module '~p' on ~p", [Mod, node()])}
   end.
 
+%% find_includes([all]) ->
+%%   Mods = erlang:loaded(),
+%%   find_includes(Mods);
+%% find_includes([Mods]) ->
+%%   RawPaths = usort([find_include_paths(Mod) || Mod <- Mods]),
+%%   FilteredPaths = [Paths || Paths <- RawPaths,
+%%                             is_list(Paths) andalso Paths =/= []],
+%%   Paths = lists:append(FilteredPaths),
+%%   {ok, Paths};
+%% find_includes(Mod) ->
+%%   Paths = find_include_paths(Mod),
+%%   {ok, Paths}.
+
+%% find_include_paths(Mod) ->
+%%   case Mod:module_info(compile) of
+%%     [] -> int:file(Mod);
+%%     CompInfo -> {_, OptionsList} = lists:keyfind(options, 1, CompInfo),
+%%                 [Path || {i, Path} <- OptionsList]
+%%   end.
+
 %% Ret: AbsName | throw(Reason)
 guess_source_file(Mod, BeamFName) ->
   Erl = to_list(Mod) ++ ".erl",
@@ -171,8 +190,20 @@ guess_source_file(Mod, BeamFName) ->
             join([Dir, Erl]),
             join([DotDot, "src", Erl]),
             join([DotDot, "src", "*", Erl]),
+            join([DotDot, "src", "*","*", Erl]),
+            join([DotDot, "src", "*","*","*", Erl]),
+            join([DotDot, "src", "*","*","*","*", Erl]),
             join([DotDot, "esrc", Erl]),
-            join([DotDot, "erl", Erl])]).
+            join([DotDot, "esrc", "*", Erl]),
+            join([DotDot, "esrc", "*","*", Erl]),
+            join([DotDot, "esrc", "*","*","*", Erl]),
+            join([DotDot, "esrc", "*","*","*","*", Erl]),
+            join([DotDot, "erl", Erl]),
+            join([DotDot, "erl", "*", Erl]),
+            join([DotDot, "erl", "*","*", Erl]),
+            join([DotDot, "erl", "*","*","*", Erl]),
+            join([DotDot, "erl", "*","*","*","*", Erl])
+           ]).
 
 try_srcs([]) -> throw(nothing);
 try_srcs(["" | T]) -> try_srcs(T);
@@ -678,16 +709,74 @@ stack_pos(#attach{stack={Pos,_Max}}) -> Pos.
 %% Completion support
 %% ----------------------------------------------------------------------
 
+all_modules()->
+    ModuleNames=lists:map(
+                  fun(Path)->
+                          case file:list_dir(Path) of
+                              {ok,BeamNames}->
+                                  [filename:basename(Beam,".beam")||
+                                      Beam <- BeamNames,".beam" == filename:extension(Beam)];
+                              {error,_Reason} ->
+                                  []
+                          end
+                  end,[X|| X <- code:get_path()]),
+    {ok,flatten_hrls(ModuleNames,[])}.
+
+prefix_matched_modules(Prefix)->
+    {ok,AllMods}=all_modules(),
+    MatchedMods=
+        lists:filter(fun(Mod)->
+                             case string:str(Mod,Prefix) of
+                                 1 -> true;%Mod starts with Prefix
+                                 _->false
+                             end
+                     end ,AllMods),
+    {ok,MatchedMods}.
+
+loaded_modules() ->
+  Mods = erlang:loaded(),
+  {ok, Mods}.
+
 modules(Prefix) ->
   case otp_doc:modules(Prefix) of
     {ok,Ans} -> {ok,Ans};
     {error,_}-> xref_modules(Prefix)
   end.
-functions(Mod, Prefix) ->
-  case otp_doc:functions(Mod,Prefix) of
-    {ok,Ans} -> {ok,Ans};
-    {error,_}-> xref_functions(Mod,Prefix)
-  end.
+
+%% distel:functions(code,"roo").
+functions(Mod,Prefix)when is_atom(Mod),is_list(Prefix)->
+    try
+        Mod:module_info(exports) of
+        Exports->
+            Result= lists:foldl(
+                      fun(X,Acc)->
+                              {FunNameAtom,_ArgCount}=X ,
+                              FunName =atom_to_list(FunNameAtom),
+                              case Prefix of
+                                  ""->
+                                      [FunName|Acc];
+                                  _ ->
+                                      case string:str(FunName,Prefix) of
+                                          1->      %FunNameAtom startsWith Prefix
+                                              [FunName|Acc];
+                                          _ ->
+                                              Acc
+                                      end
+
+                              end
+
+                      end,
+                      [],Exports),
+            {ok,Result}
+    catch
+        error:_Error->
+            ok
+            %% case otp_doc:functions(Mod,Prefix) of
+            %%     {ok,Ans} -> {ok,Ans};
+            %%     {error,_}-> xref_functions(Mod,Prefix)
+            %% end
+    end
+        .
 
 xref_completions(F,A) ->
     fun(server) -> distel_completions;
@@ -1096,3 +1185,81 @@ get_code_path(XREF) ->
         true ->
             code:get_path()
     end.
+
+%% distel:find_header_file2("eunit","include/eunit.hrl").
+find_header_file2(Application,SubPath)->
+    case code:lib_dir(Application) of
+        {error,Error}->
+            {error,Error};
+        LibDir ->
+            filename:join([LibDir, SubPath])
+    end
+        .
+
+%% distel:find_header_file("eunit/include/eunit.hrl").
+find_header_file(HeaderPathInSrc)->
+    Index =string:chr(HeaderPathInSrc,$/),
+    case  Index of
+        0->                                     %no $/ found in String
+            {error,not_a_system_header_file};
+        Index ->
+            Application = string:substr(HeaderPathInSrc,1,Index-1),
+            SubPath = string:substr(HeaderPathInSrc,Index+1),
+            find_header_file2(Application,SubPath)
+    end
+        .
+
+%% distel:find_header_files(["eunit/include/eunit.hrl","kernel/include/file.hrl"]).
+find_header_files(HeaderPathsInSrc)->
+    lists:map(fun ?MODULE:find_header_file/1 ,HeaderPathsInSrc)
+        .
+%% distel:find_matched_system_header_files("file").
+find_matched_system_header_files(Pattern)->
+    {ok,System_header_files}= find_all_system_header_files(),
+    case Pattern of
+        ""->
+            {ok,System_header_files};
+        _ ->
+            Result=lists:foldl(fun(Hrl,Acc)->
+                                       case string:str(Hrl,Pattern)of %String contains Pattern
+                                           0->
+                                               Acc;
+                                           _->
+                                               [Hrl|Acc]
+                                       end
+                               end,
+                               [],System_header_files),
+            {ok,Result}
+    end
+
+        .
+%% ["common_test/include/ct.hrl",
+%%  "common_test/include/ct_event.hrl",
+%%  "cosEvent/include/CosEventChannelAdmin_ProxyPushConsumer.hrl",...]
+find_all_system_header_files()->
+    Hrls=    lists:map(fun(Path)->
+                               ApplicationPath=filename:dirname(Path),
+                               IncludePath =filename:join(ApplicationPath,"include"),
+                               ApplicationNameWithVersionNum = filename:basename(ApplicationPath) ,
+                               [ApplicationName|_]=string:tokens(ApplicationNameWithVersionNum,"-"),
+                               case file:list_dir(IncludePath) of
+                                   {ok,IncludeFileNames}->
+                                       lists:map(fun(IncludeName) -> ApplicationName ++ "/include/" ++ IncludeName  end,IncludeFileNames);
+                                   {error,_Reason} ->
+                                       ""
+                               end
+
+                       end,[X|| X <- code:get_path() ,X =/= "."]),
+    {ok,flatten_hrls(Hrls,[])}
+        .
+
+flatten_hrls([],Acc)->
+    Acc;
+flatten_hrls([H|Tail],Acc) ->
+    case H of
+        []->
+            flatten_hrls(Tail,Acc);
+        H ->
+            flatten_hrls(Tail,H ++ Acc)
+    end
+        .

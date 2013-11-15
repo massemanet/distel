@@ -1,2 +1,3 @@
 ebin
 elisp/*.elc
+*.beam

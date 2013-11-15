@@ -55,3 +55,19 @@ on a UNIX machine. It's necessary so that Emacs can open sockets to
 the localhost via the hostname part of a nodename without talking to
 DNS.
 
+Special notes for Gentoo Users:
+on Gentoo ,documents about erlang is not installed under code:root_dir()
+but some path like /usr/share/doc/erlang-15.2/html/
+so if you using `C-cC-dh' and 'C-cC-dz', you need change 'otp_doc.erl' like this:
+
+init(Props) ->
+  Dir = "/usr/share/doc/erlang-15.2/html",
+  %% Dir =  proplists:get_value(root_dir, Props, code:root_dir()),
+
+  Prot = proplists:get_value(prot, Props, file),
+  ets:new(?MODULE,[named_table,ordered_set]),
+  try html_index(Prot,Dir),
+      {ok,#state{root_dir=Dir,prot=Prot}}
+  catch _:_ ->
+      {ok,no_html}
+  end.
