@@ -196,6 +196,31 @@ src_from_beam(Mod) ->
   catch _:_ -> ""
   end.
 
+find_macro(Mod, Macro) ->
+  find_thing(Mod, define, Macro).
+
+find_record(Mod, Record) ->
+  find_thing(Mod, record, Record).
+
+find_thing(Mod, Type, Thing) ->
+  Files = includes_from_mod(Mod),
+  Res = [{ok, File} || File <- Files,
+                       thing_in_file(File, Type, list_to_atom(Thing))],
+  case proplists:lookup(ok, Res) of
+    {ok, File} -> {ok, File};
+    _ -> {error,fmt("Can't find definition of ~p ~p",
+                    [Type, Thing])}
+  end.
+
+thing_in_file(File, Type, Thing) ->
+  {ok, Forms} = epp_dodger:parse_file(File),
+  proplists:is_defined(Thing, [element(size(T),T)
+                              || {tree,attribute,
+                                  {attr,_L,_,_},
+                                  {attribute,X,[T|_]}} <- Forms,
+                                 Type==element(3,X) orelse
+                                 Type==element(4,X)]).
+
 %% ----------------------------------------------------------------------
 %% Summarise all processes in the system.
 %%
@@ -518,6 +543,11 @@ erl_from_mod(Mod) ->
     catch _:_ -> ""
     end.
 
+includes_from_mod(Mod) ->
+    try {ok,{_,Abst}} = get_abst_from_debuginfo(Mod),
+         [File || {_,_,file,{File,_}} <- Abst, File =/= erl_from_mod(Mod)]
+    catch _:_ -> ""
+    end.
 
 assert_int(Mod,Filename) ->
     case is_interpreted(Mod) of
