@@ -26,7 +26,7 @@ commands. Using C-u to bypasses the cache.")
 (defun erl-target-node ()
   "Return the name of the default target node for commands.
 Force node selection if no such node has been choosen yet, or when
-invoked with a prefix argument." 
+invoked with a prefix argument."
   (or (and (not current-prefix-arg) erl-nodename-cache)
       (erl-choose-nodename)))
 
@@ -78,8 +78,8 @@ integer."
          (mfa (if (or (null mfa-at-point)
                       current-prefix-arg
                       distel-tags-compliant)
-                  (erl-parse-mfa 
-		   (read-string 
+                  (erl-parse-mfa
+		   (read-string
 		    "Function reference: "
 		    (if current-prefix-arg nil (erl-format-mfa mfa-at-point))))
                 mfa-at-point)))
@@ -174,7 +174,7 @@ If not then try to send the module over as a binary and load it in."
 
 (defvar distel-ebin-directory
   (file-truename
-   (concat (file-name-directory 
+   (concat (file-name-directory
             (or (locate-library "distel") load-file-name)) "../ebin"))
    "Directory where beam files are located.")
 
@@ -686,12 +686,12 @@ time it spent in subfunctions."
 (defun erl-reload-modules (node)
   "reload all out-of-date modules"
   (interactive (list (erl-target-node)))
-  (erl-rpc (lambda (result) (message "load: %s" result)) nil 
+  (erl-rpc (lambda (result) (message "load: %s" result)) nil
            node 'distel 'reload_modules ()))
 
 
 (defvar erl-reload-dwim nil
-  "Do What I Mean when reloading beam files. If erl-reload-dwim is non-nil, 
+  "Do What I Mean when reloading beam files. If erl-reload-dwim is non-nil,
 and the module cannot be found in the load path, we attempt to find the correct
 directory, add it to the load path and retry the load.
 We also don't prompt for the module name.")
@@ -699,7 +699,7 @@ We also don't prompt for the module name.")
 (defun erl-reload-module (node module)
   "Reload a module."
   (interactive (list (erl-target-node)
-		     (if erl-reload-dwim 
+		     (if erl-reload-dwim
 			 (erlang-get-module)
 		       (let* ((module (erlang-get-module))
 			      (prompt (if module
@@ -714,7 +714,7 @@ We also don't prompt for the module name.")
 
 (defun erl-do-reload (node module)
   (let ((fname (if erl-reload-dwim (buffer-file-name) nil)))
-    (erl-rpc (lambda (result) (message "load: %s" result)) nil 
+    (erl-rpc (lambda (result) (message "load: %s" result)) nil
 	     node 'distel 'reload_module (list module fname))))
 
 (defun erl-reinterpret-module (node module)
@@ -781,7 +781,7 @@ default.)"
 (defun erl-find-module ()
   (interactive)
   (erl-find-source (read-string "module: ")))
- 
+
 (defun erl-find-source (module &optional function arity)
   "Find the source code for MODULE in a buffer, loading it if necessary.
 When FUNCTION is specified, the point is moved to its start."
@@ -805,18 +805,14 @@ When FUNCTION is specified, the point is moved to its start."
 	      (message "Error: %s" reason))))))))
 
 (defun erl-find-doc-under-point ()
-  "Find the html documentation for the (possibly incomplete) OTP 
+  "Browse html documentation for the (possibly incomplete) OTP
 function under point"
   (interactive)
-  (if (require 'w3m nil t)
-      (erl-do-find-doc 'link 'point)
-    (erl-find-sig-under-point)))
+  (erl-do-find-doc 'link 'point))
 
 (defun erl-find-doc ()
   (interactive)
-  (if (require 'w3m nil t)
-      (erl-do-find-doc 'link nil)
-    (erl-find-sig)))
+  (erl-do-find-doc 'link nil))
 
 (defun erl-find-sig-under-point ()
   "Find the signatures for the (possibly incomplete) OTP function under point"
@@ -828,13 +824,12 @@ function under point"
   (erl-do-find-doc 'sig nil))
 
 (defun erl-do-find-doc (what how &optional module function ari)
-  "Find the documentation for an OTP mfa. 
-if WHAT is 'link, tries to get a link to the html docs, and open 
-it in a w3m buffer. if WHAT is nil, prints the function signature 
-in the mini-buffer.
-If HOW is 'point, tries to find the mfa at point; if HOW is nil, 
-prompts for an mfa."
-  (destructuring-bind 
+  "Find the documentation for an OTP mfa.
+if WHAT is 'link, tries to get a link to the html docs, and use
+`browse-url' to open it. if WHAT is nil, prints the function
+signature in the mini-buffer. If HOW is 'point, tries to find the
+mfa at point; if HOW is nil, prompts for an mfa."
+  (destructuring-bind
       (mod fun ari)
       (or (if (null how)
 	      (erl-parse-mfa (read-string "Function reference: ") "-")
@@ -856,7 +851,7 @@ prompts for an mfa."
 	     (['rex ['sig string]]
 	      (message "%s" string))
 	     (['rex ['link link]]
-	      (w3m-browse-url link))
+	      (browse-url link))
 	     (['rex [reaso reason]]
 	      (message "Error: %s %s" reaso reason))))))))
 
@@ -895,7 +890,7 @@ prompts for an mfa."
   (let ((win (get-buffer-window "*Completions*" 0)))
     (if win (with-selected-window win (bury-buffer))))
   (let ((end (point))
-	(beg (ignore-errors 
+	(beg (ignore-errors
 	       (save-excursion (backward-sexp 1)
 			       ;; FIXME: see erl-goto-end-of-call-name
 			       (when (eql (char-before) ?:)
@@ -1301,4 +1296,3 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
 	 (add-text-properties ,start (point) ,props)))))
 
 (provide 'erl-service)
-
