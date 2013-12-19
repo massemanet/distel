@@ -260,7 +260,7 @@ Available commands:
 	      (current-window-configuration))))
     (pop-to-buffer edb-monitor-buffer)
     (condition-case nil
-        (progn 
+        (progn
           (search-forward "break")
           (move-beginning-of-line))
       (error nil))))
@@ -360,7 +360,7 @@ Tracks events and state changes from the Erlang node."
        ;;
        (['int ['delete_break [mod line]]]
 	(edb-delete-breakpoint mod line)))
-    (ewoc-refresh edb-processes)    
+    (ewoc-refresh edb-processes)
     (&edb-monitor-loop)))
 
 (defun edb-get-buffer (mod)
@@ -435,11 +435,11 @@ When MOD is given, only update those visiting that module."
  (defvar edb-module nil
    "Current module source code in attach buffer."))
 
-(make-variable-buffer-local 
+(make-variable-buffer-local
  (defvar edb-variables-buffer nil
    "Buffer showing variable bindings of attached process."))
 
-(make-variable-buffer-local 
+(make-variable-buffer-local
  (defvar edb-attach-buffer nil
    "True if buffer is attach buffer."))
 
@@ -452,7 +452,7 @@ When MOD is given, only update those visiting that module."
   (interactive)
   (let ((pid (get-text-property (point) 'erl-pid)))
     (if pid
-	(progn (when edb-attach-with-new-frame 
+	(progn (when edb-attach-with-new-frame
 		 (select-frame (make-frame)))
 	       (edb-attach pid))
       (error "No process at point."))))
@@ -682,11 +682,11 @@ Available commands:
 (defvar edb-saved-breakpoints '()
   "List of breakpoints to set if edb-restore-dbg-state is called.")
 
-(make-variable-buffer-local 
+(make-variable-buffer-local
  (defvar edb-buffer-breakpoints nil
    "List of active buffer breakpoints."))
 
-(make-variable-buffer-local 
+(make-variable-buffer-local
  (defvar edb-buffer-breakpoints-stale nil
    "Nil if the breakpoints in the buffer are stale (out of synch)."))
 
@@ -714,7 +714,7 @@ Available commands:
        (when erlang-extended-mode
 	 (edb-create-buffer-breakpoints (edb-source-file-module-name)))))
    (buffer-list)))
-  
+
 
 (defun edb-create-breakpoint (mod line)
   "Updates all internal structures in all buffers with new breakpoint."
@@ -759,7 +759,7 @@ Available commands:
 
 (defun edb-delete-buffer-breakpoints ()
   "Deletes all buffer breakpoints in the current buffer."
-  (setq edb-buffer-breakpoints 
+  (setq edb-buffer-breakpoints
 	(edb-del-bbps edb-buffer-breakpoints (lambda (bbp) t))))
 
 (defun edb-del-breakpoints (bp-f bbp-f &optional mod)
@@ -841,7 +841,7 @@ breakpoints are already marked as stale."
 	  edb-buffer-breakpoints))
 
 (defun edb-mk-bbps (mod)
-  (zf
+  (edb-zf
    (lambda (bp)
      (let ((bmod (bp-mod bp))
 	   (line (bp-line bp)))
@@ -852,7 +852,7 @@ breakpoints are already marked as stale."
    edb-breakpoints))
 
 (defun edb-del-bbps (list pred)
-  (zf
+  (edb-zf
    (lambda (bbp)
      (cond ((funcall pred bbp)
 	    (delete-overlay (bbp-ov bbp))
@@ -874,8 +874,8 @@ breakpoints are already marked as stale."
 	  (overlay-put ov 'face 'edb-breakpoint-stale-face)
 	(overlay-put ov 'face 'edb-breakpoint-face))
       ov)))
-    
-(defun zf (f l)
+
+(defun edb-zf (f l)
   (let ((res nil))
     (dolist (x l)
       (let ((r (funcall f x)))

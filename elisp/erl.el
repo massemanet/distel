@@ -316,7 +316,7 @@ The pattern syntax is the same as `pmatch'."
   (erl-receive-loop bs clauses after erl-mailbox))
 
 (defun erl-receive-loop (bs clauses after msgs &optional acc)
-  (if (null msgs) 
+  (if (null msgs)
       (erl-continue #'erl-receive* bs clauses after)
     (let ((action
 	   ;; We restore the bindings incase they are referred to in patterns
@@ -548,7 +548,7 @@ during the next `erl-schedule'."
   (push (cons (erl-pid-id erl-self) (current-buffer))
 	erl-process-buffer-alist)
   (make-local-variable 'kill-buffer-hook)
-  (put 'kill-buffer-hook 'permanent-local t)  
+  (put 'kill-buffer-hook 'permanent-local t)
   (add-hook 'kill-buffer-hook 'erl-unenroll-process)
   (add-hook 'kill-buffer-hook 'erl-propagate-exit))
 
@@ -596,15 +596,6 @@ during the next `erl-schedule'."
       (setq erl-links (remove remote erl-links))
       (erl-deliver-exit remote local 'noconnection))))
 
-(defun impossible (&optional reason)
-  "Raise an error because something \"impossible\" has happened."
-  (if reason
-      (error "Impossible: %s" reason)
-    (error "The impossible has occured")))
-
-(defun nyi ()
-  (error "Not yet implemented!"))
-
 ;; Initialisation
 
 (defun erl-nodeup (node proc)
@@ -650,4 +641,3 @@ during the next `erl-schedule'."
         (erl-spawn
           (erl-register 'group-leader)
           (&erl-group-leader-loop))))
-
