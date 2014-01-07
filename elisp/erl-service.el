@@ -282,7 +282,9 @@ On an error, Result will be [badrpc Reason]."
     (erl-send-rpc node 'erlang 'node nil)
     (erl-receive (node)
 	((['rex response]
-          (if (equal node response)
+          (if (or (equal node response)
+                  (equal (symbol-name node)
+                         (concat (symbol-name response) ".local")))
               (message "Successfully communicated with remote node %S"
                        node)
             (message "Failed to communicate with node %S: %S"
