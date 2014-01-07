@@ -72,7 +72,7 @@ edb."))
     (edb-create-buffer-breakpoints (edb-module))))
 
 (add-hook 'erlang-extended-mode-hook
-	  'edb-setup-source-buffer)
+          'edb-setup-source-buffer)
 
 ;; ----------------------------------------------------------------------
 ;; EDB minor mode for erlang-mode source files
@@ -80,20 +80,20 @@ edb."))
 (defun edb-toggle-interpret (node module file)
   "Toggle debug-interpreting of the current buffer's module."
   (interactive (list (erl-target-node)
-		     (edb-module)
-		     buffer-file-name))
+                     (edb-module)
+                     buffer-file-name))
   (when (edb-ensure-monitoring node)
     (erl-spawn
       (erl-set-name "EDB RPC to toggle interpretation of %S on %S"
-		    module node)
+                    module node)
       (erl-send-rpc node 'distel 'debug_toggle (list module file))
       (erl-receive (module)
-	  ((['rex 'interpreted]
-	    (message "Interpreting: %S" module))
-	   (['rex 'uninterpreted]
-	    (message "Stopped interpreting: %S" module))
-	   (['rex ['badrpc reason]]
-	    (message "Failed to interpret-toggle: %S" reason)))))))
+          ((['rex 'interpreted]
+            (message "Interpreting: %S" module))
+           (['rex 'uninterpreted]
+            (message "Stopped interpreting: %S" module))
+           (['rex ['badrpc reason]]
+            (message "Failed to interpret-toggle: %S" reason)))))))
 
 (defun edb-module ()
   (if (erlang-get-module)
@@ -103,8 +103,8 @@ edb."))
 (defun edb-toggle-breakpoint (node module line)
   "Toggle a breakpoint on the current line."
   (interactive (list (erl-target-node)
-		     (edb-module)
-		     (edb-line-number)))
+                     (edb-module)
+                     (edb-line-number)))
   (unless (edb-module-interpreted-p module)
     (error "Module is not interpreted, can't set breakpoints."))
   (if edb-buffer-breakpoints-stale
@@ -113,23 +113,23 @@ edb."))
 
 (defun edb-toggle-stale-breakpoint (module line)
   (let ((overlay (edb-first (lambda (ov) (overlay-get ov 'edb-breakpoint))
-			    (overlays-in (line-beginning-position)
-					 (1+ (line-end-position))))))
+                            (overlays-in (line-beginning-position)
+                                         (1+ (line-end-position))))))
     (if overlay
-	(delete-overlay overlay)
+        (delete-overlay overlay)
       (edb-create-breakpoint module line))))
 
 (defun edb-toggle-real-breakpoint (node module line)
   (when (edb-ensure-monitoring node)
     (erl-spawn
       (erl-set-name "EDB RPC to toggle of breakpoint %S:%S on %S"
-		    module line node)
+                    module line node)
       (erl-send-rpc node 'distel 'break_toggle (list module line))
       (erl-receive (module line)
-	  ((['rex 'enabled]
-	    (message "Enabled breakpoint at %S:%S" module line))
-	   (['rex 'disabled]
-	    (message "Disabled breakpoint at %S:%S" module line)))))))
+          ((['rex 'enabled]
+            (message "Enabled breakpoint at %S:%S" module line))
+           (['rex 'disabled]
+            (message "Disabled breakpoint at %S:%S" module line)))))))
 
 (defun edb-module-interpreted-p (module)
   (assoc module edb-interpreted-modules))
@@ -148,7 +148,7 @@ Use edb-restore-dbg-state to restore the state to the erlang node."
   (interactive (list (erl-target-node)))
   (let ((do-save nil))
     (when (or (null edb-saved-interpreted-modules)
-	      (y-or-n-p "You already have a saved debugger state, continue? "))
+              (y-or-n-p "You already have a saved debugger state, continue? "))
       (setq edb-saved-interpreted-modules edb-interpreted-modules)
       (edb-save-breakpoints node)
       (message "Debugger state saved."))))
@@ -158,16 +158,16 @@ Use edb-restore-dbg-state to restore the state to the erlang node."
   (interactive (list (erl-target-node)))
   (if edb-saved-interpreted-modules
       (when (edb-ensure-monitoring node)
-	(erl-spawn
-	  (erl-set-name "EDB RPC to restore debugger state on %S" node)
-	  (erl-send-rpc node 'distel 'debug_add
-			(list edb-saved-interpreted-modules))
-	  (erl-receive (node)
-	      ((['rex 'ok]
-		(when (edb-restore-breakpoints
-		       node
-		       (lambda ()
-			 (message "Debugger state restored.")))))))))
+        (erl-spawn
+          (erl-set-name "EDB RPC to restore debugger state on %S" node)
+          (erl-send-rpc node 'distel 'debug_add
+                        (list edb-saved-interpreted-modules))
+          (erl-receive (node)
+              ((['rex 'ok]
+                (when (edb-restore-breakpoints
+                       node
+                       (lambda ()
+                         (message "Debugger state restored.")))))))))
     (message "No saved debugger state, aborting.")))
 
 
@@ -201,17 +201,17 @@ Use edb-restore-dbg-state to restore the state to the erlang node."
   "EWOC of processes running interpreted code.")
 
 (defstruct (edb-process
-	    (:constructor nil)
-	    (:constructor make-edb-process (pid mfa status info)))
+            (:constructor nil)
+            (:constructor make-edb-process (pid mfa status info)))
   pid mfa status info)
 
 (defun edb-monitor-mode ()
   "Major mode for viewing debug'able processes.
 
 Available commands:
-\\[edb-attach-command]	- Attach to the process at point.
-\\[erl-bury-viewer]	- Hide the monitor window.
-\\[erl-quit-viewer]	- Quit monitor."
+\\[edb-attach-command]  - Attach to the process at point.
+\\[erl-bury-viewer]     - Hide the monitor window.
+\\[erl-quit-viewer]     - Quit monitor."
   (interactive)
   (kill-all-local-variables)
   (setq buffer-read-only t)
@@ -222,25 +222,25 @@ Available commands:
 
 (defun edb-monitor-insert-process (p)
   (let ((buffer-read-only nil)
-	(text (edb-monitor-format (erl-pid-to-string (edb-process-pid p))
-				  (edb-process-mfa p)
-				  (edb-process-status p)
-				  (edb-process-info p))))
+        (text (edb-monitor-format (erl-pid-to-string (edb-process-pid p))
+                                  (edb-process-mfa p)
+                                  (edb-process-status p)
+                                  (edb-process-info p))))
     (put-text-property 0 (length text) 'erl-pid (edb-process-pid p) text)
     (insert text)))
 
 (defun edb-monitor-format (pid mfa status info)
   (format "%s %s %s %s"
-	  (padcut pid 12)
-	  (padcut mfa 21)
-	  (padcut status 9)
-	  (cut info 21)))
+          (padcut pid 12)
+          (padcut mfa 21)
+          (padcut status 9)
+          (cut info 21)))
 
 (defun padcut (s w)
   (let ((len (length s)))
     (cond ((= len w) s)
-	  ((< len w) (concat s (make-string (- w len) ? )))
-	  ((> len w) (substring s 0 w)))))
+          ((< len w) (concat s (make-string (- w len) ? )))
+          ((> len w) (substring s 0 w)))))
 
 (defun cut (s w)
   (if (> (length s) w)
@@ -256,8 +256,8 @@ Available commands:
     (unless (get-buffer-window edb-monitor-buffer)
       ;; Update the restorable window configuration
       (with-current-buffer edb-monitor-buffer
-	(setq erl-old-window-configuration
-	      (current-window-configuration))))
+        (setq erl-old-window-configuration
+              (current-window-configuration))))
     (pop-to-buffer edb-monitor-buffer)
     (condition-case nil
         (progn
@@ -272,12 +272,12 @@ Available commands:
 Returns NIL if this cannot be ensured."
   (if (edb-monitor-node-change-p node)
       (when (y-or-n-p (format "Attach debugger to %S instead of %S? "
-			      node edb-monitor-node))
-	;; Kill existing edb then start again
-	(kill-buffer edb-monitor-buffer)
-	(edb-start-monitor node))
+                              node edb-monitor-node))
+        ;; Kill existing edb then start again
+        (kill-buffer edb-monitor-buffer)
+        (edb-start-monitor node))
     (if (edb-monitor-live-p)
-	t
+        t
       (edb-start-monitor node))))
 
 (defun edb-monitor-node-change-p (node)
@@ -305,61 +305,61 @@ Returns NIL if this cannot be ensured."
     (add-hook 'kill-buffer-hook 'edb-monitor-cleanup)
     (erl-send-rpc node 'distel 'debug_subscribe (list erl-self))
     (erl-receive (node)
-	((['rex [interpreted breaks snapshot]]
-	  (setq edb-interpreted-modules interpreted)
-	  (edb-init-breakpoints breaks)
-	  (edb-update-source-buffers)
-	  (setq edb-processes
-		(ewoc-create 'edb-monitor-insert-process
-			     (edb-monitor-header)))
-	  (mapc (lambda (item)
-		  (mlet [pid mfa status info] item
-		    (ewoc-enter-last edb-processes
-				     (make-edb-process pid
-						       mfa
-						       status
-						       info))))
-		snapshot)
-	  (&edb-monitor-loop))))))
+        ((['rex [interpreted breaks snapshot]]
+          (setq edb-interpreted-modules interpreted)
+          (edb-init-breakpoints breaks)
+          (edb-update-source-buffers)
+          (setq edb-processes
+                (ewoc-create 'edb-monitor-insert-process
+                             (edb-monitor-header)))
+          (mapc (lambda (item)
+                  (mlet [pid mfa status info] item
+                    (ewoc-enter-last edb-processes
+                                     (make-edb-process pid
+                                                       mfa
+                                                       status
+                                                       info))))
+                snapshot)
+          (&edb-monitor-loop))))))
 
 (defun &edb-monitor-loop ()
   "Monitor process main loop.
 Tracks events and state changes from the Erlang node."
   (erl-receive ()
       ((['int ['new_status pid status info]]
-	 (let ((proc (edb-monitor-lookup pid)))
-	   (if (null proc)
-	       (message "Unknown process: %s" (erl-pid-to-string pid))
-	     (setf (edb-process-status proc) (symbol-name status))
-	     (setf (edb-process-info proc) info)
-	     (when (and edb-popup-monitor-on-event
-			(edb-interesting-event-p pid status info))
-	       (display-buffer (current-buffer))))))
+         (let ((proc (edb-monitor-lookup pid)))
+           (if (null proc)
+               (message "Unknown process: %s" (erl-pid-to-string pid))
+             (setf (edb-process-status proc) (symbol-name status))
+             (setf (edb-process-info proc) info)
+             (when (and edb-popup-monitor-on-event
+                        (edb-interesting-event-p pid status info))
+               (display-buffer (current-buffer))))))
        ;;
        (['int ['new_process (pid mfa status info)]]
-	 (ewoc-enter-last edb-processes
-			  (make-edb-process pid
-					    mfa
-					    (symbol-name status)
-					    info)))
+         (ewoc-enter-last edb-processes
+                          (make-edb-process pid
+                                            mfa
+                                            (symbol-name status)
+                                            info)))
        ;;
        (['int ['interpret mod file]]
-	(push (list mod file) edb-interpreted-modules)
-	(edb-update-source-buffers mod))
+        (push (list mod file) edb-interpreted-modules)
+        (edb-update-source-buffers mod))
        ;;
        (['int ['no_interpret mod]]
-	(setq edb-interpreted-modules
-	      (assq-delete-all mod edb-interpreted-modules))
-	(edb-update-source-buffers mod))
+        (setq edb-interpreted-modules
+              (assq-delete-all mod edb-interpreted-modules))
+        (edb-update-source-buffers mod))
        ;;
        (['int ['no_break mod]]
-	(edb-delete-breakpoints mod))
+        (edb-delete-breakpoints mod))
        ;;
        (['int ['new_break [[mod line] _info]]]
-	(edb-create-breakpoint mod line))
+        (edb-create-breakpoint mod line))
        ;;
        (['int ['delete_break [mod line]]]
-	(edb-delete-breakpoint mod line)))
+        (edb-delete-breakpoint mod line)))
     (ewoc-refresh edb-processes)
     (&edb-monitor-loop)))
 
@@ -370,39 +370,39 @@ Tracks events and state changes from the Erlang node."
   (if (null bufl) nil
     (with-current-buffer (car bufl)
       (if (and erlang-extended-mode
-	       (eq (edb-source-file-module-name) mod))
-	  (car bufl)
-	(edb-get-buffer2 mod (cdr bufl))))))
+               (eq (edb-source-file-module-name) mod))
+          (car bufl)
+        (edb-get-buffer2 mod (cdr bufl))))))
 
 
 (defun edb-interesting-event-p (pid status info)
   (or (and (eq status 'exit)
-	   (edb-attached-p pid))
+           (edb-attached-p pid))
       (and (eq status 'break)
-	   (not (edb-attached-p pid)))))
+           (not (edb-attached-p pid)))))
 
 (defun edb-update-interpreted-status ()
   "Update `edb-module-interpreted' for current buffer."
   (when erlang-extended-mode
     (let ((mod (edb-source-file-module-name)))
       (if (and mod (assq mod edb-interpreted-modules))
-	  (setq edb-module-interpreted t)
-	(setq edb-module-interpreted nil)
-	;; the erlang debugger automatically removes breakpoints when a
-	;; module becomes uninterpreted, so we match it here
-	(edb-delete-breakpoints (edb-source-file-module-name))))
+          (setq edb-module-interpreted t)
+        (setq edb-module-interpreted nil)
+        ;; the erlang debugger automatically removes breakpoints when a
+        ;; module becomes uninterpreted, so we match it here
+        (edb-delete-breakpoints (edb-source-file-module-name))))
     (force-mode-line-update)))
 
 (defun edb-update-source-buffers (&optional mod)
   "Update the debugging state of all Erlang buffers.
 When MOD is given, only update those visiting that module."
   (mapc (lambda (buf)
-	  (with-current-buffer buf
-	    (when (and erlang-extended-mode
-		       (or (null mod)
-			   (eq (edb-source-file-module-name) mod)))
-	      (edb-update-interpreted-status))))
-	(buffer-list)))
+          (with-current-buffer buf
+            (when (and erlang-extended-mode
+                       (or (null mod)
+                           (eq (edb-source-file-module-name) mod)))
+              (edb-update-interpreted-status))))
+        (buffer-list)))
 
 (defun edb-source-file-module-name ()
   "Return the Erlang module of the current buffer as a symbol, or NIL."
@@ -411,7 +411,7 @@ When MOD is given, only update those visiting that module."
 
 (defun edb-monitor-lookup (pid)
   (car (ewoc-collect edb-processes
-		     (lambda (p) (equal (edb-process-pid p) pid)))))
+                     (lambda (p) (equal (edb-process-pid p) pid)))))
 
 (defun edb-monitor-cleanup ()
   "Cleanup state after the edb process exits."
@@ -452,9 +452,9 @@ When MOD is given, only update those visiting that module."
   (interactive)
   (let ((pid (get-text-property (point) 'erl-pid)))
     (if pid
-	(progn (when edb-attach-with-new-frame
-		 (select-frame (make-frame)))
-	       (edb-attach pid))
+        (progn (when edb-attach-with-new-frame
+                 (select-frame (make-frame)))
+               (edb-attach pid))
       (error "No process at point."))))
 
 (defun edb-attach (pid)
@@ -466,15 +466,15 @@ When MOD is given, only update those visiting that module."
 (defun edb-attach-buffer (pid)
   (let ((bufname (edb-attach-buffer-name pid)))
     (or (get-buffer bufname)
-	(edb-new-attach-buffer pid))))
+        (edb-new-attach-buffer pid))))
 
 (defun edb-new-attach-buffer (pid)
   "Start a new attach process and returns its buffer."
   (erl-pid->buffer
    (erl-spawn
      (erl-set-name "EDB Attach to process %S on %S"
-		   (erl-pid-id pid)
-		   (erl-pid-node pid))
+                   (erl-pid-id pid)
+                   (erl-pid-node pid))
      (rename-buffer (edb-attach-buffer-name pid))
      ;; We must inhibit the erlang-new-file-hook, otherwise we trigger
      ;; it by entering erlang-mode in an empty buffer
@@ -486,13 +486,13 @@ When MOD is given, only update those visiting that module."
      (message "Entered debugger. Press 'h' for help.")
      (setq buffer-read-only t)
      (erl-send-rpc (erl-pid-node pid)
-		   'distel 'debug_attach (list erl-self pid))
+                   'distel 'debug_attach (list erl-self pid))
      (erl-receive ()
-	 ((['rex pid]
-	   (assert (erl-pid-p pid))
-	   (setq edb-pid pid)
-	   (setq edb-node (erl-pid-node pid))
-	   (save-excursion (edb-make-variables-window))))
+         ((['rex pid]
+           (assert (erl-pid-p pid))
+           (setq edb-pid pid)
+           (setq edb-node (erl-pid-node pid))
+           (save-excursion (edb-make-variables-window))))
        (&edb-attach-loop)))))
 
 ;; Variables listing window
@@ -505,7 +505,7 @@ The *Variables* buffer is killed with the current buffer."
     (setq edb-variables-buffer vars-buf)
     (make-local-variable 'kill-buffer-hook)
     (add-hook 'kill-buffer-hook
-	      (lambda () (kill-buffer edb-variables-buffer)))
+              (lambda () (kill-buffer edb-variables-buffer)))
     (other-window 1)
     (switch-to-buffer vars-buf)
     (other-window -1)))
@@ -541,7 +541,7 @@ The *Variables* buffer is killed with the current buffer."
   (interactive)
   (let ((var (get-text-property (point) 'edb-variable-name)))
     (if (null var)
-	(message "No variable at point")
+        (message "No variable at point")
       (edb-attach-meta-cmd `[get_binding ,var]))))
 
 ;; Attach process states
@@ -550,46 +550,46 @@ The *Variables* buffer is killed with the current buffer."
   "Attached process loop."
   (erl-receive ()
       ((['location mod line pos max]
- 	(let ((msg (format "Location: %S:%S (Stack pos: %S/%S)"
-			   mod line pos max)))
- 	  (setq header-line-format msg))
-	(&edb-attach-goto-source mod line))
+        (let ((msg (format "Location: %S:%S (Stack pos: %S/%S)"
+                           mod line pos max)))
+          (setq header-line-format msg))
+        (&edb-attach-goto-source mod line))
        (['status status]
-	(unless (memq status '(running idle))
-	  (message "Unrecognised status: %S" status))
-	(setq header-line-format (format "Status: %S" status))
-	(setq overlay-arrow-position nil)
-	(&edb-attach-loop))
+        (unless (memq status '(running idle))
+          (message "Unrecognised status: %S" status))
+        (setq header-line-format (format "Status: %S" status))
+        (setq overlay-arrow-position nil)
+        (&edb-attach-loop))
        (['variables vars]
-	;; {variables, [{Name, String}]}
-	(when (buffer-live-p edb-variables-buffer)
-	  (with-current-buffer edb-variables-buffer
-	    (let ((buffer-read-only nil))
-	      (erase-buffer)
-	      (mapc (lambda (b)
-		      (let ((name   (tuple-elt b 1))
-			    (string (tuple-elt b 2)))
-			(put-text-property 0 (length string)
-					   'edb-variable-name name
-					   string)
-			(insert string)))
-		    vars))))
-	(&edb-attach-loop))
+        ;; {variables, [{Name, String}]}
+        (when (buffer-live-p edb-variables-buffer)
+          (with-current-buffer edb-variables-buffer
+            (let ((buffer-read-only nil))
+              (erase-buffer)
+              (mapc (lambda (b)
+                      (let ((name   (tuple-elt b 1))
+                            (string (tuple-elt b 2)))
+                        (put-text-property 0 (length string)
+                                           'edb-variable-name name
+                                           string)
+                        (insert string)))
+                    vars))))
+        (&edb-attach-loop))
        (['message msg]
-	(message msg)
-	(&edb-attach-loop))
+        (message msg)
+        (&edb-attach-loop))
        (['show_variable value]
-	(save-excursion (display-message-or-view value "*Variable Value*"))
-	(&edb-attach-loop))
+        (save-excursion (display-message-or-view value "*Variable Value*"))
+        (&edb-attach-loop))
        (other
-	(message "Other: %S" other)
-	(&edb-attach-loop)))))
+        (message "Other: %S" other)
+        (&edb-attach-loop)))))
 
 (defun &edb-attach-goto-source (module line)
   "Display MODULE:LINE in the attach buffer and reenter attach loop."
   (if (eq edb-module module)
       (progn (edb-attach-goto-line line)
-	     (&edb-attach-loop))
+             (&edb-attach-loop))
     (&edb-attach-find-source module line)))
 
 (defun &edb-attach-find-source (module line)
@@ -598,15 +598,15 @@ Once loaded, reenters the attach loop."
   (erl-send-rpc edb-node 'distel 'find_source (list module))
   (erl-receive (module line)
       ((['rex ['ok path]]
-	(if (file-regular-p path)
-	    (progn (setq edb-module module)
-		   (let ((buffer-read-only nil))
-		     (erase-buffer)
-		     (insert-file-contents path))
-		   (edb-delete-buffer-breakpoints)
-		   (edb-create-buffer-breakpoints module)
-		   (edb-attach-goto-line line))
-	  (message "No such file: %s" path))))
+        (if (file-regular-p path)
+            (progn (setq edb-module module)
+                   (let ((buffer-read-only nil))
+                     (erase-buffer)
+                     (insert-file-contents path))
+                   (edb-delete-buffer-breakpoints)
+                   (edb-create-buffer-breakpoints module)
+                   (edb-attach-goto-line line))
+          (message "No such file: %s" path))))
     (&edb-attach-loop)))
 
 (defun edb-attach-goto-line (line)
@@ -616,8 +616,8 @@ Once loaded, reenters the attach loop."
 
 (defun edb-attach-buffer-name (pid)
   (format "*edbproc %s on %S*"
-	  (erl-pid-to-string pid)
-	  (erl-pid-node pid)))
+          (erl-pid-to-string pid)
+          (erl-pid-node pid)))
 
 (defun edb-attached-p (pid)
   "Non-nil when we have an attach buffer viewing PID."
@@ -631,14 +631,14 @@ Once loaded, reenters the attach loop."
 
 Available commands:
 \\<edb-attach-mode-map>
-\\[edb-attach-help]	- Popup this help text.
-\\[erl-quit-viewer]	- Quit the viewer (doesn't kill the process)
-\\[edb-attach-step]	- Step (into expression)
-\\[edb-attach-next]	- Next (over expression)
-\\[edb-attach-up]	- Up to the next stack frame
-\\[edb-attach-down]	- Down to the next stack frame
-\\[edb-attach-continue]	- Continue (until breakpoint)
-\\[edb-toggle-breakpoint]	- Toggle a breakpoint on the current line."
+\\[edb-attach-help]     - Popup this help text.
+\\[erl-quit-viewer]     - Quit the viewer (doesn't kill the process)
+\\[edb-attach-step]     - Step (into expression)
+\\[edb-attach-next]     - Next (over expression)
+\\[edb-attach-up]       - Up to the next stack frame
+\\[edb-attach-down]     - Down to the next stack frame
+\\[edb-attach-continue] - Continue (until breakpoint)
+\\[edb-toggle-breakpoint]       - Toggle a breakpoint on the current line."
   nil
   " (attached)"
   '(([? ] . edb-attach-step)
@@ -703,16 +703,16 @@ Available commands:
 
 (defun edb-init-breakpoints (breaks)
   (setq edb-breakpoints
-	(mapcar (lambda (pos)
-		  (let ((mod (aref pos 0))
-			(line (aref pos 1)))
-		    (make-bp mod line)))
-		breaks))
+        (mapcar (lambda (pos)
+                  (let ((mod (aref pos 0))
+                        (line (aref pos 1)))
+                    (make-bp mod line)))
+                breaks))
   (mapc
    (lambda (buf)
      (with-current-buffer buf
        (when erlang-extended-mode
-	 (edb-create-buffer-breakpoints (edb-source-file-module-name)))))
+         (edb-create-buffer-breakpoints (edb-source-file-module-name)))))
    (buffer-list)))
 
 
@@ -723,9 +723,9 @@ Available commands:
    (lambda (buf)
      (with-current-buffer buf
        (if (and erlang-extended-mode
-		(eq (edb-source-file-module-name) mod))
-	   (let ((bbp (make-bbp mod line (edb-make-breakpoint-overlay line))))
-	     (push bbp edb-buffer-breakpoints)))))
+                (eq (edb-source-file-module-name) mod))
+           (let ((bbp (make-bbp mod line (edb-make-breakpoint-overlay line))))
+             (push bbp edb-buffer-breakpoints)))))
    (buffer-list)))
 
 (defun edb-delete-all-breakpoints ()
@@ -745,9 +745,9 @@ Available commands:
   "Updates all internal structures in all buffers."
   (edb-del-breakpoints
    (lambda (bp) (and (eq (bp-mod bp) mod)
-		     (eq (bp-line bp) line)))
+                     (eq (bp-line bp) line)))
    (lambda (bbp) (and (eq (bbp-mod bbp) mod)
-		      (eq (bbp-line bbp) line)))
+                      (eq (bbp-line bbp) line)))
    mod))
 
 (defun edb-create-buffer-breakpoints (mod)
@@ -760,7 +760,7 @@ Available commands:
 (defun edb-delete-buffer-breakpoints ()
   "Deletes all buffer breakpoints in the current buffer."
   (setq edb-buffer-breakpoints
-	(edb-del-bbps edb-buffer-breakpoints (lambda (bbp) t))))
+        (edb-del-bbps edb-buffer-breakpoints (lambda (bbp) t))))
 
 (defun edb-del-breakpoints (bp-f bbp-f &optional mod)
   "Updates all internal structures in all buffers."
@@ -769,27 +769,27 @@ Available commands:
    (lambda (buf)
      (with-current-buffer buf
        (if (and erlang-extended-mode
-		(or (not mod)
-		    (eq (edb-source-file-module-name) mod)))
-	   (setq edb-buffer-breakpoints
-		 (edb-del-bbps edb-buffer-breakpoints bbp-f)))))
+                (or (not mod)
+                    (eq (edb-source-file-module-name) mod)))
+           (setq edb-buffer-breakpoints
+                 (edb-del-bbps edb-buffer-breakpoints bbp-f)))))
    (buffer-list)))
 
 (defun edb-synch-breakpoints (node module)
   "Synchronizes the breakpoints in the current buffer to erlang.
 I.e. deletes all old breakpoints, and re-applies them at the current line."
   (interactive (list (erl-target-node)
-		     (edb-module)))
+                     (edb-module)))
   (when (edb-ensure-monitoring node)
     (let ((id (lambda (r) r)))
       (mapc (lambda (new-bbp)
-	      (let ((bbp (car new-bbp))
-		    (new-line (cdr new-bbp)))
-		(erl-rpc id nil node 'distel 'break_delete
-			 (list (bbp-mod bbp) (bbp-line bbp)))
-		(erl-rpc id nil node 'distel 'break_add
-			 (list module new-line))))
-	    (edb-new-bbps))
+              (let ((bbp (car new-bbp))
+                    (new-line (cdr new-bbp)))
+                (erl-rpc id nil node 'distel 'break_delete
+                         (list (bbp-mod bbp) (bbp-line bbp)))
+                (erl-rpc id nil node 'distel 'break_add
+                         (list module new-line))))
+            (edb-new-bbps))
       (setq edb-buffer-breakpoints-stale nil))))
 
 (defun edb-make-breakpoints-stale (begin end length)
@@ -797,12 +797,12 @@ I.e. deletes all old breakpoints, and re-applies them at the current line."
 Has no effect if the buffer's module is not interpreted, or the
 breakpoints are already marked as stale."
   (when (and (not edb-attach-buffer)
-	     (not edb-buffer-breakpoints-stale)
-	     edb-module-interpreted)
+             (not edb-buffer-breakpoints-stale)
+             edb-module-interpreted)
     (mapc (lambda (bbp)
-	    (let ((ov (bbp-ov bbp)))
-	      (overlay-put ov 'face 'edb-breakpoint-stale-face)))
-	  edb-buffer-breakpoints)
+            (let ((ov (bbp-ov bbp)))
+              (overlay-put ov 'face 'edb-breakpoint-stale-face)))
+          edb-buffer-breakpoints)
     (setq edb-buffer-breakpoints-stale t)))
 
 (defun edb-save-breakpoints (node)
@@ -811,53 +811,53 @@ breakpoints are already marked as stale."
     (mapc
      (lambda (buf)
        (with-current-buffer buf
-	 (if erlang-extended-mode
-	     (let ((cur-mod (edb-source-file-module-name)))
-	       (unless (member cur-mod modules)
-		 (let ((new-lines (mapcar (lambda (new-bbp) (cdr new-bbp))
-					  (edb-new-bbps))))
-		   (push cur-mod modules)
-		   (push (list cur-mod new-lines) edb-saved-breakpoints)))))))
+         (if erlang-extended-mode
+             (let ((cur-mod (edb-source-file-module-name)))
+               (unless (member cur-mod modules)
+                 (let ((new-lines (mapcar (lambda (new-bbp) (cdr new-bbp))
+                                          (edb-new-bbps))))
+                   (push cur-mod modules)
+                   (push (list cur-mod new-lines) edb-saved-breakpoints)))))))
      (buffer-list))
     (mapc (lambda (bp)
-	    (unless (member (bp-mod bp) modules)
-	      (push (list (bp-mod bp) (list (bp-line bp)))
-		    edb-saved-breakpoints)))
-	  edb-breakpoints)))
+            (unless (member (bp-mod bp) modules)
+              (push (list (bp-mod bp) (list (bp-line bp)))
+                    edb-saved-breakpoints)))
+          edb-breakpoints)))
 
 (defun edb-restore-breakpoints (node cont)
   (erl-send-rpc node 'distel 'break_restore (list edb-saved-breakpoints))
   (erl-receive (cont)
       ((['rex 'ok]
-	(funcall cont))
+        (funcall cont))
        (['rex ['badrpc reason]]
-	(message "Failed to restore breakpoints: %S" reason)))))
+        (message "Failed to restore breakpoints: %S" reason)))))
 
 (defun edb-new-bbps ()
   (mapcar (lambda (bbp)
-	    (let* ((new-pos (overlay-start (bbp-ov bbp)))
-		   (new-line (+ (count-lines (point-min) new-pos) 1)))
-	      (cons bbp new-line)))
-	  edb-buffer-breakpoints))
+            (let* ((new-pos (overlay-start (bbp-ov bbp)))
+                   (new-line (+ (count-lines (point-min) new-pos) 1)))
+              (cons bbp new-line)))
+          edb-buffer-breakpoints))
 
 (defun edb-mk-bbps (mod)
   (edb-zf
    (lambda (bp)
      (let ((bmod (bp-mod bp))
-	   (line (bp-line bp)))
+           (line (bp-line bp)))
        (if (eq bmod mod)
-	   (let ((ov (edb-make-breakpoint-overlay line)))
-	     (make-bbp bmod line ov))
-	 nil)))
+           (let ((ov (edb-make-breakpoint-overlay line)))
+             (make-bbp bmod line ov))
+         nil)))
    edb-breakpoints))
 
 (defun edb-del-bbps (list pred)
   (edb-zf
    (lambda (bbp)
      (cond ((funcall pred bbp)
-	    (delete-overlay (bbp-ov bbp))
-	    nil)
-	   (t bbp)))
+            (delete-overlay (bbp-ov bbp))
+            nil)
+           (t bbp)))
    list))
 
 (defun edb-make-breakpoint-overlay (line)
@@ -865,26 +865,26 @@ breakpoints are already marked as stale."
   (save-excursion
     (goto-line line)
     (let ((ov (make-overlay (line-beginning-position)
-			    (line-beginning-position 2)
-			    (current-buffer)
-			    t
-			    nil)))
+                            (line-beginning-position 2)
+                            (current-buffer)
+                            t
+                            nil)))
       (overlay-put ov 'edb-breakpoint t)
       (if edb-buffer-breakpoints-stale
-	  (overlay-put ov 'face 'edb-breakpoint-stale-face)
-	(overlay-put ov 'face 'edb-breakpoint-face))
+          (overlay-put ov 'face 'edb-breakpoint-stale-face)
+        (overlay-put ov 'face 'edb-breakpoint-face))
       ov)))
 
 (defun edb-zf (f l)
   (let ((res nil))
     (dolist (x l)
       (let ((r (funcall f x)))
-	(if r (push r res))))
+        (if r (push r res))))
     res))
 
 (defun edb-first (pred list)
   "Return the first element of LIST that satisfies PRED."
   (loop for x in list
-	when (funcall pred x) return x))
+        when (funcall pred x) return x))
 
 (provide 'edb)

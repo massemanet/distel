@@ -27,9 +27,9 @@ available.
 C-c C-d n - set the erlang node name
 C-c C-d g - upload the distel modules to the erlang node
 
-M-/	  - Complete a module or remote function name.
-M-.	  - Jump from a function call to its definition.
-M-,	  - Jump back from a function definition (multi-level).
+M-/       - Complete a module or remote function name.
+M-.       - Jump from a function call to its definition.
+M-,       - Jump back from a function definition (multi-level).
 C-c C-d : - Evaluate an erlang expression from the minibuffer.
 C-c C-d f - Refactor expressions in the region as a new function.
 C-c C-d F - Find a module.
@@ -68,7 +68,7 @@ that it'll typically run on the last 2 versions of Erlang and Emacs
 (as of 2008 OTP R11/R12 and Emacs 21/22).
 
 (*) Luke Gorrie is unfortunately no longer involved with Distel, and
-Blutail no longer exists... 
+Blutail no longer exists...
   there is of course the distel-hackers mailing list;
 https://lists.sourceforge.net/lists/listinfo/distel-hackers
 

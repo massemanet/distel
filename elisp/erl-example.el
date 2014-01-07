@@ -18,7 +18,7 @@ The server registers the name `echo'."
   (erl-receive (recipient)
       (('exit t)
        (msg (erl-send recipient msg)
-	    (erlex-echo-loop recipient)))))
+            (erlex-echo-loop recipient)))))
 
 (defun erlex-echo-test ()
   "Test an echo server by having it forward some messages to the null
@@ -56,4 +56,3 @@ check for them there!"
     ;; its registered name - it's buffer is "*reg counter*", and you
     ;; can safely C-x k it.
     ))
-

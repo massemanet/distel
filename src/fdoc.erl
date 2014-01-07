@@ -368,4 +368,3 @@ indent(S, Pad) -> flatten([Pad | indent1(S, Pad)]).
 indent1("\n"++S, Pad) -> ["\n", Pad, indent1(S, Pad)];
 indent1([H|T], Pad)   -> [H|indent1(T, Pad)];
 indent1([], _)        -> [].
-

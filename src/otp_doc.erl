@@ -11,7 +11,7 @@
 %% --------------------------------------------------------------------------
 %% gen_server boilerplate
 -behaviour(gen_server).
--export([handle_call/3, handle_cast/2, handle_info/2, 
+-export([handle_call/3, handle_cast/2, handle_info/2,
          init/1, terminate/2, code_change/3]).
 %% --------------------------------------------------------------------------
 % API - these run in the shell
@@ -30,7 +30,7 @@ stop() ->
 start() -> start([]).
 start(Props) -> assert(Props).
 
-distel(link,M,F,A) when ?is_str(M),?is_str(F),is_integer(A) -> 
+distel(link,M,F,A) when ?is_str(M),?is_str(F),is_integer(A) ->
   get(link,M,F,A);
 distel(sig,M,F,A) when ?is_str(M),?is_str(F),is_integer(A) ->
   case get(sig,M,F,A) of
@@ -48,12 +48,12 @@ sig(M,F,A) when is_atom(M), is_atom(F), is_integer(A) -> get(sig,M,F,A).
 
 firefox(M) -> firefox(M,'').
 firefox(M,F) -> firefox(M,F,-1).
-firefox(M,F,A) when is_atom(M), is_atom(F), is_integer(A) -> 
+firefox(M,F,A) when is_atom(M), is_atom(F), is_integer(A) ->
   case get(link,M,F,A) of
     no_html -> no_doc_installed;
     Link -> ffx(Link)
   end.
-  
+
 ffx({link,Link}) -> os:cmd("firefox "++Link),Link;
 ffx({mfas,MFAs}) -> MFAs;
 ffx([]) -> no_doc.
@@ -84,13 +84,13 @@ assert(Props) ->
 -record(state,{root_dir,prot=file,delim=delim()}).
 
 %% gen_server callbacks
-init(Props) -> 
+init(Props) ->
   Dir =  proplists:get_value(root_dir, Props, code:root_dir()),
   Prot = proplists:get_value(prot, Props, file),
   ets:new(?MODULE,[named_table,ordered_set]),
   try html_index(Prot,Dir),
       {ok,#state{root_dir=Dir,prot=Prot}}
-  catch _:_ -> 
+  catch _:_ ->
       {ok,no_html}
   end.
 
@@ -99,17 +99,17 @@ code_change(_,State,_) -> {ok,State}.
 handle_cast(_In,State) -> {noreply,State}.
 handle_info(_In,State) -> {noreply,State}.
 
-handle_call(stop,_From,State) -> 
+handle_call(stop,_From,State) ->
   {stop,normal,ok,State};
 handle_call(_In,_From,no_html) ->
   {reply,no_html,no_html};
-handle_call({sig,M,F,A},_From,State) -> 
+handle_call({sig,M,F,A},_From,State) ->
   {reply,handle_sig(M,F,A,State),State};
-handle_call({mods,M,_,_},_From,State) -> 
+handle_call({mods,M,_,_},_From,State) ->
   {reply,handle_mods(M,State),State};
-handle_call({funcs,M,F,_},_From,State) -> 
+handle_call({funcs,M,F,_},_From,State) ->
   {reply,handle_funcs(M,F,State),State};
-handle_call({link,M,F,A},_From,State) -> 
+handle_call({link,M,F,A},_From,State) ->
   {reply,handle_link(M,F,A,State),State}.
 
 %% --------------------------------------------------------------------------
@@ -131,9 +131,9 @@ handle_funcs(Mod,Prefix,_State) ->
 handle_link(Mo,Fu,Aa,State) ->
   try MFAs = matching_mfas(Mo, Fu, Aa),
       until([fun()->link_with_anchor(MFAs,State) end,
-	     fun()->exact_match(Mo,Fu,MFAs,State) end,
-	     fun()->link_without_anchor(MFAs,State) end,
-	     fun()->mfa_multi(MFAs,State) end])
+             fun()->exact_match(Mo,Fu,MFAs,State) end,
+             fun()->link_without_anchor(MFAs,State) end,
+             fun()->mfa_multi(MFAs,State) end])
   catch _:_ -> []
   end.
 
@@ -142,21 +142,21 @@ until([F|Fs]) ->
   catch _:_ -> until(Fs)
   end.
 
-link_with_anchor(MFAs,State) -> 
+link_with_anchor(MFAs,State) ->
   [_] = lists:usort([{M,F}||{M,F,_A}<-MFAs]),
   {A,{M,F}} = lists:min([{A,{M,F}}||{M,F,A}<-MFAs]),
   {link,io_str("~w://~s#~s~s~s",
-	 [State#state.prot,e_get({file,M}),linkmf(M,F),State#state.delim,A])}.
+         [State#state.prot,e_get({file,M}),linkmf(M,F),State#state.delim,A])}.
 
 linkmf("erlang",F) -> "erlang:"++F;
 linkmf(_,F) -> F.
 
-exact_match(M,F,MFAs,State) -> 
+exact_match(M,F,MFAs,State) ->
   A = lists:min([A||{Mo,Fu,A}<-MFAs,M==Mo,F==Fu]),
   {link,io_str("~w://~s#~s~s~s",
-	 [State#state.prot,e_get({file,M}),linkmf(M,F),State#state.delim,A])}.
+         [State#state.prot,e_get({file,M}),linkmf(M,F),State#state.delim,A])}.
 
-link_without_anchor(MFAs,State) -> 
+link_without_anchor(MFAs,State) ->
   [M] = lists:usort([M || {M,_F,_A} <- MFAs]),
   {link,io_str("~w://~s",[State#state.prot, e_get({file,M})])}.
 
@@ -173,7 +173,7 @@ matching_mfas(Mo, Fu, Aa) ->
 
 matching_ms(M) ->
   Ms = all_prefix_keys({file,M}),
-  case lists:member(M,Ms) of 
+  case lists:member(M,Ms) of
     true -> [M];
     false-> Ms
   end.
@@ -196,7 +196,7 @@ all_prefix_keys({Tag,X0},{Tag,X}) ->
 all_prefix_keys(_,_) ->
   [].
 
-which_a(M,F,"-1") -> 
+which_a(M,F,"-1") ->
   e_get({{as,M},F});
 which_a(M,F,A) ->
   case lists:member(A,e_get({{as,M},F})) of
@@ -213,22 +213,22 @@ html_index(file,Dir) ->
 
 lines(Line,_,Dir) ->
   case string:tokens(Line, "<> \"") of
-    ["TD", "A", "HREF=", "../"++Href, M|_] -> 
+    ["TD", "A", "HREF=", "../"++Href, M|_] ->
       case filename:basename(Href,".html") of
-	"index" -> ok;
-	M -> e_set({file,M}, filename:join([Dir,Href]))
+        "index" -> ok;
+        M -> e_set({file,M}, filename:join([Dir,Href]))
       end;
     _ -> ok
   end.
 
 %% --------------------------------------------------------------------------
 %% read a module's html file
-%% store the function names in {fs,Mod}, the arities in {{as,M},F} and the 
+%% store the function names in {fs,Mod}, the arities in {{as,M},F} and the
 %% function signature in {{sig,M,F},A}
 
 maybe_cache(M) ->
-  try e_get({fs,M}) 
-  catch 
+  try e_get({fs,M})
+  catch
     no_data -> cache_funcs(M)
   end.
 
@@ -239,23 +239,23 @@ cache_funcs(M) ->
 funcsf(Line,A,M) ->
   case trim_P(string:tokens(A++Line,"<>\"")) of
     ["a name=",FA,"/a","span class=","bold_code",Sig,"/span"|_] ->  % R14
-      a_line(M,fa(FA),Sig),[];			% R12-
+      a_line(M,fa(FA),Sig),[];                  % R12-
     ["a name=",FA,"span class=","bold_code",Sig,"/span","/a"|_] ->
-      a_line(M,fa(FA),Sig),[];			% R12-
+      a_line(M,fa(FA),Sig),[];                  % R12-
     ["A NAME=",FA,"STRONG","CODE",Sig,"/CODE","/STRONG","/A"|_] ->
-      a_line(M,fa(FA),Sig),[];			% -R11
+      a_line(M,fa(FA),Sig),[];                  % -R11
     ["A NAME=",_,"STRONG","CODE"|_] ->
-      A++Line;					% -R11, broken lines
-    _ -> 
+      A++Line;                                  % -R11, broken lines
+    _ ->
       case A of
-	[] -> [];
-	_ -> A++Line
+        [] -> [];
+        _ -> A++Line
       end
   end.
 
 a_line(_,["Module:"++_,_],_) -> ok;  %ignore the gen_server/gen_fsm callbacks
 a_line("erlang",["erlang:"++F,A],"erlang:"++Sig) -> a_line("erlang",[F,A],Sig);
-a_line(M,[F,A],Sig) ->	    %io:fwrite("- ~p~n",[{M,F,A}]).
+a_line(M,[F,A],Sig) ->      %io:fwrite("- ~p~n",[{M,F,A}]).
   try e_bag({fs,M},F),
       e_bag({{as,M},F}, A),
       e_set({{sig,M,F},A}, dehtml(Sig))
@@ -309,7 +309,7 @@ fold_file_lines(FD,Fun,Acc) ->
   end.
 
 trim_nl(Str) -> lists:reverse(tl(lists:reverse(Str))).
-  
+
 %% --------------------------------------------------------------------------
 %% Schönfinkelisation
 curry(F,Arg) ->

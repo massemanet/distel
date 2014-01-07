@@ -1,8 +1,8 @@
 %
 %%% distel_ie - an interactive erlang shell
 %%%
-%%% Some of the code has shamelessly been stolen from Luke Gorrie 
-%%% [luke@bluetail.com] - ripped from its elegance and replaced by bugs. 
+%%% Some of the code has shamelessly been stolen from Luke Gorrie
+%%% [luke@bluetail.com] - ripped from its elegance and replaced by bugs.
 %%% It just goes to show that you can't trust anyone these days. And
 %%% as if that wasn't enough, I'll even blame Luke: "He _made_ me do it!"
 %%%
@@ -16,21 +16,21 @@
 -module(distel_ie).
 
 -export([
-	 evaluate/2,
+         evaluate/2,
 
-	 test1/0,
-	 test2/0,
-	 test3/0,
-	 test4/0,
-	 test5/0,
+         test1/0,
+         test2/0,
+         test3/0,
+         test4/0,
+         test5/0,
 
-	 ensure_registered/0,
+         ensure_registered/0,
 
-	 start/0,
-	 start/1,
-	 init/1,
-	 loop/1
-	]).
+         start/0,
+         start/1,
+         init/1,
+         loop/1
+        ]).
 
 -define(FMT(X), list_to_binary(lists:flatten(io_lib:format("~p", [X])))).
 
@@ -39,10 +39,10 @@
 %% ensure_registered/0
 ensure_registered() ->
     case whereis(distel_ie) of
- 	undefined -> start() ;
- 	Pid  ->
-	    group_leader(group_leader(), Pid),
-	    ok
+        undefined -> start() ;
+        Pid  ->
+            group_leader(group_leader(), Pid),
+            ok
     end.
 
 %%
@@ -75,23 +75,23 @@ init(_Options) ->
 %% loop/1
 
 loop({Defs, Line, Bindings}) ->
-    receive 
-	{evaluate, Emacs, String} -> 
-	    case catch evaluate(String, {Defs, Line, Bindings}) of
-		{'EXIT', Rsn} ->
-		    Emacs ! {ok, list_to_binary(
-				   io_lib:format("EXIT: ~p", [Rsn]))},
-		    ?MODULE:loop({Defs, Line, Bindings});
-		{Result, {NL, NB}} ->
-		    Emacs ! Result,
-		    ?MODULE:loop({Defs, NL, NB})
-	    end;
-	forget_bindings ->
-	    put(distel_ie_bindings, []),
-	    ?MODULE:loop({Defs, Line, []}) ;
-	Unknown ->
-	    io:format("distel_ie: unknown message recvd '~p'\n", [Unknown]),
-	    ?MODULE:loop({Defs, Line, Bindings})
+    receive
+        {evaluate, Emacs, String} ->
+            case catch evaluate(String, {Defs, Line, Bindings}) of
+                {'EXIT', Rsn} ->
+                    Emacs ! {ok, list_to_binary(
+                                   io_lib:format("EXIT: ~p", [Rsn]))},
+                    ?MODULE:loop({Defs, Line, Bindings});
+                {Result, {NL, NB}} ->
+                    Emacs ! Result,
+                    ?MODULE:loop({Defs, NL, NB})
+            end;
+        forget_bindings ->
+            put(distel_ie_bindings, []),
+            ?MODULE:loop({Defs, Line, []}) ;
+        Unknown ->
+            io:format("distel_ie: unknown message recvd '~p'\n", [Unknown]),
+            ?MODULE:loop({Defs, Line, Bindings})
 
     end.
 
@@ -101,32 +101,32 @@ loop({Defs, Line, Bindings}) ->
 
 evaluate(String, {Defs, Line, Bindings}) ->
     case parse_expr(String) of
-	%% ok, so it is an expression :
-	{ok, Parse} ->
-	    RemoteParse = add_remote_call_info(Parse, Defs),
+        %% ok, so it is an expression :
+        {ok, Parse} ->
+            RemoteParse = add_remote_call_info(Parse, Defs),
             case catch erl_eval:exprs(RemoteParse, Bindings) of
                 {value, V, NewBinds} ->
-		    {{ok, ?FMT(V)}, {Line, NewBinds}};
+                    {{ok, ?FMT(V)}, {Line, NewBinds}};
                 Error ->
-		    {?FMT(Error), {Line, Bindings}}
-	    end;
-	%% try and treat it as a form / definition instead :
-	Other ->
-	    case parse_form(String) of
-		{ok, Parse} -> 
-		    {ok, Name, Arity} = get_function_name(Parse),
-		    ets:insert(Defs, {{Name,Arity}, Parse}),
-		    FunTrees = lists:flatten(
-				 lists:reverse(ets:match(Defs,{'_', '$1'}))),
-		    %% Line isn't really used yet
-		    NewLine = Line,
-		    compile_load(FunTrees),
-		    Def = list_to_binary(atom_to_list(Name) ++ "/" ++ 
-					 integer_to_list(Arity)),
-		    {{ok, Def}, {NewLine, Bindings}} ;
-		Error ->
-		    {{error, ?FMT({Error, Other})}, {Line, Bindings}}
-	    end
+                    {?FMT(Error), {Line, Bindings}}
+            end;
+        %% try and treat it as a form / definition instead :
+        Other ->
+            case parse_form(String) of
+                {ok, Parse} ->
+                    {ok, Name, Arity} = get_function_name(Parse),
+                    ets:insert(Defs, {{Name,Arity}, Parse}),
+                    FunTrees = lists:flatten(
+                                 lists:reverse(ets:match(Defs,{'_', '$1'}))),
+                    %% Line isn't really used yet
+                    NewLine = Line,
+                    compile_load(FunTrees),
+                    Def = list_to_binary(atom_to_list(Name) ++ "/" ++
+                                         integer_to_list(Arity)),
+                    {{ok, Def}, {NewLine, Bindings}} ;
+                Error ->
+                    {{error, ?FMT({Error, Other})}, {Line, Bindings}}
+            end
     end.
 
 %%
@@ -134,12 +134,12 @@ evaluate(String, {Defs, Line, Bindings}) ->
 
 parse_expr(String) ->
     case erl_scan:string(String) of
-	{ok, Tokens, _} ->
-	    catch erl_parse:parse_exprs(Tokens) ;
-	{error, {_Line, erl_parse, Rsn}} ->
-	    {error, lists:flatten(Rsn)};
-	{error, Error, _} ->
-	    {error, Error}
+        {ok, Tokens, _} ->
+            catch erl_parse:parse_exprs(Tokens) ;
+        {error, {_Line, erl_parse, Rsn}} ->
+            {error, lists:flatten(Rsn)};
+        {error, Error, _} ->
+            {error, Error}
     end.
 
 %%
@@ -147,12 +147,12 @@ parse_expr(String) ->
 
 parse_form(String) ->
     case erl_scan:string(String) of
-	{ok, Tokens, _} ->
-	    catch erl_parse:parse_form(Tokens) ;
-	{error, {_Line, erl_parse, Rsn}} ->
-	    {error, lists:flatten(Rsn)};
-	{error, Error, _} ->
-	    {error, Error}
+        {ok, Tokens, _} ->
+            catch erl_parse:parse_form(Tokens) ;
+        {error, {_Line, erl_parse, Rsn}} ->
+            {error, lists:flatten(Rsn)};
+        {error, Error, _} ->
+            {error, Error}
     end.
 
 
@@ -171,8 +171,8 @@ defun(String) ->
 compile_load(Parse) ->
 
     Header = [{attribute,9,module,distel_ie_internal},
-	      {attribute,11,compile,export_all},
-	      {attribute,12,export,[]}],
+              {attribute,11,compile,export_all},
+              {attribute,12,export,[]}],
 
     EOF = [{eof,20}],
 
@@ -186,7 +186,7 @@ compile_load(Parse) ->
 %%
 %% add_remote_call_info/2
 %%
-%% TODO: this is gonna need more work, e.g. it needs to recurse into 
+%% TODO: this is gonna need more work, e.g. it needs to recurse into
 %% lists (cons) and tuples ... +more
 
 add_remote_call_info([], _Defs) -> [] ;
@@ -212,20 +212,20 @@ add_remote_call_info({call, L, {atom, L2, Name}, Body}, Defs) ->
 add_remote_call_info([{call, L, {atom, L2, Name}, Body} | Rs], Defs) ->
     B = add_remote_call_info(Body, Defs),
     IsBuiltin = erlang:is_builtin(erlang, Name, length(B)),
-    Call = case IsBuiltin of 
-	       true ->
-		   {call, L, {atom, L2, Name}, B} ;
-	       false ->
-		   Arity = length(Body),
-		   case find_module(Name, Arity) of 
-		       {ok, Mod} ->
-	 		   {call, L, {remote, L2, 
-				      {atom, L2, Mod}, 
-				      {atom, L2, Name}}, B} ;
-		       {error, _} ->
-			   {call, L, {atom, L2, Name}, B}
-		   end
-	   end,
+    Call = case IsBuiltin of
+               true ->
+                   {call, L, {atom, L2, Name}, B} ;
+               false ->
+                   Arity = length(Body),
+                   case find_module(Name, Arity) of
+                       {ok, Mod} ->
+                           {call, L, {remote, L2,
+                                      {atom, L2, Mod},
+                                      {atom, L2, Name}}, B} ;
+                       {error, _} ->
+                           {call, L, {atom, L2, Name}, B}
+                   end
+           end,
     [Call | add_remote_call_info(Rs, Defs)] ;
 
 add_remote_call_info([{tuple, L, Values} | Rs], Defs) ->
@@ -254,10 +254,10 @@ find_module(Function, Arity) ->
     Mods = [distel_ie_internal, distel_ie, c],
     F = fun(M) -> not is_exported(Function, Arity, M) end,
     case lists:dropwhile(F, Mods) of
-	[] ->
-	    search_modules(Function, Arity, code:all_loaded()) ;
-	[M | _] ->
-	    {ok, M}
+        [] ->
+            search_modules(Function, Arity, code:all_loaded()) ;
+        [M | _] ->
+            {ok, M}
     end.
 
 
@@ -266,12 +266,12 @@ find_module(Function, Arity) ->
 
 is_exported(Function, Arity, Module) ->
     case code:is_loaded(Module) of
-	false ->
-	    false;
-	_ ->
-	    Info = Module:module_info(),
-	    {value, {exports, Exports}} = lists:keysearch(exports, 1, Info),
-	    lists:member({Function, Arity}, Exports)
+        false ->
+            false;
+        _ ->
+            Info = Module:module_info(),
+            {value, {exports, Exports}} = lists:keysearch(exports, 1, Info),
+            lists:member({Function, Arity}, Exports)
     end.
 
 
@@ -282,17 +282,17 @@ search_modules(_Function, _Arity, []) ->
     {error, not_found};
 search_modules(Function, Arity, [{M, _} | Ms]) ->
     case is_exported(Function, Arity, M) of
-	true ->
-	    {ok, M} ;
-	false ->
-	    search_modules(Function, Arity, Ms)
+        true ->
+            {ok, M} ;
+        false ->
+            search_modules(Function, Arity, Ms)
     end.
-    
+
 
 %%
 %% get_function_name/1
 
-get_function_name({function, _, Name, Arity, _}) -> 
+get_function_name({function, _, Name, Arity, _}) ->
     {ok, Name, Arity} ;
 
 get_function_name(Unknown) ->
@@ -300,7 +300,7 @@ get_function_name(Unknown) ->
 
 
 %%% ------------------------------------------------------------------- [tests]
-    
+
 %%
 %% test1/0
 
@@ -312,27 +312,27 @@ test1() ->
 %% test2/0
 
 test2() ->
-    
+
     Prefix = [
-	      {attribute,9,module,compile_and_load_me},
-	      {attribute,11,compile,export_all},
-	      {attribute,12,export,[]}
-	     ],
-    
+              {attribute,9,module,compile_and_load_me},
+              {attribute,11,compile,export_all},
+              {attribute,12,export,[]}
+             ],
+
     Postfix = [{eof,20}],
-    
+
     String = "sista([]) -> [] ;\n\nsista(W) -> lists:last(W).\n",
 %    String = "sista([], _) -> [] ;\n\nsista(W, _) -> lists:last(W).\n",
-    
+
     {ok, Tokens, _} = erl_scan:string(String, 23),
     {ok, Tree} = erl_parse:parse_form(Tokens),
-    
+
     io:format("tree : '~p'\n", [Tree]),
-    
+
     SyntaxTree = Prefix ++ [Tree] ++ Postfix,
-    
+
     io:format("syntaxtree : '~p'\n", [SyntaxTree]),
-    
+
     {ok, Mod, Binary} = compile:forms(SyntaxTree),
     code:load_binary(Mod, "spam", Binary),
     compile_and_load_me:sista([1,2,galapremiere]).
@@ -362,7 +362,7 @@ test4() ->
     Expr = "nisse([1,2,3]).",
 %    Expr = "distel_ie_internal:nisse([1,2,3]).",
 %    Expr = "lists:last([1,2,3]).",
-    
+
     D = evaluate(Define, {Defs, 10, []}),
     io:format("nisse defined: '~p'\n", [D]),
     io:format("is_loaded: '~p'\n", [code:is_loaded(distel_ie_internal)]),
@@ -375,7 +375,7 @@ test4() ->
 test5() ->
 
     Defs = ets:new(definitions, [set]),
-    
+
     Define = "nisse([]) -> [] ;\n\nnisse(W) -> lists:last(W).",
     Expr = "nisse([1,2,3]).",
 
@@ -386,7 +386,6 @@ test5() ->
     {ok, Tree} = erl_parse:parse_exprs(Tokens),
 
     io:format("original tree : '~p'\n", [Tree]),
-    
+
     RemoteTree = add_remote_call_info(Tree, Defs),
     io:format("remote tree : '~p'\n", [RemoteTree]).
-

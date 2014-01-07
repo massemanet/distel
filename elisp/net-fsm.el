@@ -40,9 +40,9 @@ addition to being passed as an argument.")
   (let ((success (make-symbol "success")))
     `(let (,success)
        (unwind-protect
-	   (prog1 (progn ,@body)
-	     (setq ,success t))
-	 (unless ,success ,cleanup)))))
+           (prog1 (progn ,@body)
+             (setq ,success t))
+         (unless ,success ,cleanup)))))
 
 (put 'with-error-cleanup 'lisp-indent-function 1)
 
@@ -54,10 +54,10 @@ addition to being passed as an argument.")
   (let ((buf (generate-new-buffer " *net-fsm*")))
     (with-error-cleanup (kill-buffer buf)
       (let ((p (open-network-stream "netfsm" buf host port)))
-	(set-process-coding-system p 'no-conversion 'no-conversion)
-	(if (fboundp 'set-process-filter-multibyte)
-	  (set-process-filter-multibyte p nil))
-	p))))
+        (set-process-coding-system p 'no-conversion 'no-conversion)
+        (if (fboundp 'set-process-filter-multibyte)
+          (set-process-filter-multibyte p nil))
+        p))))
 
 (defun fsm-connect (host port state0 &optional init-arg cont fail-cont buffer)
   "Connect to HOST on PORT and initialize a state machine in
@@ -114,8 +114,8 @@ the FSM fails."
   (fsm-debug "EVENT: %S - %S\n" event arg)
   (with-error-cleanup
       (fsm-fail (format "Error on event %S in state %S"
-			event fsm-state))
-	(funcall fsm-state event arg)))
+                        event fsm-state))
+        (funcall fsm-state event arg)))
 
 (defun fsm-terminate (&optional result)
   "Terminate an FSM with success. The continuation function, if
@@ -150,10 +150,10 @@ available, is called with RESULT."
   "Print a debugging message to the *fsm-debug* buffer."
   (if fsm-use-debug-buffer
       (with-current-buffer (get-buffer-create "*fsm-debug*")
-	(unless (featurep 'xemacs)
-	  (set-buffer-multibyte nil))
-	(goto-char (point-max))
-	(insert (apply #'format (cons fmt (mapcar #'summarise args)))))))
+        (unless (featurep 'xemacs)
+          (set-buffer-multibyte nil))
+        (goto-char (point-max))
+        (insert (apply #'format (cons fmt (mapcar #'summarise args)))))))
 
 (defun check-event (event &rest allowed)
   "Ensure that an event is allowed. If EVENT is not one of ALLOWED, an
@@ -169,10 +169,10 @@ error is signaled."
   "Execute BODY, and return the message that it creates via calls to
 fsm-{insert,encode}*."
   `(let ((fsm-work-buffer (let ((default-enable-multibyte-characters nil))
-			     (generate-new-buffer " *fsm-msg*"))))
+                             (generate-new-buffer " *fsm-msg*"))))
      (unwind-protect
-	 (progn ,@body
-		(with-current-buffer fsm-work-buffer (buffer-string)))
+         (progn ,@body
+                (with-current-buffer fsm-work-buffer (buffer-string)))
        (kill-buffer fsm-work-buffer))))
 
 (defmacro fsm-with-message-buffer (&rest body)
@@ -180,7 +180,7 @@ fsm-{insert,encode}*."
 called outside fsm-build-message, BODY is just executed in the current
 buffer."
   `(with-current-buffer (or fsm-work-buffer
-			    (current-buffer)) ,@body))
+                            (current-buffer)) ,@body))
 
 (put 'fsm-build-message 'lisp-indent-function 'defun)
 (put 'fsm-with-message-buffer 'lisp-indent-function 1)
@@ -199,14 +199,14 @@ buffer."
   "Encode N as a 2-byte big-endian integer."
   (fsm-with-message-buffer
       (insert (logand (ash n -8) 255)
-	      (logand n          255))))
+              (logand n          255))))
 (defun fsm-encode4 (n)
   "Encode N as a 4-byte big-endian integer."
   (fsm-with-message-buffer
       (insert (logand (ash n -24) 255)
-	      (logand (ash n -16) 255)
-	      (logand (ash n -8)  255)
-	      (logand n           255))))
+              (logand (ash n -16) 255)
+              (logand (ash n -8)  255)
+              (logand n           255))))
 (defun fsm-insert (&rest args)
   "Insert ARGS (characters or strings) into the encoding buffer."
   (fsm-with-message-buffer
@@ -252,11 +252,11 @@ buffer."
 (defun summarise (x)
   (if (stringp x)
       (with-temp-buffer
-	(insert x)
-	(goto-char (point-min))
-	(while (search-forward "\n" nil t)
-	  (replace-match "\\n" nil t))
-	(elide-string (buffer-string) 30))
+        (insert x)
+        (goto-char (point-min))
+        (while (search-forward "\n" nil t)
+          (replace-match "\\n" nil t))
+        (elide-string (buffer-string) 30))
     x))
 
 (defun elide-string (s len)

@@ -10,8 +10,8 @@ Step 1: Some random windows hacker admonishes us:
         work. Having a path without spaces is necessary to use erlc
         from cygwin's bash.
 
-	But to the rescue jacobg23! (http://code.google.com/u/jacobg23):
-	You can use Windows short paths (e.g., c:\progra~1\ instead of
+        But to the rescue jacobg23! (http://code.google.com/u/jacobg23):
+        You can use Windows short paths (e.g., c:\progra~1\ instead of
         c:\Program Files) - so edit your PATH environment variable so
         that the path to the erlang executables looks like
         c:\progra~1\erl5.5.4 (or whatever) instead.  (Ditto for any
@@ -29,8 +29,8 @@ Step 4: We must now update the ~/.erlang and ~/.emacs files to load
         variable, and Erlang uses %HOMEDRIVE%\%HOMEPATH%. Both default
         to C:\ (as far as I know..)
 
-	After figuring out or setting these paths, edit your .erlang
-	to include (substitute real path):
+        After figuring out or setting these paths, edit your .erlang
+        to include (substitute real path):
 
           code:add_pathz("c:/jungerl/lib/distel/ebin").
 
@@ -42,4 +42,3 @@ Step 4: We must now update the ~/.erlang and ~/.emacs files to load
 
 Distel should now work correctly. If you have problems, please send a
 note to the mailing list.
-

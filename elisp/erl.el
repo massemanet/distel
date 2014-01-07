@@ -16,7 +16,7 @@
 ;; it terminates with 'normal' status.
 
 (eval-when-compile (require 'cl))
-(provide 'erl)				; avoid recursive require
+(provide 'erl)                          ; avoid recursive require
 (require 'derl)
 (require 'erl-service)
 (require 'patmatch)
@@ -26,42 +26,42 @@
 ;; Exactly matches the [ERL-TAG erl-pid NODE ID SERIAL CREATION] vector used
 ;; in the `erlext' mapping, so don't change it!
 (defstruct (erl-pid
-	    (:type vector)
-	    :named
-	    (:initial-offset 1)		; make room for erl-tag (TYPE)
-	    (:constructor nil)		; no default constructor
-	    (:constructor %make-erl-local-pid (&optional (id (incf erl-pid-counter))
-							(node erl-node-name)
-							(serial 0)
-							(creation 0))))
+            (:type vector)
+            :named
+            (:initial-offset 1)         ; make room for erl-tag (TYPE)
+            (:constructor nil)          ; no default constructor
+            (:constructor %make-erl-local-pid (&optional (id (incf erl-pid-counter))
+                                                        (node erl-node-name)
+                                                        (serial 0)
+                                                        (creation 0))))
   node id serial creation)
 
 (defun make-erl-local-pid (&optional id)
   "Make a node-local pid."
   (let ((pid (if id
-		 (%make-erl-local-pid id)
-	       (%make-erl-local-pid))))
+                 (%make-erl-local-pid id)
+               (%make-erl-local-pid))))
     ;; Tag the first element of the pid
     (setf (elt pid 0) erl-tag)
     pid))
 
 ;; Global book keeping state
 
-(defvar erl-node-name nil		; initialised below
+(defvar erl-node-name nil               ; initialised below
   "Node name for Emacs.")
 
 (defun erl-determine-hostname ()
   "Figure out the short-names hostname."
   (let ((fqdn (system-name)))
     (if (string-match "\\.local$" fqdn)
-	fqdn
+        fqdn
       (if (string-match "[^\\.]+" fqdn)
-	  (match-string 0 fqdn)
-	(error "erl: Can't determine hostname.")))))
+          (match-string 0 fqdn)
+        (error "erl: Can't determine hostname.")))))
 
 (when (null erl-node-name)
   (setq erl-node-name
-	(intern (format "distel_%S@%s" (emacs-pid) (erl-determine-hostname)))))
+        (intern (format "distel_%S@%s" (emacs-pid) (erl-determine-hostname)))))
 
 (defconst erl-null-pid (make-erl-local-pid 0)
   "\"Null process\", the /dev/null of erl processes.
@@ -172,7 +172,7 @@ BINDINGS is created by `capture-bindings'"
   "Call FN with BINDINGS restored.
 BINDINGS is created by `capture-bindings'"
   (let ((vars (car bindings))
-	(vals (cadr bindings)))
+        (vals (cadr bindings)))
     (eval `(apply (lambda ,vars (funcall ,fn)) ',vals))))
 
 ;; Process API functions
@@ -213,21 +213,21 @@ alternative."
 WHO can be a pid, a registered name (symbol), or a tuple of
 \[REGISTERED-NAME NODE]."
   (cond ((erl-null-pid-p who)
-	 (erl-lose-msg message))
-	((erl-local-pid-p who)
-	 (when (erl-local-pid-alive-p who)
-	   (erl-deliver-message who message)))
-	((erl-remote-pid-p who)
-	 (erl-dist-send who message))
-	((symbolp who)
-	 (let ((proc (erl-whereis who)))
-	   (if proc
-	       (erl-send proc message)
-	     (erl-exit (tuple 'badarg (tuple 'not-registered who))))))
-	((tuplep who)			; [tuple NAME NODE]
-	 (erl-dist-reg-send (tuple-elt who 2) (tuple-elt who 1) message))
-	(t
-	 (error "Bad pid: %S" who))))
+         (erl-lose-msg message))
+        ((erl-local-pid-p who)
+         (when (erl-local-pid-alive-p who)
+           (erl-deliver-message who message)))
+        ((erl-remote-pid-p who)
+         (erl-dist-send who message))
+        ((symbolp who)
+         (let ((proc (erl-whereis who)))
+           (if proc
+               (erl-send proc message)
+             (erl-exit (tuple 'badarg (tuple 'not-registered who))))))
+        ((tuplep who)                   ; [tuple NAME NODE]
+         (erl-dist-reg-send (tuple-elt who 2) (tuple-elt who 1) message))
+        (t
+         (error "Bad pid: %S" who))))
 
 (defun erl-exit (why &optional who)
   "Exit the current process.
@@ -301,8 +301,8 @@ The overall syntax for receive is:
 
 The pattern syntax is the same as `pmatch'."
   `(erl-start-receive (capture-bindings ,@vars)
-			,(mcase-parse-clauses clauses)
-			(lambda () ,@after)))
+                        ,(mcase-parse-clauses clauses)
+                        (lambda () ,@after)))
 
 (defun erl-start-receive (bs clauses after)
   ;; Setup a continuation and immediately return to the scheduler
@@ -319,15 +319,15 @@ The pattern syntax is the same as `pmatch'."
   (if (null msgs)
       (erl-continue #'erl-receive* bs clauses after)
     (let ((action
-	   ;; We restore the bindings incase they are referred to in patterns
-	   (with-bindings bs
-	     (mcase-choose (car msgs) clauses))))
+           ;; We restore the bindings incase they are referred to in patterns
+           (with-bindings bs
+             (mcase-choose (car msgs) clauses))))
       (if (null action)
-	  (erl-receive-loop bs clauses after (cdr msgs) (cons (car msgs) acc))
-	(setq erl-mailbox (append (reverse acc) (cdr msgs)))
-	(with-bindings bs
-	  (funcall action)
-	  (funcall after))))))
+          (erl-receive-loop bs clauses after (cdr msgs) (cons (car msgs) acc))
+        (setq erl-mailbox (append (reverse acc) (cdr msgs)))
+        (with-bindings bs
+          (funcall action)
+          (funcall after))))))
 
 (defun erl-register (name &optional process)
   "Register PROCESS with NAME."
@@ -341,7 +341,7 @@ The pattern syntax is the same as `pmatch'."
 is unregistered."
   (let ((buf (get-buffer (regname-to-bufname name))))
     (if buf
-	(with-current-buffer buf erl-self))))
+        (with-current-buffer buf erl-self))))
 
 (defun regname-to-bufname (name)
   (format "*reg %S*" name))
@@ -375,8 +375,8 @@ schedulable.  The scheduler loop is entered if we aren't being called
 by it already.
 If LINK is true, the process is linked before being run."
   (let* ((%pid (make-erl-local-pid))
-	 (%buffer (get-buffer-create (erl-pid-buffer-name %pid)))
-	 (%gl (or erl-group-leader erl-default-group-leader)))
+         (%buffer (get-buffer-create (erl-pid-buffer-name %pid)))
+         (%gl (or erl-group-leader erl-default-group-leader)))
     (with-current-buffer %buffer
       (setq erl-self %pid)
       (setq erl-group-leader %gl)
@@ -385,8 +385,8 @@ If LINK is true, the process is linked before being run."
       (erl-enroll-process))
     (when %link (erl-link %pid))
     (if %run-now-p
-	(let ((erl-in-scheduler-loop t))
-	  (erl-run-process %pid))
+        (let ((erl-in-scheduler-loop t))
+          (erl-run-process %pid))
       (erl-make-schedulable %pid))
     (erl-maybe-schedule)
     %pid))
@@ -420,13 +420,13 @@ Invokes the scheduler if necessary."
 
 (defun erl-schedule-process (%pid)
   (cond ((not (erl-local-pid-alive-p %pid))
-	 (message "STRANGE: %S scheduled but dead; removing" %pid)
-	 (erl-make-unschedulable %pid))
-	((with-erl-process %pid (null erl-continuation))
-	 (message "STRANGE: %S is a zombie! killing" %pid)
-	 (with-erl-process %pid (erl-terminate 'zombie)))
-	(t
-	 (while (eq 'reschedule (erl-run-process %pid))))))
+         (message "STRANGE: %S scheduled but dead; removing" %pid)
+         (erl-make-unschedulable %pid))
+        ((with-erl-process %pid (null erl-continuation))
+         (message "STRANGE: %S is a zombie! killing" %pid)
+         (with-erl-process %pid (erl-terminate 'zombie)))
+        (t
+         (while (eq 'reschedule (erl-run-process %pid))))))
 
 (defun erl-run-process (%pid)
   "Run a process.
@@ -436,22 +436,22 @@ Calls the current continuation from within the process' buffer."
     ;; The %ugly-names are to avoid shadowing the caller's dynamic
     ;; bindings.
     (let ((%k erl-continuation)
-	  (%kargs erl-continuation-args)
-	  (%buffer (current-buffer)))
+          (%kargs erl-continuation-args)
+          (%buffer (current-buffer)))
       (setq erl-continuation nil)
       (setq erl-continuation-args nil)
       (if erl-stop-on-error
-	  (erl-invoke %k %kargs)
-	(condition-case data
-	    (erl-invoke %k %kargs)
-	  (error (erl-terminate `[emacs-error ,(format "%S" data)])))))))
+          (erl-invoke %k %kargs)
+        (condition-case data
+            (erl-invoke %k %kargs)
+          (error (erl-terminate `[emacs-error ,(format "%S" data)])))))))
 
 (defun erl-invoke (%k %kargs)
   (condition-case data
       (prog1 (catch 'schedule-out
-	       (prog1 nil (save-current-buffer (apply %k %kargs))))
-	(unless erl-continuation
-	  (erl-terminate 'normal)))
+               (prog1 nil (save-current-buffer (apply %k %kargs))))
+        (unless erl-continuation
+          (erl-terminate 'normal)))
     (erl-exit-signal (erl-terminate (cadr data)))))
 
 (defun erl-make-schedulable (pid)
@@ -459,20 +459,20 @@ Calls the current continuation from within the process' buffer."
 during the next `erl-schedule'."
   (unless (member pid erl-schedulable-processes)
     (setq erl-schedulable-processes
-	  (append erl-schedulable-processes (list pid)))))
+          (append erl-schedulable-processes (list pid)))))
 
 (defun erl-make-unschedulable (pid)
   "Remove PID from the list of schedulable processes."
   (setq erl-schedulable-processes
-	(remove pid erl-schedulable-processes)))
+        (remove pid erl-schedulable-processes)))
 
 (defun erl-terminate (why)
   "Exit the current process."
   (unless (eq why 'normal)
     (message "EXIT: %s %S %s" (erl-pid-to-string erl-self) why
-	     (if erl-process-name
-		 (concat "\n  Process name: " erl-process-name)
-	       "")))
+             (if erl-process-name
+                 (concat "\n  Process name: " erl-process-name)
+               "")))
   (setq erl-exit-reason why)
   (erl-make-unschedulable erl-self)
   (kill-buffer (erl-pid->buffer erl-self)))
@@ -499,9 +499,9 @@ during the next `erl-schedule'."
   (unless (equal (erl-pid-node pid) erl-node-name)
     (error "Not a local pid: %S" pid))
   (format "*pid <%S.%S.%S>*"
-	  0
-	  (erl-pid-id pid)
-	  (erl-pid-serial pid)))
+          0
+          (erl-pid-id pid)
+          (erl-pid-serial pid)))
 
 (defun erl-pid->buffer (pid)
   "Get PID's buffer."
@@ -516,9 +516,9 @@ during the next `erl-schedule'."
   (when (erl-local-pid-p pid)
     (let ((buffer (cdr (assoc (erl-pid-id pid) erl-process-buffer-alist))))
       (and buffer
-	   (buffer-live-p buffer)
-	   (with-erl-process pid
-	     (null erl-exit-reason))))))
+           (buffer-live-p buffer)
+           (with-erl-process pid
+             (null erl-exit-reason))))))
 
 (defun erl-local-pid-p (x)
   "True iff X is the pid of a local process."
@@ -533,8 +533,8 @@ during the next `erl-schedule'."
 (defun erl-pid-to-string (pid)
   ;; FIXME: number nodes
   (let ((n (if (eq (erl-pid-node pid) erl-node-name)
-	       "0" ; local
-	     "?")))
+               "0" ; local
+             "?")))
     (format "<%s.%S.%S>" n (erl-pid-id pid) (erl-pid-serial pid))))
 
 (defun erl-lose-msg (msg)
@@ -546,7 +546,7 @@ during the next `erl-schedule'."
 (defun erl-enroll-process ()
   "Setup pid->buffer mapping state for the current process."
   (push (cons (erl-pid-id erl-self) (current-buffer))
-	erl-process-buffer-alist)
+        erl-process-buffer-alist)
   (make-local-variable 'kill-buffer-hook)
   (put 'kill-buffer-hook 'permanent-local t)
   (add-hook 'kill-buffer-hook 'erl-unenroll-process)
@@ -557,37 +557,37 @@ during the next `erl-schedule'."
   (let (out)
     (while list
       (unless (funcall predicate (car list))
-	(push (car list) out))
+        (push (car list) out))
       (setq list (cdr list)))
     (nreverse out)))
 
 (defun erl-unenroll-process ()
   (setq erl-process-buffer-alist
-	(erl-remove-if #'(lambda (x) (eq (erl-pid-id erl-self) (car x)))
-		   erl-process-buffer-alist)))
+        (erl-remove-if #'(lambda (x) (eq (erl-pid-id erl-self) (car x)))
+                   erl-process-buffer-alist)))
 
 (defun erl-propagate-exit ()
   (when (null erl-exit-reason)
     (setq erl-exit-reason 'killed))
   (unless (eq erl-exit-reason 'normal)
     (mapc #'(lambda (proc) (erl-send-exit erl-self proc erl-exit-reason))
-	  erl-links)))
+          erl-links)))
 
 (defun erl-send-exit (from to rsn)
   (cond ((erl-local-pid-alive-p to)
-	 (erl-deliver-exit from to rsn))
-	((erl-remote-pid-p to)
-	 (erl-dist-exit from to rsn))))
+         (erl-deliver-exit from to rsn))
+        ((erl-remote-pid-p to)
+         (erl-dist-exit from to rsn))))
 
 (defun erl-deliver-exit (from to rsn)
   (with-erl-process to
-    (cond (erl-exit-reason	; already terminated?
-	   t)
-	  (erl-trap-exit
-	   (erl-deliver-message to (tuple 'EXIT from rsn))
-	   (erl-unlink from))
-	  (t
-	   (erl-terminate rsn)))))
+    (cond (erl-exit-reason      ; already terminated?
+           t)
+          (erl-trap-exit
+           (erl-deliver-message to (tuple 'EXIT from rsn))
+           (erl-unlink from))
+          (t
+           (erl-terminate rsn)))))
 
 (defun erl-nodedown-exit (local remote)
   "Send an exit to LOCAL from REMOTE caused by a communications failure."
@@ -622,8 +622,8 @@ during the next `erl-schedule'."
 (defun &erl-group-leader-loop ()
   (erl-receive ()
       ((['put_chars s]
-	(if (eq s nil)
-	    nil
+        (if (eq s nil)
+            nil
         (condition-case err
             (save-excursion
               (with-current-buffer (get-buffer-create "*erl-output*")

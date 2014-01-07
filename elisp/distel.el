@@ -54,41 +54,41 @@ use. This name will be cached for future commands. To override the
 cache, give a prefix argument with C-u before using the command.
 \\<erlang-extended-mode-map>
 
-\\[erl-choose-nodename]	- Set Erlang nodename.
-\\[erl-ping]	- Check connection between Emacs and Erlang.
+\\[erl-choose-nodename] - Set Erlang nodename.
+\\[erl-ping]    - Check connection between Emacs and Erlang.
 
-\\[erl-find-source-under-point]		- Jump from a function call to its definition.
-\\[erl-find-source-unwind]		- Jump back from a function definition (multi-level).
+\\[erl-find-source-under-point]         - Jump from a function call to its definition.
+\\[erl-find-source-unwind]              - Jump back from a function definition (multi-level).
 
-\\[erl-reload-module]	- (Re)load an Erlang module.
-\\[erl-reload-modules]	- Reload all Erlang modules that are out of date.
-\\[erl-find-module]	- Find a module.
-\\[erl-who-calls]	- Who calls function under point.
-\\[erl-rebuild-call-graph]	- Refresh erl-who-calls info.
+\\[erl-reload-module]   - (Re)load an Erlang module.
+\\[erl-reload-modules]  - Reload all Erlang modules that are out of date.
+\\[erl-find-module]     - Find a module.
+\\[erl-who-calls]       - Who calls function under point.
+\\[erl-rebuild-call-graph]      - Refresh erl-who-calls info.
 
-\\[erl-process-list]	- List all Erlang processes (\"pman\").
-\\[edb-toggle-interpret]	- Toggle debug interpreting of the module.
-C-c C-d b/\\[edb-toggle-breakpoint]	- Toggle a debugger breakpoint at the current line.
-\\[edb-monitor]	- Popup the debugger's process monitor buffer.
-\\[edb-synch-breakpoints]	- Synchronizes current breakpoints to erlang.
-\\[edb-save-dbg-state]	- Save set of interpreted modules and breakpoints.
-\\[edb-restore-dbg-state]	- Restore saved set of interpreted modules and breakpoints.
+\\[erl-process-list]    - List all Erlang processes (\"pman\").
+\\[edb-toggle-interpret]        - Toggle debug interpreting of the module.
+C-c C-d b/\\[edb-toggle-breakpoint]     - Toggle a debugger breakpoint at the current line.
+\\[edb-monitor] - Popup the debugger's process monitor buffer.
+\\[edb-synch-breakpoints]       - Synchronizes current breakpoints to erlang.
+\\[edb-save-dbg-state]  - Save set of interpreted modules and breakpoints.
+\\[edb-restore-dbg-state]       - Restore saved set of interpreted modules and breakpoints.
 
-\\[erl-eval-expression]	- Evaluate an erlang expression from the minibuffer.
-\\[erl-ie-show-session]	- Create an interactive \"session\" buffer.
+\\[erl-eval-expression] - Evaluate an erlang expression from the minibuffer.
+\\[erl-ie-show-session] - Create an interactive \"session\" buffer.
 
-\\[erl-complete]		- Complete a module or remote function name.
-\\[erl-refactor-subfunction]	- Refactor expressions in the region as a new function.
+\\[erl-complete]                - Complete a module or remote function name.
+\\[erl-refactor-subfunction]    - Refactor expressions in the region as a new function.
 
-\\[erl-find-sig-under-point]	- Show the signature for the function under point.
-\\[erl-find-doc-under-point]	- Show the HTML documentation for the function under point.
-\\[erl-find-sig]	- Show the signature for a function.
-\\[erl-find-doc]	- Show the HTML documentation for a function.
-\\[erl-fdoc-describe]	- Describe a function with fdoc.
-\\[erl-fdoc-apropos]	- Describe functions matching a regexp with fdoc.
+\\[erl-find-sig-under-point]    - Show the signature for the function under point.
+\\[erl-find-doc-under-point]    - Show the HTML documentation for the function under point.
+\\[erl-find-sig]        - Show the signature for a function.
+\\[erl-find-doc]        - Show the HTML documentation for a function.
+\\[erl-fdoc-describe]   - Describe a function with fdoc.
+\\[erl-fdoc-apropos]    - Describe functions matching a regexp with fdoc.
 
-\\[fprof]	- Profile (with fprof) an expression from the minibuffer.
-\\[fprof-analyse]	- View profiler results from an \"fprof:analyse\" file.
+\\[fprof]       - Profile (with fprof) an expression from the minibuffer.
+\\[fprof-analyse]       - View profiler results from an \"fprof:analyse\" file.
 
  \"fdoc\" works by looking at the source code. The HTML doc functions
 needs the OTP HTML docs to be installed. who-calls makes use of
@@ -117,7 +117,7 @@ about Emacs' online help, use \"\\[help-for-help]\".
     ("\C-c\C-ds" edb-synch-breakpoints)
     ("\C-c\C-dS" edb-save-dbg-state)
     ("\C-c\C-dR" edb-restore-dbg-state)
-    ("\C-c\C-dm" edb-monitor)          
+    ("\C-c\C-dm" edb-monitor)
     ("\C-c\C-d:" erl-eval-expression)
     ("\C-c\C-dL" erl-reload-module)
     ("\C-c\C-dr" erl-reload-modules)
@@ -126,8 +126,8 @@ about Emacs' online help, use \"\\[help-for-help]\".
     ("\C-c\C-d." erl-find-source-under-point)
     ("\C-c\C-d," erl-find-source-unwind)
     ("\C-c\C-dl" erl-process-list)
-    ("\C-\M-i"   erl-complete)	; M-TAB
-    ("\M-?"      erl-complete)	; Some windowmanagers hijack M-TAB..
+    ("\C-\M-i"   erl-complete)  ; M-TAB
+    ("\M-?"      erl-complete)  ; Some windowmanagers hijack M-TAB..
     ("\C-c\C-de" erl-ie-show-session)
     ("\C-c\C-df" erl-refactor-subfunction)
     ("\C-c\C-dF" erl-find-module)
@@ -144,7 +144,7 @@ about Emacs' online help, use \"\\[help-for-help]\".
     ("\C-c\C-dn" erl-choose-nodename)
     ("("         erl-openparen)
     ;; Possibly "controversial" shorter keys
-    ("\M-."      erl-find-source-under-point)	; usually `find-tag'
+    ("\M-."      erl-find-source-under-point)   ; usually `find-tag'
     ("\M-*"      erl-find-source-unwind) ; usually `pop-tag-mark'
     ("\M-,"      erl-find-source-unwind) ; usually `tags-loop-continue'
     ;;("\M-/"      erl-complete) ; usually `dabbrev-expand'
@@ -169,29 +169,29 @@ about Emacs' online help, use \"\\[help-for-help]\".
   "When non-nil the short name of the currently connected node.")
 
 (add-to-list 'minor-mode-alist
-	     '(erlang-extended-mode
-	       (" EXT"
+             '(erlang-extended-mode
+               (" EXT"
                 (distel-modeline-node (":" distel-modeline-node) "")
                 (edb-module-interpreted "<interpreted>" ""))))
 
 (add-hook 'erlang-extended-mode-hook
-	  '(lambda ()
-	     (if erlang-extended-mode
-		 (distel-init)
-	       (distel-finish))))
+          '(lambda ()
+             (if erlang-extended-mode
+                 (distel-init)
+               (distel-finish))))
 
 (defun distel-init ()
   (setq erlang-menu-items
-	(erlang-menu-add-below 'distel-menu-items
-			       'erlang-menu-compile-items
-			       erlang-menu-items))
+        (erlang-menu-add-below 'distel-menu-items
+                               'erlang-menu-compile-items
+                               erlang-menu-items))
   (erlang-menu-init))
 
 (defun distel-finish ()
   (setq erlang-menu-items
-	(erlang-menu-delete 'distel-menu-items erlang-menu-items))
+        (erlang-menu-delete 'distel-menu-items erlang-menu-items))
   (erlang-menu-init))
-  
+
 (defvar distel-menu-items
   '(nil
     ("Distel"
@@ -230,7 +230,7 @@ Please see the documentation of `erlang-menu-base-items'.")
   "Report a bug to the distel-hackers mailing list."
   (interactive (list (read-string "One-line summary: ")))
   (compose-mail distel-bugs-address
-		(format "PROBLEM: %s" summary))
+                (format "PROBLEM: %s" summary))
   (require 'font-lock)
   (insert (propertize "\
 ;; Distel bug report form.
@@ -243,7 +243,7 @@ Please see the documentation of `erlang-menu-base-items'.")
 ;; Please describe the problem in detail in this blank space:
 
 "
-		      'face font-lock-comment-face))
+                      'face font-lock-comment-face))
   (save-excursion
     (insert (propertize "\
 
@@ -256,7 +256,7 @@ Please see the documentation of `erlang-menu-base-items'.")
 
 
 "
-			'face font-lock-comment-face))
+                        'face font-lock-comment-face))
     (insert "[ ---- Automatically gathered trace information ---- ]\n\n")
     (insert (format "Emacs node name: %S\n\n" erl-node-name))
     (insert (format "Node of most recent command: %S\n\n" erl-nodename-cache))
@@ -266,8 +266,8 @@ Please see the documentation of `erlang-menu-base-items'.")
     (when erl-nodename-cache
       (insert (format "Recent interactions with %S:\n" erl-nodename-cache))
       (distel-indented-insert (distel-last-lines
-			       (format "*trace %S*" erl-nodename-cache) 50)
-			      2))
+                               (format "*trace %S*" erl-nodename-cache) 50)
+                              2))
     (insert "\n\nThe End.\n\n")))
 
 (defun distel-last-lines (buffer n)
@@ -281,4 +281,3 @@ Please see the documentation of `erlang-menu-base-items'.")
   (let ((pos (point)))
     (insert string)
     (indent-rigidly pos (point) level)))
-

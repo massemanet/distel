@@ -49,7 +49,7 @@
     ;; hiijack stdin/stdout :
     (let ((output-buffer (current-buffer)))
       (setq erl-group-leader
-	    (erl-spawn (&erl-ie-group-leader-loop output-buffer))))
+            (erl-spawn (&erl-ie-group-leader-loop output-buffer))))
 
     (erl-ie-ensure-registered node)
 
@@ -75,20 +75,20 @@
   (interactive (list (erl-ie-read-nodename)))
   (erl-ie-read-nodename)
   (let ((end (point))
-	(beg (save-excursion
-	       (loop do (re-search-backward "^$")
-		     while (looking-at "end"))
-	       (point))))
+        (beg (save-excursion
+               (loop do (re-search-backward "^$")
+                     while (looking-at "end"))
+               (point))))
     (erl-ie-evaluate beg end node t)))
 
 (defun erl-ie-eval-defun (node)
   (interactive (list (erl-ie-read-nodename)))
   (erl-ie-read-nodename)
   (let* ((beg (save-excursion (erlang-beginning-of-function)
-			      (point)))
-	 (end (save-excursion (goto-char beg)
-			      (erlang-end-of-function)
-			      (point))))
+                              (point)))
+         (end (save-excursion (goto-char beg)
+                              (erlang-end-of-function)
+                              (point))))
     (erl-ie-evaluate beg end node)))
 
 ;;
@@ -99,38 +99,38 @@
 
 (defun erl-ie-evaluate (start end node &optional inline)
   "Evaluate region START to END on NODE.
-The marked region can be a function definition, a function 
+The marked region can be a function definition, a function
 call or an expression."
   (interactive (list
-		(region-beginning)
-		(region-end)
-		(erl-ie-read-nodename)))
+                (region-beginning)
+                (region-end)
+                (erl-ie-read-nodename)))
 
   (let* ((string (buffer-substring-no-properties start end))
-	 (buffer (current-buffer)))
+         (buffer (current-buffer)))
     (erl-spawn
       (erl-send (tuple 'distel_ie node)
-		(tuple 'evaluate erl-self string))
-      
+                (tuple 'evaluate erl-self string))
+
       (message "Sent eval request..")
 
       ;; move cursor to after the marked region
       (goto-char (min (point-max) (1+ end)))
       (erl-receive (buffer inline)
-	  ((['ok value]
-	    (if inline
-		(with-current-buffer buffer
-		  ;; Clear "Sent eval request.." message
-		  (message "")
-	      
-		  (let ((my-point (point)))
+          ((['ok value]
+            (if inline
+                (with-current-buffer buffer
+                  ;; Clear "Sent eval request.." message
+                  (message "")
+
+                  (let ((my-point (point)))
                     (unless (looking-at "^")
                       (end-of-line)
                       (insert "\n"))
 
                     (let ((beg (point)))
-		    ;; Insert value, indent all lines of it 4 places,
-		    ;; then draw a " => " at the start.
+                    ;; Insert value, indent all lines of it 4 places,
+                    ;; then draw a " => " at the start.
                       (insert value)
                       (save-excursion (indent-rigidly beg (point) 5)
                                       (goto-char beg)
@@ -139,23 +139,23 @@ call or an expression."
                     (insert "\n")
                     (goto-char my-point)
                     (push-mark (point) t)))
-	      (display-message-or-view (format "Result: %s" value)
-				       "*Evaluation Result*")))
-	   
-	   (['msg msg]
-	    (with-current-buffer buffer
-	      (message msg)))
-	   
-	   (['error reason]
-	    (with-current-buffer buffer
-	      
-	      ;; TODO: should check the buffer for first non-whitespace
-	      ;; before we do:
-	      (newline 1)
-	      (insert "Error: ") (insert reason) (newline 1)))
-	   
-	   (other
-	    (message "Unexpected: %S" other)))))))
+              (display-message-or-view (format "Result: %s" value)
+                                       "*Evaluation Result*")))
+
+           (['msg msg]
+            (with-current-buffer buffer
+              (message msg)))
+
+           (['error reason]
+            (with-current-buffer buffer
+
+              ;; TODO: should check the buffer for first non-whitespace
+              ;; before we do:
+              (newline 1)
+              (insert "Error: ") (insert reason) (newline 1)))
+
+           (other
+            (message "Unexpected: %S" other)))))))
 
 
 (defun erl-ie-xor (a b)
@@ -169,8 +169,8 @@ call or an expression."
 (defun &erl-ie-group-leader-loop (buf)
   (erl-receive (buf)
       ((['put_chars s]
-	(with-current-buffer buf
-	  (insert s))))
+        (with-current-buffer buf
+          (insert s))))
     (&erl-ie-group-leader-loop buf)))
 
 
@@ -205,14 +205,14 @@ for debugging a file without ruining the content by mistake."
 The content is pasted at the end of the session buffer.  This can be useful
 for debugging a file without ruining the content by mistake."
   (interactive (list
-		(region-beginning)
-		(region-end)
-		(erl-ie-read-nodename)))
+                (region-beginning)
+                (region-end)
+                (erl-ie-read-nodename)))
   (let ((cloned-region (buffer-substring-no-properties start end)))
 
     (with-current-buffer (erl-ie-session node)
       (goto-char (point-max))
-      (set-mark (point))		; so the region will be right
+      (set-mark (point))                ; so the region will be right
       (insert cloned-region))
     (erl-ie-popup-buffer node)))
 
@@ -231,4 +231,3 @@ for debugging a file without ruining the content by mistake."
     ("\C-\M-x" . erl-ie-eval-defun)))
 
 (provide 'distel-ie)
-

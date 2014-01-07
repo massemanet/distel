@@ -24,9 +24,9 @@ See `mlet' for a description of pattern syntax."
 (eval-and-compile
 (defun mcase-parse-clauses (clauses)
   `(list ,@(mapcar #'(lambda (clause)
-		       `(list ',(car clause)
-			      (lambda () ,@(cdr clause))))
-		   clauses))))
+                       `(list ',(car clause)
+                              (lambda () ,@(cdr clause))))
+                   clauses))))
 
 (defmacro pmatch (&rest args)
   "Deprecated; see `mlet'."
@@ -54,43 +54,43 @@ Sequence: (pat1 ...), [pat1 ...]
   Matches the \"shape\" of the pattern, as well as each individual
   subpattern."
   (let ((var (make-symbol "var")))
-    `(let ((,var ,object))	; so that we just eval `object' once
+    `(let ((,var ,object))      ; so that we just eval `object' once
        (mcase ,var
-	 (,pattern ,@body)
-	 (_        (signal 'erl-exit-signal
-			   (list (tuple 'badmatch ',pattern ,var))))))))
+         (,pattern ,@body)
+         (_        (signal 'erl-exit-signal
+                           (list (tuple 'badmatch ',pattern ,var))))))))
 
 (defun mcase* (object clauses)
   (let ((clause (mcase-choose object clauses)))
     (if clause
-	(funcall clause)
+        (funcall clause)
       (signal 'erl-exit-signal '(case-clause)))))
 
 (defun mcase-choose (object clauses)
   (if (null clauses)
       nil
     (let* ((clause  (car clauses))
-	   (pattern (car clause))
-	   (action  (cadr clause))
-	   (result  (patmatch pattern object)))
+           (pattern (car clause))
+           (action  (cadr clause))
+           (result  (patmatch pattern object)))
       (if (eq result 'fail)
-	  (mcase-choose object (cdr clauses))
-	`(lambda ()
-	   (let ,(alist-to-letlist result)
-	     (funcall ,action)))))))
+          (mcase-choose object (cdr clauses))
+        `(lambda ()
+           (let ,(alist-to-letlist result)
+             (funcall ,action)))))))
 
 (defun alist-to-letlist (alist)
   "Convert an alist into `let' binding syntax, eg: ((A . B)) => ((A 'B))"
   (mapcar (lambda (cell)
-	    (list (car cell) (list 'quote (cdr cell))))
-	  alist))
+            (list (car cell) (list 'quote (cdr cell))))
+          alist))
 
 (defun pmatch-tail (seq)
   (if (consp seq)
       (cdr seq)
     (let ((new (make-vector (1- (length seq)) nil)))
       (dotimes (i (length new))
-	(aset new i (aref seq (1+ i))))
+        (aset new i (aref seq (1+ i))))
       new)))
 
 (defun patmatch (pattern object &optional bindings)
@@ -98,15 +98,15 @@ Sequence: (pat1 ...), [pat1 ...]
   (if (eq bindings 'fail)
       'fail
     (cond ((pmatch-wildcard-p pattern)
-	   bindings)
-	  ((pmatch-constant-p pattern) ; '(x)
-	   (pmatch-constant pattern object bindings))
-	  ((pmatch-bound-var-p pattern)	; ,foo
-	   (pmatch-match-var pattern object bindings))
-	  ((pmatch-unbound-var-p pattern) ; foo
-	   (pmatch-bind-var pattern object bindings))
-	  ((pmatch-trivial-p pattern) ; nil, t, any-symbol
-	   (if (equal pattern object) bindings 'fail))
+           bindings)
+          ((pmatch-constant-p pattern) ; '(x)
+           (pmatch-constant pattern object bindings))
+          ((pmatch-bound-var-p pattern) ; ,foo
+           (pmatch-match-var pattern object bindings))
+          ((pmatch-unbound-var-p pattern) ; foo
+           (pmatch-bind-var pattern object bindings))
+          ((pmatch-trivial-p pattern) ; nil, t, any-symbol
+           (if (equal pattern object) bindings 'fail))
           ((consp pattern)
            (if (consp object)
                (patmatch (cdr pattern) (cdr object)
@@ -117,8 +117,8 @@ Sequence: (pat1 ...), [pat1 ...]
                     (= (length pattern) (length object)))
                (patmatch (coerce pattern 'list) (coerce object 'list) bindings)
              'fail))
-	  (t
-	   'fail))))
+          (t
+           'fail))))
 
 (defun pmatch-wildcard-p (pat)
   (eq pat '_))
@@ -164,13 +164,13 @@ Example: (QUOTE QUOTE)"
       ;; or ports from matching tuple patterns.
       'fail
     (let* ((var (pmatch-unbound-var-symbol pat))
-	   (binding (assoc var bindings)))
+           (binding (assoc var bindings)))
       (cond ((null binding)
-	     (acons var object bindings))
-	    ((equal (cdr binding) object)
-	     bindings)
-	    (t
-	     'fail)))))
+             (acons var object bindings))
+            ((equal (cdr binding) object)
+             bindings)
+            (t
+             'fail)))))
 
 (eval-when-compile (defvar pattern)) ; dynamic
 
@@ -189,8 +189,8 @@ Example: (QUOTE QUOTE)"
 
 (defun pmatch-alist-keysort (alist)
   (sort alist (lambda (a b)
-		(string< (symbol-name (car a))
-			 (symbol-name (car b))))))
+                (string< (symbol-name (car a))
+                         (symbol-name (car b))))))
 
 ;;; Test suite
 
@@ -199,14 +199,14 @@ Example: (QUOTE QUOTE)"
 EXPECTED is either 'fail or a list of bindings (in any order)."
   (let ((actual (patmatch pattern object)))
     (if (or (and (eq actual 'fail)
-		 (eq actual expected))
-	    (and (listp expected)
-		 (listp actual)
-		 (equal (pmatch-alist-keysort actual)
-			(pmatch-alist-keysort expected))))
-	t
+                 (eq actual expected))
+            (and (listp expected)
+                 (listp actual)
+                 (equal (pmatch-alist-keysort actual)
+                        (pmatch-alist-keysort expected))))
+        t
       (error "Patmatch: %S %S => %S, expected %S"
-	     pattern object actual expected))))
+             pattern object actual expected))))
 
 (defun pmatch-test ()
   "Test the pattern matcher."
@@ -215,18 +215,17 @@ EXPECTED is either 'fail or a list of bindings (in any order)."
   (pmatch-expect '(t nil 1) '(t nil 1) ())
   (let ((foo 'foo))
     (pmatch-expect '(FOO ,foo 'foo [FOO]) '(foo foo foo [foo])
-		   '((FOO . foo))))
+                   '((FOO . foo))))
   (pmatch-expect 1 2 'fail)
   (pmatch-expect '(x x) '(1 2) 'fail)
   (pmatch-expect '_ '(1 2) 'nil)
   (assert (equal 'yes
-		 (mcase '(call 42 lists length ((1 2 3)))
-		   (t 'no)
-		   (1 'no)
-		   ((call Ref 'lists 'length (_))
-		    'yes)
-		   (_ 'no))))
+                 (mcase '(call 42 lists length ((1 2 3)))
+                   (t 'no)
+                   (1 'no)
+                   ((call Ref 'lists 'length (_))
+                    'yes)
+                   (_ 'no))))
   (message "Smooth sailing"))
 
 (provide 'patmatch)
-

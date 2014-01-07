@@ -1,1231 +1,1230 @@
 2008-12-18  Mats Cronqvist  <masse@kreditor.se>
 
-	* *: tagged and uploaded 4.03
+        * *: tagged and uploaded 4.03
 
-	* otp_doc.erl : the strategy for completion is this; try otp_doc
-	first, since it's faster. if it comes up empty, xref should kick
-	in. alas, otp_doc was signalling failure to find by
-	returning {ok,[]} instead of {error,R}.
+        * otp_doc.erl : the strategy for completion is this; try otp_doc
+        first, since it's faster. if it comes up empty, xref should kick
+        in. alas, otp_doc was signalling failure to find by
+        returning {ok,[]} instead of {error,R}.
 
 2008-09-23  Mats Cronqvist  <masse@kreditor.se>
 
-	* doc: xemacs doesn't ship with ewoc.el. documented this, with a
-	pointer to savannah.
+        * doc: xemacs doesn't ship with ewoc.el. documented this, with a
+        pointer to savannah.
 
-	2008-09-05  Mats Cronqvist  <masse@kreditor.se>
+        2008-09-05  Mats Cronqvist  <masse@kreditor.se>
 
-	* Makefile: the "make install" target and "erl-load-backend"
-	disagreed on where the beam files where supposed to live. changed
-	the makefile and updated the INSTALL file.
+        * Makefile: the "make install" target and "erl-load-backend"
+        disagreed on where the beam files where supposed to live. changed
+        the makefile and updated the INSTALL file.
 
 2008-07-31  Mats Cronqvist  <masse@kreditor.se>
 
-	* various: fixed docs and compiler warnings, and made a 4.0
-	release.
+        * various: fixed docs and compiler warnings, and made a 4.0
+        release.
 
 2008-05-23  Mats Cronqvist  <masse@kreditor.se>
 
-	* src/otp_doc.erl (funcsf):
+        * src/otp_doc.erl (funcsf):
 
-	yet another edge case in the broken line handling
-	
-	* src/otp_doc.erl (handle_link): 	
+        yet another edge case in the broken line handling
 
-	added code for the case where you are looking for links and have
-	several hits, but one is exact. e.g., when searching for
-	gen_server:start/4, you probably want that and not
-	gen_server:start_link/4.
-	
+        * src/otp_doc.erl (handle_link):
+
+        added code for the case where you are looking for links and have
+        several hits, but one is exact. e.g., when searching for
+        gen_server:start/4, you probably want that and not
+        gen_server:start_link/4.
+
 2008-05-13  Mats Cronqvist  <masse@kreditor.se>
 
-	* src/otp_doc.erl:
-	* src/distel.erl:
-	* elisp/erl-service.el:
-	
-	changed completion support (erl-complete) to try completions from
-	the html docs first, and fall back to xref if that fails. old
-	behaviour was to try xref only. not so great since;
-	
-	xref is annoyingly slow
-	xref also completes internal exports (arguably a feature?)
-	
-	elisp functions to browse the docs;
-	erl-find-doc
-	erl-find-sig
-	erl-find-sig-under-point
-	erl-find-doc-under-point
+        * src/otp_doc.erl:
+        * src/distel.erl:
+        * elisp/erl-service.el:
+
+        changed completion support (erl-complete) to try completions from
+        the html docs first, and fall back to xref if that fails. old
+        behaviour was to try xref only. not so great since;
+
+        xref is annoyingly slow
+        xref also completes internal exports (arguably a feature?)
+
+        elisp functions to browse the docs;
+        erl-find-doc
+        erl-find-sig
+        erl-find-sig-under-point
+        erl-find-doc-under-point
 
 2008-04-15  Mats Cronqvist  <masse@kreditor.se>
 
-	* src/otp_doc.erl: 
-	added modules/1 and functions/2
-	fixed special case for the gen_server/gen_fsm callbacks
+        * src/otp_doc.erl:
+        added modules/1 and functions/2
+        fixed special case for the gen_server/gen_fsm callbacks
 
-	* src/otp_doc.erl: 
-	handled the special case of the "erlang" module.
-	handling the F-A delimiter that changed between R11 and R12.
+        * src/otp_doc.erl:
+        handled the special case of the "erlang" module.
+        handling the F-A delimiter that changed between R11 and R12.
 
 2008-04-10  Mats Cronqvist  <masse@kreditor.se>
 
-	* elisp/erl-service.el: 
-	added erl-find-module (prompt for module name and open erl file) 
+        * elisp/erl-service.el:
+        added erl-find-module (prompt for module name and open erl file)
 
-	and 
-	
-	erl-find-sig-under-point (print function signature(s) in mini-buffer)
-	e.g., doing erl-find-sig-under-point on "li:fl" will print this;
-	
-	lib:flush_receive() -> void()
-	lists:flatlength(DeepList) -> int()
-	lists:flatmap(Fun, List1) -> List2
-	lists:flatten(DeepList, Tail) -> List
-	lists:flatten(DeepList) -> List
+        and
+
+        erl-find-sig-under-point (print function signature(s) in mini-buffer)
+        e.g., doing erl-find-sig-under-point on "li:fl" will print this;
+
+        lib:flush_receive() -> void()
+        lists:flatlength(DeepList) -> int()
+        lists:flatmap(Fun, List1) -> List2
+        lists:flatten(DeepList, Tail) -> List
+        lists:flatten(DeepList) -> List
 
 2008-04-09  Mats Cronqvist  <masse@kreditor.se>
 
-	* src/otp_doc.erl: 
-	* src/distel.erl: 
-	  in the process of adding document browsing to distel.
-	currently, M-x erl-find-doc-under-point will pop a buffer and
-	display the OTP html doc for the function under point.
-	requires 'w3m' and 'w3m-el' to be installed.
-	
-2007-11-03  Bill Clementson  <billclem@gmail.com> 
+        * src/otp_doc.erl:
+        * src/distel.erl:
+          in the process of adding document browsing to distel.
+        currently, M-x erl-find-doc-under-point will pop a buffer and
+        display the OTP html doc for the function under point.
+        requires 'w3m' and 'w3m-el' to be installed.
 
-	* elisp/derl.el (derl-string-make-unibyte,
-	derl-recv-challenge-ack): Mods for unicode. Patch supplied by
-	Dimitris Dinodimos.
+2007-11-03  Bill Clementson  <billclem@gmail.com>
 
-	* elisp/net-fsm.el (fsm-open-socket): Mods for unicode. Patch
-	supplied by Dimitris Dinodimos.
-	
+        * elisp/derl.el (derl-string-make-unibyte,
+        derl-recv-challenge-ack): Mods for unicode. Patch supplied by
+        Dimitris Dinodimos.
+
+        * elisp/net-fsm.el (fsm-open-socket): Mods for unicode. Patch
+        supplied by Dimitris Dinodimos.
+
 2007-09-27  Bill Clementson  <billclem@gmail.com>
 
-	* elisp/erl-service.el (erl-complete): Modified Completions buffer
-	handling to better conform to standard Emacs completions.
-	
-2007-09-17  Bill Clementson  <billclem@gmail.com> & Matthias Radestock  
+        * elisp/erl-service.el (erl-complete): Modified Completions buffer
+        handling to better conform to standard Emacs completions.
 
-	* src/distel.erl: Changed who-calls xref:q call so that line
-	numbers of function calls were returned rather than the line
-	number of the start of the calling function.
+2007-09-17  Bill Clementson  <billclem@gmail.com> & Matthias Radestock
 
-	* elisp/erl-service.el (erl-find-callers, erl-who-calls-mode,
-	erl-goto-caller, erl-propertize-insert): Added derived mode for
-	who-calls and functionality to go to call locations.	
-	
-2007-09-14  Bill Clementson  <billclem@gmail.com> & Matthias Radestock  
+        * src/distel.erl: Changed who-calls xref:q call so that line
+        numbers of function calls were returned rather than the line
+        number of the start of the calling function.
 
-	* src/distel.erl: Replaced module and function
-	"completions" (M-TAB) logic with calls to xref:q/2 in order to
-	improve performance, reuse "who calls" xref code changes, and
-	provide support for BIF completions.
-	
+        * elisp/erl-service.el (erl-find-callers, erl-who-calls-mode,
+        erl-goto-caller, erl-propertize-insert): Added derived mode for
+        who-calls and functionality to go to call locations.
+
+2007-09-14  Bill Clementson  <billclem@gmail.com> & Matthias Radestock
+
+        * src/distel.erl: Replaced module and function
+        "completions" (M-TAB) logic with calls to xref:q/2 in order to
+        improve performance, reuse "who calls" xref code changes, and
+        provide support for BIF completions.
+
 2007-09-12  Mats Cronqvist  <etxmacr@ws73032>
 
-	* src/distel.erl (src_from_beam/1): couldn't find the source name
-	in module_info/1 if the module was interpreted, which caused the
-	debugger to fail :<
+        * src/distel.erl (src_from_beam/1): couldn't find the source name
+        in module_info/1 if the module was interpreted, which caused the
+        debugger to fail :<
 
-	the reason for the exit was that filelib:wildcard("") exits. might
-	not be a bug, but pretty wierd.
+        the reason for the exit was that filelib:wildcard("") exits. might
+        not be a bug, but pretty wierd.
 
-	now, if the module is interpreted, the source file name is
-	retrieved from the interpreter (int:file/1)
-	
-2007-09-03  Bill Clementson  <billclem@gmail.com> 
+        now, if the module is interpreted, the source file name is
+        retrieved from the interpreter (int:file/1)
 
-	* src/distel.erl: Replaced "who calls" (C-c C-d w) logic (all ~250
-	lines of it) with a single call to xref:q/2. (Patch from Matthias
-	Radestock)
+2007-09-03  Bill Clementson  <billclem@gmail.com>
+
+        * src/distel.erl: Replaced "who calls" (C-c C-d w) logic (all ~250
+        lines of it) with a single call to xref:q/2. (Patch from Matthias
+        Radestock)
 
 2007-07-20  Mats Cronqvist  <locmacr@mwlx084>
 
-	* src/distel.erl (guess_source_file): added <beamfiledir>../src/*
-	to list of directories in which to search for erl files.
-	search dirs are now:
-	the one specified in the beamfile (the 'source' field in module_info(compile))
-	<beamfiledir>
+        * src/distel.erl (guess_source_file): added <beamfiledir>../src/*
+        to list of directories in which to search for erl files.
+        search dirs are now:
+        the one specified in the beamfile (the 'source' field in module_info(compile))
+        <beamfiledir>
         <beamfiledir>../src
-	<beamfiledir>../src/*
-	<beamfiledir>../esrc
-	<beamfiledir>../erl
-	
+        <beamfiledir>../src/*
+        <beamfiledir>../esrc
+        <beamfiledir>../erl
+
 2007-07-05  Bill Clementson  <billclem@gmail.com>
 
-	* elisp/erl-service.el (erl-nodename-history, erl-choose-nodename): 
-	Added node name default value and history. 
-	
-	* elisp/erl-service.el (erl-find-mod): Deleted function erl-find-mod
-	as its functionality has been subsumed by erl-find-source-under-point.
-	
+        * elisp/erl-service.el (erl-nodename-history, erl-choose-nodename):
+        Added node name default value and history.
+
+        * elisp/erl-service.el (erl-find-mod): Deleted function erl-find-mod
+        as its functionality has been subsumed by erl-find-source-under-point.
+
 2007-07-05  Mats Cronqvist  <mats dot cronqvist at gmail dot youguess>
 
-	* src/distel.erl: rewrote src_from_beam/1 just because the old one
-	was ugly.
+        * src/distel.erl: rewrote src_from_beam/1 just because the old one
+        was ugly.
 
 2007-07-04  Bill Clementson  <billclem@gmail.com>
 
-	* elisp/erl-service.el (erl-find-source): Stop prompting for node name 
-	when erl-find-source is called with a prefix arg (earlier change in 
-	erl-target-node also affected erl-find-source).
-	
+        * elisp/erl-service.el (erl-find-source): Stop prompting for node name
+        when erl-find-source is called with a prefix arg (earlier change in
+        erl-target-node also affected erl-find-source).
+
 2007-07-02  Bill Clementson  <billclem@gmail.com> & Matthias Radestock
 
-	* elisp/erl-service.el (erl-ping): New function erl-ping checks to see
-	whether it is possible to communicate with a node.
-	
-	* elisp/erl-service.el (maybe-select-db-rebuild, erl-fdoc-apropos, 
-	erl-fdoc-describe): New function maybe-select-db-rebuild handles prefix
-	arg prompting for fdoc commands that might require a rebuild of the 
-	fdoc db.
-	
-	* elisp/erl-service.el (erl-target-node): Force node selection if no 
-	such node has been choosen yet, or when invoked with a prefix argument.
+        * elisp/erl-service.el (erl-ping): New function erl-ping checks to see
+        whether it is possible to communicate with a node.
 
-	* elisp/distel.el (distel-keys): Added "C-c C-d g" key binding for 
-	ner erl-ping command.
+        * elisp/erl-service.el (maybe-select-db-rebuild, erl-fdoc-apropos,
+        erl-fdoc-describe): New function maybe-select-db-rebuild handles prefix
+        arg prompting for fdoc commands that might require a rebuild of the
+        fdoc db.
 
-	* doc/distel.texi  (Conventions): Added comments about mods made to 
-	allow selection of a node if a command is called with a prefix argument 
-	and new erl-ping command.
-	
+        * elisp/erl-service.el (erl-target-node): Force node selection if no
+        such node has been choosen yet, or when invoked with a prefix argument.
+
+        * elisp/distel.el (distel-keys): Added "C-c C-d g" key binding for
+        ner erl-ping command.
+
+        * doc/distel.texi  (Conventions): Added comments about mods made to
+        allow selection of a node if a command is called with a prefix argument
+        and new erl-ping command.
+
 2007-06-22  Bill Clementson  <billclem@gmail.com>
 
-	* elisp/erl-service.el (erl-reload-module): Change "eq" to "equal" 
-	when comparing node to edb-monitor-node.
-	
+        * elisp/erl-service.el (erl-reload-module): Change "eq" to "equal"
+        when comparing node to edb-monitor-node.
+
 2007-06-21  Bill Clementson  <billclem@gmail.com>
 
-	* elisp/edb.el (edb-toggle-interpret, edb-monitor-cleanup): Reverted my 
-	2007-06-11 change (as it was causing problems when doing multi-module
-	debugging) and cleared edb-monitor-node in edb-monitor-cleanup so that 
-	debugging would be initialized properly when re-debugging the same 
-	node. Thanks to Matthias Radestock for helping to identify the bug.
+        * elisp/edb.el (edb-toggle-interpret, edb-monitor-cleanup): Reverted my
+        2007-06-11 change (as it was causing problems when doing multi-module
+        debugging) and cleared edb-monitor-node in edb-monitor-cleanup so that
+        debugging would be initialized properly when re-debugging the same
+        node. Thanks to Matthias Radestock for helping to identify the bug.
 
 2007-06-11  Bill Clementson  <billclem@gmail.com>
 
-	* elisp/erl-service.el (erl-eval-expression): Use current region
-	as default expression to evaluate.
+        * elisp/erl-service.el (erl-eval-expression): Use current region
+        as default expression to evaluate.
 
-	* doc/distel.texi: Updated document with mod for erl-eval-expression.
+        * doc/distel.texi: Updated document with mod for erl-eval-expression.
 
-	* elisp/edb.el (edb-toggle-interpret): Fix problem with debugger
-	not toggling properly when connection to erlang node had been
-	stopped and subsequently restarted.
+        * elisp/edb.el (edb-toggle-interpret): Fix problem with debugger
+        not toggling properly when connection to erlang node had been
+        stopped and subsequently restarted.
 
 2007-06-06  Luke Gorrie  <luke@synap.se>
 
-	* src/fdoc.erl (import_module): Fixed pattern matching bug.
-	Thanks Matthias Radestock.
+        * src/fdoc.erl (import_module): Fixed pattern matching bug.
+        Thanks Matthias Radestock.
 
 2007-05-12  Luke Gorrie  <luke@synap.se>
 
-	* Makefile: Removed configure/autoconf. Not needed anymore!
+        * Makefile: Removed configure/autoconf. Not needed anymore!
 
-	* elisp/distel.el (distel-menu-items): Added erl-reload-modules.
+        * elisp/distel.el (distel-menu-items): Added erl-reload-modules.
 
 2007-04-14  Luke Gorrie  <luke@synap.se>
 
-	* src/distel.erl (calls): Added a 'catch' over erl_syntax calls to
-	make who-calls more robust. (Patch from Matthias Radestock.)
+        * src/distel.erl (calls): Added a 'catch' over erl_syntax calls to
+        make who-calls more robust. (Patch from Matthias Radestock.)
 
 2007-04-12  Mats Cronqvist  <mats.cronqvist@ericsson.com>
 
-	* elisp/erl-service.el (erl-set-cookie, erl-get-cookie): 
-	sets/gets the lisp side cookie. if emacs and erlang are running on
-	different machines you typically want to set the lisp side cookie
-	to the same as on the erlang side (use erlang:get_cookie/0).
+        * elisp/erl-service.el (erl-set-cookie, erl-get-cookie):
+        sets/gets the lisp side cookie. if emacs and erlang are running on
+        different machines you typically want to set the lisp side cookie
+        to the same as on the erlang side (use erlang:get_cookie/0).
 
 2007-02-27  Luke Gorrie  <luke@synap.se>
 
-	* elisp/erl-service.el (erl-check-backend, &erl-load-backend):
-	If the Erlang node does not have the Distel modules available in
-	the code path then patch them in directly as binaries using RPC.
-	Now you don't have to bother adding Distel to the code path and
-	should be able to connect to any Erlang node (e.g. on a target
-	system).
+        * elisp/erl-service.el (erl-check-backend, &erl-load-backend):
+        If the Erlang node does not have the Distel modules available in
+        the code path then patch them in directly as binaries using RPC.
+        Now you don't have to bother adding Distel to the code path and
+        should be able to connect to any Erlang node (e.g. on a target
+        system).
 
-	* elisp/net-fsm.el (fsm-shutdown): Fixed annoying bug.
+        * elisp/net-fsm.el (fsm-shutdown): Fixed annoying bug.
 
-	* elisp/erl.el (erl-binary, erl-binaryp, erl-binary-string):
-	Added explicit binary datatype that is sent to Erlang as a binary.
+        * elisp/erl.el (erl-binary, erl-binaryp, erl-binary-string):
+        Added explicit binary datatype that is sent to Erlang as a binary.
 
-	* elisp/erlext.el (erl-tag): Switched from defconst to defvar to
-	avoid unnecessarily redefining (which blows everything).
-	Added encoding of binaries.
+        * elisp/erlext.el (erl-tag): Switched from defconst to defvar to
+        avoid unnecessarily redefining (which blows everything).
+        Added encoding of binaries.
 
 2006-09-25  Mats Cronqvist  <mats.cronqvist@ericsson.com>
 
-	* src/distel.erl: added erl-reload-modules. reloads all modules
-	that are out of date. compares time of compilation for the loaded
-	code and the code in the corresponding beam file.
-	* elisp/distel.el: bound erl-reload-modules to C-c C-d r.
-	
+        * src/distel.erl: added erl-reload-modules. reloads all modules
+        that are out of date. compares time of compilation for the loaded
+        code and the code in the corresponding beam file.
+        * elisp/distel.el: bound erl-reload-modules to C-c C-d r.
+
 2006-09-04  Mats Cronqvist  <mats.cronqvist@ericsson.com>
 
-	* src/distel.erl (Module): reload_module/2; 1st arg assumed to be
-	sting, could be atom or string.  resolved by creating to_atom/1
-	and to_bin/1. got rid of l2a/1 and l2b/1.
+        * src/distel.erl (Module): reload_module/2; 1st arg assumed to be
+        sting, could be atom or string.  resolved by creating to_atom/1
+        and to_bin/1. got rid of l2a/1 and l2b/1.
 
 2006-08-03  Mats Cronqvist  <mats.cronqvist@ericsson.com>
 
-	* src/distel.erl (Module): had problems in guess_source_file/2;
-	1st arg was assumed to be atom, but could be atom or list.
-	wound up creating 3 functions;
-	
-	l2a/1 - list_to_atom
-	l2b/1 - list_to_binary
-	to_list - *_to_list
+        * src/distel.erl (Module): had problems in guess_source_file/2;
+        1st arg was assumed to be atom, but could be atom or list.
+        wound up creating 3 functions;
 
-	and use them consistently.
-	
+        l2a/1 - list_to_atom
+        l2b/1 - list_to_binary
+        to_list - *_to_list
+
+        and use them consistently.
+
 2006-05-15  Mats Cronqvist  <mats.cronqvist@ericsson.com>
 
-	* src/distel.erl (Module): behaviour of int:meta changed in R10B-10.
-	edb now understands the new, and (hopefully) the old as well.
+        * src/distel.erl (Module): behaviour of int:meta changed in R10B-10.
+        edb now understands the new, and (hopefully) the old as well.
 
-	new feature; you can attach to a process that exited in
-	interpreted code and inspect the stack (just as if you're in a
-	break)
+        new feature; you can attach to a process that exited in
+        interpreted code and inspect the stack (just as if you're in a
+        break)
 
-	fixed bug when trying to do c:l/1 on a string
-	
+        fixed bug when trying to do c:l/1 on a string
+
 2005-06-07  Mats Cronqvist  <mats.cronqvist@ericsson.com>
 
-	* elisp/derl.el (derl-cookie): made derl-cookie writable
+        * elisp/derl.el (derl-cookie): made derl-cookie writable
 
 2005-06-03  Mats Cronqvist  <mats.cronqvist@ericsson.com>
 
-	* elisp/erl-service.el (erl-openparent): inserts a "(" and the
-	argument list from erl-openparen.
-	
-	(erl-reload-dwim): Do What I Mean to erl-reload-module. when
-	reloading beam files; if erl-reload-dwim is non-nil, and the
-	erlang module cannot be found in the load path, we attempt to find
-	the correct directory. I.e. if we're editing PATH/Mod.erl we look
-	for PATH/Mod.beam orelse PATH/../ebin/Mod.beam. if found we add
-	the dir to the load path and retry the load.  We also don't prompt
-	for the module name. this is your basic bloat.
+        * elisp/erl-service.el (erl-openparent): inserts a "(" and the
+        argument list from erl-openparen.
 
-	* elisp/distel.el (Module): bound M-( to erl-openparent
+        (erl-reload-dwim): Do What I Mean to erl-reload-module. when
+        reloading beam files; if erl-reload-dwim is non-nil, and the
+        erlang module cannot be found in the load path, we attempt to find
+        the correct directory. I.e. if we're editing PATH/Mod.erl we look
+        for PATH/Mod.beam orelse PATH/../ebin/Mod.beam. if found we add
+        the dir to the load path and retry the load.  We also don't prompt
+        for the module name. this is your basic bloat.
+
+        * elisp/distel.el (Module): bound M-( to erl-openparent
 
 2005-06-02  Mats Cronqvist  <mats.cronqvist@ericsson.com>
 
-	* src/distel.erl (reload_module/2): runs c:l/1, if it fails it looks
-	for the beam file in in srcdir and srcdir/../ebin (srcdir is where
-	the .erl file that you're editing lives, it's sent from emacs). if
-	it finds the beam file it adds the appropriate dir to the load
-	path and reruns c:l/1.
-	(stack_pos/2): debugger wouldn't show the variable
-	bindings in the top level function. now it does! 
-	(refresh_dir/1): fixed typo 
-	(Module): imported some functions from filename, renamed some
-	unused vars...
+        * src/distel.erl (reload_module/2): runs c:l/1, if it fails it looks
+        for the beam file in in srcdir and srcdir/../ebin (srcdir is where
+        the .erl file that you're editing lives, it's sent from emacs). if
+        it finds the beam file it adds the appropriate dir to the load
+        path and reruns c:l/1.
+        (stack_pos/2): debugger wouldn't show the variable
+        bindings in the top level function. now it does!
+        (refresh_dir/1): fixed typo
+        (Module): imported some functions from filename, renamed some
+        unused vars...
 
 2005-03-25  Mats Cronqvist  <mats.cronqvist@ericsson.com>
 
-	* elisp/derl.el (derl-int32-to-decimal): Rewrote the test for
-	enough precision in floating-point. the test is pretty lame, even
-	if it succeeds we cannot be sure it'll work for all int32's.
-	alas, i'm too ignorant to write a good test. the previous version
-	of the test was nicer, but FSFmacs-specific :<
+        * elisp/derl.el (derl-int32-to-decimal): Rewrote the test for
+        enough precision in floating-point. the test is pretty lame, even
+        if it succeeds we cannot be sure it'll work for all int32's.
+        alas, i'm too ignorant to write a good test. the previous version
+        of the test was nicer, but FSFmacs-specific :<
 
 2005-02-20  Luke Gorrie  <luke@synap.se>
 
-	* doc/distel.texi (Conventions): Added a note that you need to
-	start the Erlang node yourself, to make Joe happy.
+        * doc/distel.texi (Conventions): Added a note that you need to
+        start the Erlang node yourself, to make Joe happy.
 
 2005-01-30  Luke Gorrie  <luke@synap.se>
 
-	* elisp/erl-service.el (erl-goto-end-of-call-name): Rewrote to
-	hopefully suck less badly.
+        * elisp/erl-service.el (erl-goto-end-of-call-name): Rewrote to
+        hopefully suck less badly.
 
 2004-10-27  Luke Gorrie  <luke@synap.se>
 
-	* elisp/erl-service.el (erl-refactor-subfunction): Strip text
-	properties from refactored text.
+        * elisp/erl-service.el (erl-refactor-subfunction): Strip text
+        properties from refactored text.
 
-	* elisp/erl.el (&erl-group-leader-loop): Make *erl-output* a plain
-	Emacs buffer created on demand. Previously it was actually the
-	Distel group leader process and so it was bad to kill it (now it's
-	fine).
+        * elisp/erl.el (&erl-group-leader-loop): Make *erl-output* a plain
+        Emacs buffer created on demand. Previously it was actually the
+        Distel group leader process and so it was bad to kill it (now it's
+        fine).
 
 2004-10-26  Martin Bjorklund  <mbj@bluetail.com>
 
-	* elisp/distel.el (distel-menu-items): Use erl-choose-nodename in
-	the menu.
+        * elisp/distel.el (distel-menu-items): Use erl-choose-nodename in
+        the menu.
 
 2004-10-25  Luke Gorrie  <luke@synap.se>
 
-	* elisp/derl.el (derl-send-name): Lie to Erlang by saying that we
-	support extended PIDs. This way we can establish distribution with
-	R10B-0, which doesn't seem to actually send extended pids
-	initially. (This is a lame workaround but I'm in a hurry and the
-	extended-pid format is not documented.)
+        * elisp/derl.el (derl-send-name): Lie to Erlang by saying that we
+        support extended PIDs. This way we can establish distribution with
+        R10B-0, which doesn't seem to actually send extended pids
+        initially. (This is a lame workaround but I'm in a hurry and the
+        extended-pid format is not documented.)
 
-	* doc/distel.texi: Updated to describe `erl-choose-nodename' and
-	the fact that `C-u' is now a regular prefix argument instead of a
-	new-node-chooser.
+        * doc/distel.texi: Updated to describe `erl-choose-nodename' and
+        the fact that `C-u' is now a regular prefix argument instead of a
+        new-node-chooser.
 
-	* README, INSTALL: Updated to describe simplified installation
-	instructions.
+        * README, INSTALL: Updated to describe simplified installation
+        instructions.
 
 2004-10-23  Luke Gorrie  <luke@synap.se>
 
-	* elisp/erl-service.el (erl-choose-nodename): Update
-	distel-modeline-node.
+        * elisp/erl-service.el (erl-choose-nodename): Update
+        distel-modeline-node.
 
-	* elisp/distel.el (distel-keys, distel-bind-keys): Bind keys
-	manually instead of with define-minor-mode. The latter makes it
-	hard to change the bindings without restarting Emacs.
-	(distel-modeline-node): Variable containing the (possibly
-	abbreviated) name of the current Erlang node. This is displayed in
-	the modeline so the user can see which node is in use.
+        * elisp/distel.el (distel-keys, distel-bind-keys): Bind keys
+        manually instead of with define-minor-mode. The latter makes it
+        hard to change the bindings without restarting Emacs.
+        (distel-modeline-node): Variable containing the (possibly
+        abbreviated) name of the current Erlang node. This is displayed in
+        the modeline so the user can see which node is in use.
 
 2004-10-16  Luke Gorrie  <luke@synap.se>
 
-	* elisp/derl.el (derl-int32-to-decimal): No longer try to use the
-	'dec32' helper program: rely solely on floating point. This way we
-	can remove that C program entirely.
+        * elisp/derl.el (derl-int32-to-decimal): No longer try to use the
+        'dec32' helper program: rely solely on floating point. This way we
+        can remove that C program entirely.
 
 2004-08-26  Luke Gorrie  <luke@bluetail.com>
 
-	* erl/distel.erl: Added who_calls/3 front-end to cross
-	referencing.
+        * erl/distel.erl: Added who_calls/3 front-end to cross
+        referencing.
 
-	* elisp/patmatch.el (patmatch): Fixed bugs in matching lists and
-	tuples.
+        * elisp/patmatch.el (patmatch): Fixed bugs in matching lists and
+        tuples.
 
 2004-08-25  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl-service.el (erl-read-call-mfa): This is now the One
-	True Way to determine the module/function/arity for a command to
-	operate on.
-	(erl-who-calls): New command to list all callers of a given
-	function.
-	(erl-node-name): Renamed to `erl-target-node'. Does not look at
-	prefix argument anymore. If you want to switch nodes you now have
-	to use `M-x erl-choose-node' instead of just `C-u'. This frees up
-	the prefix argument for more interesting uses.
+        * elisp/erl-service.el (erl-read-call-mfa): This is now the One
+        True Way to determine the module/function/arity for a command to
+        operate on.
+        (erl-who-calls): New command to list all callers of a given
+        function.
+        (erl-node-name): Renamed to `erl-target-node'. Does not look at
+        prefix argument anymore. If you want to switch nodes you now have
+        to use `M-x erl-choose-node' instead of just `C-u'. This frees up
+        the prefix argument for more interesting uses.
 
-	* elisp/erl.el (&erl-group-leader-loop): Make the *erl-output*
-	window scroll properly.
+        * elisp/erl.el (&erl-group-leader-loop): Make the *erl-output*
+        window scroll properly.
 
 2004-05-27  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl-service.el (erl-refactor-subfunction): More
-	robust. Can now handle things like trailing ';' characters in the
-	region being refactored.
+        * elisp/erl-service.el (erl-refactor-subfunction): More
+        robust. Can now handle things like trailing ';' characters in the
+        region being refactored.
 
 2004-05-24  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl.el (erl-nodes): New variable. Contains the list of
-	nodes that we're connected to, like the nodes() BIF.
+        * elisp/erl.el (erl-nodes): New variable. Contains the list of
+        nodes that we're connected to, like the nodes() BIF.
 
-	* elisp/erl-service.el (erl-openparen): Don't lookup the arglist
-	unless we're actually connected to the node.
+        * elisp/erl-service.el (erl-openparen): Don't lookup the arglist
+        unless we're actually connected to the node.
 
 2004-05-21  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl-service.el (erl-openparen): New command to print the
-	argument list for a function call. Automatically runs when you
-	type '('.
+        * elisp/erl-service.el (erl-openparen): New command to print the
+        argument list for a function call. Automatically runs when you
+        type '('.
 
-	* erl/distel.erl (get_arglists): The Erlang part.
+        * erl/distel.erl (get_arglists): The Erlang part.
 
 2004-03-23  Dave Love  <fx@gnu.org>
 
-	* doc/distel.texi: Fix some @xref usages.
+        * doc/distel.texi: Fix some @xref usages.
 
 2004-03-10  Dave Love  <fx@gnu.org>
 
-	* elisp/patmatch.el (cl): Require when compiling.
-	(mcase-parse-clauses): Wrap in eval-and-compile.
-	(mlet): Don't use gensym.
-	(pmatch-tail): New.
-	(patmatch): Use it.
-	(pattern): Defvar when compiling.
+        * elisp/patmatch.el (cl): Require when compiling.
+        (mcase-parse-clauses): Wrap in eval-and-compile.
+        (mlet): Don't use gensym.
+        (pmatch-tail): New.
+        (patmatch): Use it.
+        (pattern): Defvar when compiling.
 
-	* elisp/net-fsm.el (cl): Require when compiling.
-	(with-error-cleanup): Don't use gensym.
-	(fsm-build-message): Use default-enable-multibyte-characters.
+        * elisp/net-fsm.el (cl): Require when compiling.
+        (with-error-cleanup): Don't use gensym.
+        (fsm-build-message): Use default-enable-multibyte-characters.
 
-	* elisp/erlext.el (xemacs-only, gnu-only): Delete.  Don't use them
-	to signal error on loading.
-	(erlext-binary-to-term, erlext-term-to-binary): Use
-	default-enable-multibyte-characters, with-temp-buffer.
-	(erlext-read1): Define conditionally on fbound char-int.
+        * elisp/erlext.el (xemacs-only, gnu-only): Delete.  Don't use them
+        to signal error on loading.
+        (erlext-binary-to-term, erlext-term-to-binary): Use
+        default-enable-multibyte-characters, with-temp-buffer.
+        (erlext-read1): Define conditionally on fbound char-int.
 
-	* elisp/erl.el: Only require cl when compiling.  Provide erl
-	early.  Doc fixes.
-	(defprocvar): Wrap in eval-when-compile.
-	(erl-remove-if): New.  Change callers of remove-if to use it.
+        * elisp/erl.el: Only require cl when compiling.  Provide erl
+        early.  Doc fixes.
+        (defprocvar): Wrap in eval-when-compile.
+        (erl-remove-if): New.  Change callers of remove-if to use it.
 
-	* elisp/erl-service.el (cl): Require when compiling.
-	(erl): Require.
+        * elisp/erl-service.el (cl): Require when compiling.
+        (erl): Require.
 
-	* elisp/erl-example.el (cl): Require when compiling.
-	(erl): Require.
+        * elisp/erl-example.el (cl): Require when compiling.
+        (erl): Require.
 
-	* elisp/epmd.el (cl): Require when compiling.
-	(epmd-port-please): Comment out (unused).
+        * elisp/epmd.el (cl): Require when compiling.
+        (epmd-port-please): Comment out (unused).
 
-	* elisp/edb.el (cl): Require when compiling.
-	(erlang-extended-mode): Autoload.
+        * elisp/edb.el (cl): Require when compiling.
+        (erlang-extended-mode): Autoload.
 
-	* elisp/distel-ie.el (cl): Require when compiling.
-	(erl): Require.
-	(erl-ie-evaluate, erl-ie-copy-buffer-to-session)
-	(erl-ie-copy-region-to-session): Doc fix.
+        * elisp/distel-ie.el (cl): Require when compiling.
+        (erl): Require.
+        (erl-ie-evaluate, erl-ie-copy-buffer-to-session)
+        (erl-ie-copy-region-to-session): Doc fix.
 
-	* elisp/derl.el (cl): Require when compiling.
-	(derl-alive): Use default-enable-multibyte-characters,
-	with-temp-buffer, erl-tuple-elt.
-	(derl-int32-to-decimal): Maybe use floating point.
-	(derl-hexstring-to-binstring): Renamed from
-	hexstring-to-binstring; callers changed.
-	(derl-merge-halves): Renamed from merge-halves; callers changed.
-	(derl-hexchar-to-int): Renamed from hexchar-to-int; callers
-	changed.
+        * elisp/derl.el (cl): Require when compiling.
+        (derl-alive): Use default-enable-multibyte-characters,
+        with-temp-buffer, erl-tuple-elt.
+        (derl-int32-to-decimal): Maybe use floating point.
+        (derl-hexstring-to-binstring): Renamed from
+        hexstring-to-binstring; callers changed.
+        (derl-merge-halves): Renamed from merge-halves; callers changed.
+        (derl-hexchar-to-int): Renamed from hexchar-to-int; callers
+        changed.
 
-	* elisp/distel.el (distel-erlang-mode-hook): Doc fix.
-	(erlang-extended-mode-hook): Quote lambda in hook.
-	(font-lock): Require when compiling.
-	(report-distel-problem): Require font-lock.
+        * elisp/distel.el (distel-erlang-mode-hook): Doc fix.
+        (erlang-extended-mode-hook): Quote lambda in hook.
+        (font-lock): Require when compiling.
+        (report-distel-problem): Require font-lock.
 
 2004-01-09  Luke Gorrie  <luke@bluetail.com>
 
-	* erl/distel.erl (debug_toggle): Call code:ensure_loaded/1 to
-	make sure a module is loaded before trying to interpret. This is
-	an attempt to avoid not-properly-understood debugger problems.
+        * erl/distel.erl (debug_toggle): Call code:ensure_loaded/1 to
+        make sure a module is loaded before trying to interpret. This is
+        an attempt to avoid not-properly-understood debugger problems.
 
 2003-06-11  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl-service.el (erl-refactor-strip-macros): Now removing
-	macros before attempting to find free variables in
-	expressions. This allows us to refactor code that uses macros,
-	though it could lead to invalid refactorings in pathological cases
-	(i.e. if a macro expansion would really have introduced a new free
-	variable.)
+        * elisp/erl-service.el (erl-refactor-strip-macros): Now removing
+        macros before attempting to find free variables in
+        expressions. This allows us to refactor code that uses macros,
+        though it could lead to invalid refactorings in pathological cases
+        (i.e. if a macro expansion would really have introduced a new free
+        variable.)
 
 2003-03-26  Luke Gorrie  <luke@bluetail.com>
 
-	* Release: 3.3!
+        * Release: 3.3!
 
 2003-03-11  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/derl.el (erl-dec32): Portability fix for Win32, thanks to
-	Nicolas Charpentier.
+        * elisp/derl.el (erl-dec32): Portability fix for Win32, thanks to
+        Nicolas Charpentier.
 
-	* erl/distel.erl: Now converting fdoc result strings into
-	binaries, to avoid the classic string/list encoding problems.
+        * erl/distel.erl: Now converting fdoc result strings into
+        binaries, to avoid the classic string/list encoding problems.
 
 2003-03-10  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/distel.el: Added "C-x SPC" keybinding for toggling
-	breakpoints, for consistency with the rest of Emacs.
+        * elisp/distel.el: Added "C-x SPC" keybinding for toggling
+        breakpoints, for consistency with the rest of Emacs.
 
-	* elisp/erl-service.el: fdoc commands now accept a numeric prefix
-	to mean, "rebuild the doc database."
+        * elisp/erl-service.el: fdoc commands now accept a numeric prefix
+        to mean, "rebuild the doc database."
 
 2003-03-06  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/edb.el: Improved breakpoint handling.
+        * elisp/edb.el: Improved breakpoint handling.
 
-	* elisp/erl-service.el (erl-fdoc-apropos, erl-fdoc-describe):
-	Added commands for finding documentation via 'fdoc'.
+        * elisp/erl-service.el (erl-fdoc-apropos, erl-fdoc-describe):
+        Added commands for finding documentation via 'fdoc'.
 
 2003-02-17  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl-service.el (erl-check-backend): Now using the
-	`erl-nodeup-hook' to automatically check that the `distel' module
-	is loadable by Erlang nodes we connect to, and print a warning if
-	not. You can avoid this by setting `distel-inhibit-backend-check'
-	to t.
+        * elisp/erl-service.el (erl-check-backend): Now using the
+        `erl-nodeup-hook' to automatically check that the `distel' module
+        is loadable by Erlang nodes we connect to, and print a warning if
+        not. You can avoid this by setting `distel-inhibit-backend-check'
+        to t.
 
 2003-01-15  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl-service.el (erl-read-nodename): The universal prefix
-	argument (C-u) means "prompt me for which node to use", but
-	numeric prefixes no longer do. This is to free them up for other
-	purposes.
-	(erl-find-source-under-point): Numeric prefix argument forces the
-	same behaviour as `distel-tags-compliant', i.e. prompt for
-	function name. Useful for jumping to functions that aren't being
-	called anywhere handy.
-	(erl-refactor-subfunction): Slightly improved error reportage.
+        * elisp/erl-service.el (erl-read-nodename): The universal prefix
+        argument (C-u) means "prompt me for which node to use", but
+        numeric prefixes no longer do. This is to free them up for other
+        purposes.
+        (erl-find-source-under-point): Numeric prefix argument forces the
+        same behaviour as `distel-tags-compliant', i.e. prompt for
+        function name. Useful for jumping to functions that aren't being
+        called anywhere handy.
+        (erl-refactor-subfunction): Slightly improved error reportage.
 
-	* elisp/edb.el (edb-new-attach-buffer): Inhibiting
-	`erlang-new-file-hook' in attach buffers. It was misfiring and
-	causing problems.
+        * elisp/edb.el (edb-new-attach-buffer): Inhibiting
+        `erlang-new-file-hook' in attach buffers. It was misfiring and
+        causing problems.
 
-	* elisp/erl-service.el (erl-refactor-subfunction): Small
-	portability fix; this feature probably only worked in the CVS
-	version of Emacs 21 previously. Now also works in 21.2.1.
+        * elisp/erl-service.el (erl-refactor-subfunction): Small
+        portability fix; this feature probably only worked in the CVS
+        version of Emacs 21 previously. Now also works in 21.2.1.
 
 2003-01-14  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl-service.el (erl-refactor-subfunction): New refactoring
-	command: takes all expressions in the region and makes a new
-	function out of them. The original text is replaced by a call to
-	the new function, and all needed variables are passed as
-	parameters. The function itself is placed on the kill ring, for
-	manual placement. Bound to "C-c C-d f".
+        * elisp/erl-service.el (erl-refactor-subfunction): New refactoring
+        command: takes all expressions in the region and makes a new
+        function out of them. The original text is replaced by a call to
+        the new function, and all needed variables are passed as
+        parameters. The function itself is placed on the kill ring, for
+        manual placement. Bound to "C-c C-d f".
 
-	* erl/distel.erl: Erlang-side refactoring support, requires
-	syntax_tools version 1.2 (from erlang.org contributions.)
+        * erl/distel.erl: Erlang-side refactoring support, requires
+        syntax_tools version 1.2 (from erlang.org contributions.)
 
 2003-01-11  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/edb.el: Toggling stale breakpoints is now a local
-	operation - it doesn't talk to the erlang node. This fixes a
-	problem caused by the expected inconsistencies. Also, making a
-	buffer uninterpreted now removes all breakpoints (the erlang
-	debugger backend already quietly works this way.)
+        * elisp/edb.el: Toggling stale breakpoints is now a local
+        operation - it doesn't talk to the erlang node. This fixes a
+        problem caused by the expected inconsistencies. Also, making a
+        buffer uninterpreted now removes all breakpoints (the erlang
+        debugger backend already quietly works this way.)
 
 2002-12-16  Luke Gorrie  <luke@bluetail.com>
 
-	* Release: 3.2!
+        * Release: 3.2!
 
-	* elisp/edb.el (edb-make-breakpoint-overlay): Changed
-	`point-at-bol' call to `line-beginning-position', for Emacs20
-	compatibility.
-	Minor XEmacs compatibility hacks.
+        * elisp/edb.el (edb-make-breakpoint-overlay): Changed
+        `point-at-bol' call to `line-beginning-position', for Emacs20
+        compatibility.
+        Minor XEmacs compatibility hacks.
 
-	* elisp/distel.el (erlang-extended-mode): Moved "BODY" part from
-	erlang-extended-mode's define-minor-mode and into a hook, for
-	Emacs20 compatibility.
+        * elisp/distel.el (erlang-extended-mode): Moved "BODY" part from
+        erlang-extended-mode's define-minor-mode and into a hook, for
+        Emacs20 compatibility.
 
-	* erl/distel.erl (debug_add): Now always reinterpreting modules,
-	even when int:interpreted() says they're already interpreted,
-	since it can give false information if modules are reloaded behind
-	its back. Maybe we need to talk with OTP about the semantics of
-	reloading interpreted modules in various ways..
+        * erl/distel.erl (debug_add): Now always reinterpreting modules,
+        even when int:interpreted() says they're already interpreted,
+        since it can give false information if modules are reloaded behind
+        its back. Maybe we need to talk with OTP about the semantics of
+        reloading interpreted modules in various ways..
 
-	* elisp/derl.el (derl-cookie): Variable for explicitly setting
-	cookie (from Mats Cronqvist)
+        * elisp/derl.el (derl-cookie): Variable for explicitly setting
+        cookie (from Mats Cronqvist)
 
-	* elisp/distel.el (erlang-extended-mode): Some new key bindings:
-	C-d C-d e: erl-ie-show-session (moved from C-c C-d s)
-	C-c C-d s: edb-synch-breakpoints
-	C-c C-d S: edb-save-dbg-state
-	C-c C-d R: edb-restore-dbg-state
+        * elisp/distel.el (erlang-extended-mode): Some new key bindings:
+        C-d C-d e: erl-ie-show-session (moved from C-c C-d s)
+        C-c C-d s: edb-synch-breakpoints
+        C-c C-d S: edb-save-dbg-state
+        C-c C-d R: edb-restore-dbg-state
 
-	* elisp/erl-service.el (erl-reload-module): Bugfix - if a module
-	is interpreted, then we reinterpret it instead of
-	reloading. Avoids problem of quietly uninterpreting modules.
+        * elisp/erl-service.el (erl-reload-module): Bugfix - if a module
+        is interpreted, then we reinterpret it instead of
+        reloading. Avoids problem of quietly uninterpreting modules.
 
-	* elisp/erl.el (erl-node-name): Now including the unix pid of
-	Emacs in the node name, so that multiple Emacsen can connect to
-	the same erlang node. Previously there was a naming conflict.
+        * elisp/erl.el (erl-node-name): Now including the unix pid of
+        Emacs in the node name, so that multiple Emacsen can connect to
+        the same erlang node. Previously there was a naming conflict.
 
 2002-12-15  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/edb.el (edb-make-breakpoints-stale): Never mark
-	breakpoints as stale in attach buffer.
-	(edb-breakpoint-stale-face): Switched stale breakpoint colour to
-	purple (no decent dark yellow, at least on LCD screen.)
+        * elisp/edb.el (edb-make-breakpoints-stale): Never mark
+        breakpoints as stale in attach buffer.
+        (edb-breakpoint-stale-face): Switched stale breakpoint colour to
+        purple (no decent dark yellow, at least on LCD screen.)
 
 2002-12-13  Martin Bjorklund  <mbj@bluetail.com>
 
-	* elisp/edb.el (edb-save-dbg-state): Save debugger state
-	(i.e. which modules are interpreted, and their breakpoints).  The
-	saved state can be restored after e.g. a node restart with
-	edb-restore-dbg-state.
+        * elisp/edb.el (edb-save-dbg-state): Save debugger state
+        (i.e. which modules are interpreted, and their breakpoints).  The
+        saved state can be restored after e.g. a node restart with
+        edb-restore-dbg-state.
 
 2002-12-12  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/edb.el (edb-synch-breakpoints): When calculating the line
-	number of a breakpoint overlay, now counting lines from
-	(point-min) (beginning of buffer) instead of (window-start)
-	(beginning of visible part of buffer).
+        * elisp/edb.el (edb-synch-breakpoints): When calculating the line
+        number of a breakpoint overlay, now counting lines from
+        (point-min) (beginning of buffer) instead of (window-start)
+        (beginning of visible part of buffer).
 
 2002-12-08  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl-service.el (erl-find-source): Fixed problem where
-	erl-find-source would only work from files with -module(..)
-	declarations. Now it works in any erlang-mode buffer.
+        * elisp/erl-service.el (erl-find-source): Fixed problem where
+        erl-find-source would only work from files with -module(..)
+        declarations. Now it works in any erlang-mode buffer.
 
 2002-12-08  Martin Bjorklund  <mbj@bluetail.com>
 
-	* elisp/erl-service.el (erl-find-source-under-point): Don't ask
-	for nodename if a local function definition is asked for.
+        * elisp/erl-service.el (erl-find-source-under-point): Don't ask
+        for nodename if a local function definition is asked for.
 
 2002-12-06  Martin Bjorklund  <mbj@bluetail.com>
 
-	* elisp/edb.el (edb-synch-breakpoints): Added "synch all
-	breakpoints to erlang" command, bound to C-c C-d S.  Might be used
-	after a buffer with breakpoints has been modified, recompiled and
-	loaded to erlang, to re-apply all breakpoints in the buffer.
+        * elisp/edb.el (edb-synch-breakpoints): Added "synch all
+        breakpoints to erlang" command, bound to C-c C-d S.  Might be used
+        after a buffer with breakpoints has been modified, recompiled and
+        loaded to erlang, to re-apply all breakpoints in the buffer.
 
-	* elisp/edb.el (edb-breakpoint-stale-face): Added a face which is
-	used to mark breakpoints to be out of synch when a buffer is
-	modified.
+        * elisp/edb.el (edb-breakpoint-stale-face): Added a face which is
+        used to mark breakpoints to be out of synch when a buffer is
+        modified.
 
-	* elisp/edb.erl: Cleanups.
+        * elisp/edb.erl: Cleanups.
 
 2002-12-06  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl-service.el (erl-pman-kill-process): Added "kill this
-	process" command, bound to 'k' (patch from Mats Cronqvist.)
+        * elisp/erl-service.el (erl-pman-kill-process): Added "kill this
+        process" command, bound to 'k' (patch from Mats Cronqvist.)
 
-	* elisp/erl.el (erl-exit): Fixed stupid bug.
+        * elisp/erl.el (erl-exit): Fixed stupid bug.
 
-	* elisp/edb.el (edb-monitor): Now putting the point at the last
-	process after popping up the monitor (patch from Mats Cronqvist.)
+        * elisp/edb.el (edb-monitor): Now putting the point at the last
+        process after popping up the monitor (patch from Mats Cronqvist.)
 
 2002-11-30  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/edb.el (edb-make-breakpoint-overlay): Tiny tweak of
-	setting the overlay "rear advance" to nil. This means that if you
-	open a new line following a breakpoint, the overlay won't spill
-	over onto it.
+        * elisp/edb.el (edb-make-breakpoint-overlay): Tiny tweak of
+        setting the overlay "rear advance" to nil. This means that if you
+        open a new line following a breakpoint, the overlay won't spill
+        over onto it.
 
 2002-11-28  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/edb.el (edb-attach-mode): Bound "b" to
-	edb-toggle-breakpoint in attach buffers, as a shortcut.
+        * elisp/edb.el (edb-attach-mode): Bound "b" to
+        edb-toggle-breakpoint in attach buffers, as a shortcut.
 
 2002-11-28  Martin Bjorklund  <mbj@bluetail.com>
 
-	* elisp/edb.el: Added visual breakpoints, both in source files and
-	the attach buffer.  It uses the customizable face
-	'edb-breakpoint-face' for breakpoint highlighting.
-	
-	* elisp/distel.el: Extended the Erlang menu with a 'distel'
-	submenu, which contains the common distel functions.
+        * elisp/edb.el: Added visual breakpoints, both in source files and
+        the attach buffer.  It uses the customizable face
+        'edb-breakpoint-face' for breakpoint highlighting.
 
-	* elisp/derl.el (derl-use-trace-buffer): Added a customizable
-	'derl-use-trace-buffer' (default t) which is used to turn on/off
-	the trace buffer.
+        * elisp/distel.el: Extended the Erlang menu with a 'distel'
+        submenu, which contains the common distel functions.
 
-	* elisp/net-fsm.el (fsm-use-debug-buffer): Added a customizable
-	'fsm-use-debug-buffer' (default nil) which is used to turn on/off
-	the net-fsm debug buffer.
+        * elisp/derl.el (derl-use-trace-buffer): Added a customizable
+        'derl-use-trace-buffer' (default t) which is used to turn on/off
+        the trace buffer.
+
+        * elisp/net-fsm.el (fsm-use-debug-buffer): Added a customizable
+        'fsm-use-debug-buffer' (default nil) which is used to turn on/off
+        the net-fsm debug buffer.
 
 2002-11-24  Luke Gorrie  <luke@bluetail.com>
 
-	* configure: Added configure script to CVS.
+        * configure: Added configure script to CVS.
 
-	* elisp/distel.el (erlang-extended-mode): Added completion binding
-	on M-?, since M-TAB is often used by window managers.
+        * elisp/distel.el (erlang-extended-mode): Added completion binding
+        on M-?, since M-TAB is often used by window managers.
 
-	* elisp/distel-ie.el: Changed keybindings. Now C-j evaluates the
-	expression behind the point and inserts the result in-line, and
-	C-M-x evaluates a function definition and shows the result as a
-	message. Based on suggestions from people at EUC.
+        * elisp/distel-ie.el: Changed keybindings. Now C-j evaluates the
+        expression behind the point and inserts the result in-line, and
+        C-M-x evaluates a function definition and shows the result as a
+        message. Based on suggestions from people at EUC.
 
-	* elisp/distel.el (distel): Added Distel customization group under
-	Programming->Tools, and put `distel-tags-compliant' and
-	`edb-popup-monitor-on-event' in there.
+        * elisp/distel.el (distel): Added Distel customization group under
+        Programming->Tools, and put `distel-tags-compliant' and
+        `edb-popup-monitor-on-event' in there.
 
-	* elisp/erl-service.el (erl-complete): Added command to complete
-	module names and fully-qualified function names, with all the
-	fixin's (popup completion list etc). This is bound on M-TAB, and
-	_nice_!
-	(process-list-mode): Pressing "u" now updates the process list. A
-	bunch of small usability enhancements to process info viewing.
+        * elisp/erl-service.el (erl-complete): Added command to complete
+        module names and fully-qualified function names, with all the
+        fixin's (popup completion list etc). This is bound on M-TAB, and
+        _nice_!
+        (process-list-mode): Pressing "u" now updates the process list. A
+        bunch of small usability enhancements to process info viewing.
 
 2002-11-23  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/derl.el (derl-nodedown): Now delivering EXIT signals from
-	linked remote processes when we lose contact with their node. This
-	fixes some long standing problems, like the debug monitor hanging
-	if you restart the node it's talking to.
+        * elisp/derl.el (derl-nodedown): Now delivering EXIT signals from
+        linked remote processes when we lose contact with their node. This
+        fixes some long standing problems, like the debug monitor hanging
+        if you restart the node it's talking to.
 
 2002-11-21  Martin Bjorklund  <mbj@bluetail.com>
 
-	* elisp/distel.el (distel-tags-compliant): New variable for making
-	M-. prompt for which function to find.
+        * elisp/distel.el (distel-tags-compliant): New variable for making
+        M-. prompt for which function to find.
 
 2002-11-21  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl.el: Various minor fixes: added erl-group-leader
-	function (if the variable is nil in a non-process buffer, it takes
-	the default), improved erl-pid-to-string, rearranged some things.
+        * elisp/erl.el: Various minor fixes: added erl-group-leader
+        function (if the variable is nil in a non-process buffer, it takes
+        the default), improved erl-pid-to-string, rearranged some things.
 
-	* elisp/erl-service.el (erl-send-rpc): Using a new
-	erl-group-leader function instead of the variable of the same
-	name, to fix a problem when sending RPCs from non-process buffers.
+        * elisp/erl-service.el (erl-send-rpc): Using a new
+        erl-group-leader function instead of the variable of the same
+        name, to fix a problem when sending RPCs from non-process buffers.
 
-	* elisp/edb.el (edb-monitor-format): Avoiding trailing spaces in
-	summary lines, so that it doesn't unnecessarily wrap lines on < 80
-	column displays (was needed for the big font I used in the EUC
-	presentation.)
+        * elisp/edb.el (edb-monitor-format): Avoiding trailing spaces in
+        summary lines, so that it doesn't unnecessarily wrap lines on < 80
+        column displays (was needed for the big font I used in the EUC
+        presentation.)
 
-	* elisp/distel-ie.el: Added a couple of `push-mark' calls, so that
-	after you evaluate a definition the mark will be placed where the
-	cursor is (and thus when you type a new expression, the region
-	will be around your new text, ready for M-x). But what we really
-	need to do is change M-x so that it grabs a whole expression
-	instead of using the region.
+        * elisp/distel-ie.el: Added a couple of `push-mark' calls, so that
+        after you evaluate a definition the mark will be placed where the
+        cursor is (and thus when you type a new expression, the region
+        will be around your new text, ready for M-x). But what we really
+        need to do is change M-x so that it grabs a whole expression
+        instead of using the region.
 
 2002-11-12  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/derl.el (erl-connect): Now printing an error if we try to
-	connect to an erlang node that has the same nodename as Emacs, to
-	prevent a commonly confusing problem.
+        * elisp/derl.el (erl-connect): Now printing an error if we try to
+        connect to an erlang node that has the same nodename as Emacs, to
+        prevent a commonly confusing problem.
 
 2002-11-10  Luke Gorrie  <luke@bluetail.com>
 
-	* Release: 3.1!
+        * Release: 3.1!
 
 2002-11-08  Luke Gorrie  <luke@bluetail.com>
 
-	* Everywhere: Incompatible changes to the pattern syntax. All
-	symbols are now variables by default, to match a symbol by value
-	it has to be quoted. The basic difference is:
-	  [ok Value]
-	becomes:
-	  ['ok value]
-	The algorithm for updating your patterns is:
-	  Put a quote in front of all lower-case match-by-value symbols.
-	  Change all the symbols for variables to lower-case.
-	And that's all. Hopefully I've correctly fixed this in all the
-	code included in Distel.
-	
-	* elisp/erl-service.el (fprof-analyse): Added new command to view
-	an existing fprof analysis file.
+        * Everywhere: Incompatible changes to the pattern syntax. All
+        symbols are now variables by default, to match a symbol by value
+        it has to be quoted. The basic difference is:
+          [ok Value]
+        becomes:
+          ['ok value]
+        The algorithm for updating your patterns is:
+          Put a quote in front of all lower-case match-by-value symbols.
+          Change all the symbols for variables to lower-case.
+        And that's all. Hopefully I've correctly fixed this in all the
+        code included in Distel.
+
+        * elisp/erl-service.el (fprof-analyse): Added new command to view
+        an existing fprof analysis file.
 
 2002-11-05  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl.el (erl-make-ref): Equivalent to make_ref/0 BIF in
-	Erlang. Also added support for encoding/decoding refs "on the
-	wire" (erlext.el).
+        * elisp/erl.el (erl-make-ref): Equivalent to make_ref/0 BIF in
+        Erlang. Also added support for encoding/decoding refs "on the
+        wire" (erlext.el).
 
-	* elisp/erlext.el (erlext-read-obj): Bignums are now skipped over,
-	giving the symbol SMALL-BIGNUM or LARGE-BIGNUM instead of an
-	error.
+        * elisp/erlext.el (erlext-read-obj): Bignums are now skipped over,
+        giving the symbol SMALL-BIGNUM or LARGE-BIGNUM instead of an
+        error.
 
 2002-10-30  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl-service.el (erl-reload-module): Convenience function
-	for reloading an Erlang module. I often see people switch from
-	Emacs to an erlang shell to type "l(mymod)" after a 'make'. This
-	is a quicker way.
-	Bound to "C-c C-d L".
+        * elisp/erl-service.el (erl-reload-module): Convenience function
+        for reloading an Erlang module. I often see people switch from
+        Emacs to an erlang shell to type "l(mymod)" after a 'make'. This
+        is a quicker way.
+        Bound to "C-c C-d L".
 
 2002-10-23  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/distel.el (report-distel-problem): New automated bug
-	reporting command. Creates a bug report email template including
-	some recent trace information.
+        * elisp/distel.el (report-distel-problem): New automated bug
+        reporting command. Creates a bug report email template including
+        some recent trace information.
 
 2002-10-08  Luke Gorrie  <luke@bluetail.com>
 
-	* distel.erl, elisp/edb.el (edb-toggle-interpret): Fixes for
-	finding the right source code to interpret when debugging is
-	toggled on (patch by Mats Cronqvist). Now we use the absolute path
-	name of the Emacs buffer as the filename to interpret on the
-	Erlang node. This essentially assumes a common file system between
-	both nodes. The issue of "fully general" debugging on arbitrary
-	remote nodes still needs some thinking (e.g. if node and Emacs
-	have different versions of the code, etc.). But for now this is
-	more convenient for debugging nodes that do have a common file
-	system with Emacs.
+        * distel.erl, elisp/edb.el (edb-toggle-interpret): Fixes for
+        finding the right source code to interpret when debugging is
+        toggled on (patch by Mats Cronqvist). Now we use the absolute path
+        name of the Emacs buffer as the filename to interpret on the
+        Erlang node. This essentially assumes a common file system between
+        both nodes. The issue of "fully general" debugging on arbitrary
+        remote nodes still needs some thinking (e.g. if node and Emacs
+        have different versions of the code, etc.). But for now this is
+        more convenient for debugging nodes that do have a common file
+        system with Emacs.
 
 2002-10-04  Luke Gorrie  <luke@bluetail.com>
 
-	* erl/distel.erl, erl-service.el: Can now find the source file for
-	a module from information in the beamfile saying where it was
-	originally compiled.  Idea & patch by Mats Cronqvist
-	<etxmacr@cbe.ericsson.se>.
+        * erl/distel.erl, erl-service.el: Can now find the source file for
+        a module from information in the beamfile saying where it was
+        originally compiled.  Idea & patch by Mats Cronqvist
+        <etxmacr@cbe.ericsson.se>.
 
 2002-09-30  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl-service.el (erl-find-source): Doesn't do the
-	source-file-finding RPC when already in a buffer matching the
-	module name.
+        * elisp/erl-service.el (erl-find-source): Doesn't do the
+        source-file-finding RPC when already in a buffer matching the
+        module name.
 
 2002-08-29  Luke Gorrie  <luke@bluetail.com>
 
-	* Release: 3.0!
+        * Release: 3.0!
 
 2002-08-29  david wallin  <david.wallin@ul.ie>
 
-	* README.ie-session (Module): New file, trying to explain what
-	  distel-ie is supposed to do.
+        * README.ie-session (Module): New file, trying to explain what
+          distel-ie is supposed to do.
 
 2002-08-29  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/distel-ie.el (erl-ie-inline-results): Added variable to
-	control how results are reported (inline in buffer, or in message
-	area). Uses the message area by default, prefix argument inverts.
-	(erl-ie-show-session): This is the new "create a blank session"
-	command (calls erl-ie-session and pops up the buffer, something
-	I'd broken)
+        * elisp/distel-ie.el (erl-ie-inline-results): Added variable to
+        control how results are reported (inline in buffer, or in message
+        area). Uses the message area by default, prefix argument inverts.
+        (erl-ie-show-session): This is the new "create a blank session"
+        command (calls erl-ie-session and pops up the buffer, something
+        I'd broken)
 
 2002-08-28  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl-service.el (display-message-or-view): Fixed
-	embarrassing bug where an unbound variable was being
-	used (apparently it previously had the right dynamic binding by
-	luck - scary).
+        * elisp/erl-service.el (display-message-or-view): Fixed
+        embarrassing bug where an unbound variable was being
+        used (apparently it previously had the right dynamic binding by
+        luck - scary).
 
-	* erl/distel.erl (find_source/1): Now resolves relative paths.
+        * erl/distel.erl (find_source/1): Now resolves relative paths.
 
-	* elisp/erl-service.el (erl-find-source-under-point): Included
-	details of the workings in the docstring. Made a portability
-	tweak.
+        * elisp/erl-service.el (erl-find-source-under-point): Included
+        details of the workings in the docstring. Made a portability
+        tweak.
 
 2002-08-27  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl.el (erl-stop-on-error): Setting this variable to
-	non-nil stops the scheduler from trapping elisp errors, so you
-	can debug them normally. See variable docstring for details.
+        * elisp/erl.el (erl-stop-on-error): Setting this variable to
+        non-nil stops the scheduler from trapping elisp errors, so you
+        can debug them normally. See variable docstring for details.
 
-	* elisp/distel.el (erlang-extended-mode): Fixed up the mode line
-	format for erlang-extended-mode. Working around a bug in Emacs 21,
-	I think.
+        * elisp/distel.el (erlang-extended-mode): Fixed up the mode line
+        format for erlang-extended-mode. Working around a bug in Emacs 21,
+        I think.
 
 2002-08-24  david wallin  <david.wallin@ul.ie>
 
-	* elisp/derl.el (erl-connect): Well well well... who would have
-	  guessed that I would have to step in and save the day with some
-	  elisp hacking? :-) Anyway, Luke, better take a look at the changes,
-	  at least now you can connect to an erl node.
+        * elisp/derl.el (erl-connect): Well well well... who would have
+          guessed that I would have to step in and save the day with some
+          elisp hacking? :-) Anyway, Luke, better take a look at the changes,
+          at least now you can connect to an erl node.
 
 2002-08-23  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl-service.el (display-message-or-view): Emacs20
-	compatibility fix. Also, now only using the echo area for
-	single-line messages, even though Emacs21 can handle bigger
-	ones. This feels better for process info items, since it's
-	confusing to have e.g. one large backtrace in a buffer and then
-	another smaller one pop up in the echo area - better to always use
-	the buffer.
+        * elisp/erl-service.el (display-message-or-view): Emacs20
+        compatibility fix. Also, now only using the echo area for
+        single-line messages, even though Emacs21 can handle bigger
+        ones. This feels better for process info items, since it's
+        confusing to have e.g. one large backtrace in a buffer and then
+        another smaller one pop up in the echo area - better to always use
+        the buffer.
 
-	* elisp/edb.el (edb-monitor): Monitor buffer now pops up when an
-	attached process exits (as well as when an unattached process hits
-	a breakpoint).
+        * elisp/edb.el (edb-monitor): Monitor buffer now pops up when an
+        attached process exits (as well as when an unattached process hits
+        a breakpoint).
 
-	* elisp/erl.el (erl-set-name): Added this function that processes
-	can call to give themself a name. This name is printed if the
-	process crashes - it's handy for debugging. Updated some existing
-	processes to use it.
+        * elisp/erl.el (erl-set-name): Added this function that processes
+        can call to give themself a name. This name is printed if the
+        process crashes - it's handy for debugging. Updated some existing
+        processes to use it.
 
-	* elisp/derl.el (erl-connect): When epmd lookup fails, the *derl
-	<node>* buffer is now killed. This fixes a long-standing bug that
-	forced you to manually kill this buffer before you can try to
-	connect again.
+        * elisp/derl.el (erl-connect): When epmd lookup fails, the *derl
+        <node>* buffer is now killed. This fixes a long-standing bug that
+        forced you to manually kill this buffer before you can try to
+        connect again.
 
 2002-08-22  david wallin  <david.wallin@ul.ie>
 
-	* elisp/distel-ie.el (erl-ie-copy-[buffer|region]-to-session): Move 
-	  the pointer to the end of the buffer before inserting.
-	
-	* elisp/distel-ie.el (erl-ie-session): The welcome message should 
-	  only occur once (on startup), i.e., that the user is welcome back 
-	  is now implicit.
+        * elisp/distel-ie.el (erl-ie-copy-[buffer|region]-to-session): Move
+          the pointer to the end of the buffer before inserting.
 
-	* erl/distel_ie.erl (add_remote_call_info/2): Added the string tuple. 
-	  So 'cd("/usr/local").' can now properly be evaluated.
+        * elisp/distel-ie.el (erl-ie-session): The welcome message should
+          only occur once (on startup), i.e., that the user is welcome back
+          is now implicit.
+
+        * erl/distel_ie.erl (add_remote_call_info/2): Added the string tuple.
+          So 'cd("/usr/local").' can now properly be evaluated.
 
 2002-08-22  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl-service.el (erl-bury-viewer): Add this command, which
-	is like `erl-quit-viewer' but buries rather than kills the buffer.
-	(erl-find-source): Improved error reportage, and now only adding
-	locations to the M-, history when we actually jump somewhere.
+        * elisp/erl-service.el (erl-bury-viewer): Add this command, which
+        is like `erl-quit-viewer' but buries rather than kills the buffer.
+        (erl-find-source): Improved error reportage, and now only adding
+        locations to the M-, history when we actually jump somewhere.
 
-	* elisp/edb.el: Various debugger improvements: Monitor buffer pops
-	up when an unattached process hits a breakpoint (unless
-	`edb-popup-monitor-on-event' is nil); Monitor better intercepts
-	debug commands to either start monitoring or switch nodes; 'q' now
-	hides rather than kills the monitor buffer/process ('k' kills);
-	Return and C-m can be used to attach to a process from the monitor,
-	as well as the traditional 'a'.
+        * elisp/edb.el: Various debugger improvements: Monitor buffer pops
+        up when an unattached process hits a breakpoint (unless
+        `edb-popup-monitor-on-event' is nil); Monitor better intercepts
+        debug commands to either start monitoring or switch nodes; 'q' now
+        hides rather than kills the monitor buffer/process ('k' kills);
+        Return and C-m can be used to attach to a process from the monitor,
+        as well as the traditional 'a'.
 
 2002-08-21  Luke Gorrie  <luke@bluetail.com>
 
-	* config/emacs-init-snippet.el.in: Now being careful to add
-	Distel at the end of the load-path, so that the
-	possibly-redundant files we include for compatibility (ewoc.el,
-	md5.el) don't override any locally installed ones.
+        * config/emacs-init-snippet.el.in: Now being careful to add
+        Distel at the end of the load-path, so that the
+        possibly-redundant files we include for compatibility (ewoc.el,
+        md5.el) don't override any locally installed ones.
 
-	* README, Makefile.in (VERSION): Increased 3.0a -> 3.0b to
-	distinguish from the version installed on Bluetail'ers' machines
-	earlier today.
+        * README, Makefile.in (VERSION): Increased 3.0a -> 3.0b to
+        distinguish from the version installed on Bluetail'ers' machines
+        earlier today.
 
-	* elisp/erl.el (erl-reductions): Added reductions counter, saying
-	how many times a process has been executed (_not_ how many calls
-	it has made, like Erlang reductions). This can be inspected
-	directly for debug purposes.
+        * elisp/erl.el (erl-reductions): Added reductions counter, saying
+        how many times a process has been executed (_not_ how many calls
+        it has made, like Erlang reductions). This can be inspected
+        directly for debug purposes.
 
-	* config/emacs-init-snippet.el.in: Using autoconf on the .emacs
-	snippet to setup the right load-path. It seems that just making a
-	directory in ${prefix}/share/emacs/site-lisp/ doesn't get you
-	into the load path automatically.
+        * config/emacs-init-snippet.el.in: Using autoconf on the .emacs
+        snippet to setup the right load-path. It seems that just making a
+        directory in ${prefix}/share/emacs/site-lisp/ doesn't get you
+        into the load path automatically.
 
-	* elisp/edb.el, erl/distel.erl: Reworked the debugger so that the
-	Monitor process tracks the current set of breakpoints and
-	interpreted modules. Erlang-extended-mode buffers now indicate via
-	the mode line whether they are currently being interpreted.
+        * elisp/edb.el, erl/distel.erl: Reworked the debugger so that the
+        Monitor process tracks the current set of breakpoints and
+        interpreted modules. Erlang-extended-mode buffers now indicate via
+        the mode line whether they are currently being interpreted.
 
-	* Makefile.in: Moved the documentation onto separate targets:
-	  "info", "info_install", "postscript". Hopefully this will avoid
-	  hittings errors in basic installations on non-GNU systems.
+        * Makefile.in: Moved the documentation onto separate targets:
+          "info", "info_install", "postscript". Hopefully this will avoid
+          hittings errors in basic installations on non-GNU systems.
 
 2002-08-20  david wallin  <david.wallin@ul.ie>
 
-	* elisp/distel.el (erlang-extended-mode): Added a keybinding
-	  for erl-ie-evaluate: C-M-x.
+        * elisp/distel.el (erlang-extended-mode): Added a keybinding
+          for erl-ie-evaluate: C-M-x.
 
-	* elisp/distel-ie.el (erl-ie-evaluate): If the current buffer 
-	  isn't a session; start a session and copy the marked region 
-	  over to it. All interaction will then take place in the 
-	  session buffer.
+        * elisp/distel-ie.el (erl-ie-evaluate): If the current buffer
+          isn't a session; start a session and copy the marked region
+          over to it. All interaction will then take place in the
+          session buffer.
 
 2002-08-20  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl-service.el (erl-find-source-under-point): Can now
-	handle text like "foo:bar/2" - i.e. reads the arity correctly, so
-	you can jump to definitions from e.g. export lists. Actual change
-	made in `erl-get-arity'.
-	(erl-find-source-under-point): When arity can't be determined,
-	finds the first matching function of any arity. This is useful
-	when you're writing a function call and can't remember what
-	arguments/arities a function has - you can jump to the definition
-	and see.
+        * elisp/erl-service.el (erl-find-source-under-point): Can now
+        handle text like "foo:bar/2" - i.e. reads the arity correctly, so
+        you can jump to definitions from e.g. export lists. Actual change
+        made in `erl-get-arity'.
+        (erl-find-source-under-point): When arity can't be determined,
+        finds the first matching function of any arity. This is useful
+        when you're writing a function call and can't remember what
+        arguments/arities a function has - you can jump to the definition
+        and see.
 
-	* All: XEmacs and Emacs20 compatibility fixes (tested edb,
-	erl-process-list).
+        * All: XEmacs and Emacs20 compatibility fixes (tested edb,
+        erl-process-list).
 
 2002-08-19  david wallin  <david.wallin@ul.ie>
 
-	* elisp/distel.el (erlang-extended-mode): Added keybindings 
-	for distel-ie.
-	C-c C-d s : Start a session.
-	C-c C-d c : Copy current buffer to a session.
-	C-c C-d r : Copy a marked region in the current buffer to a session.
+        * elisp/distel.el (erlang-extended-mode): Added keybindings
+        for distel-ie.
+        C-c C-d s : Start a session.
+        C-c C-d c : Copy current buffer to a session.
+        C-c C-d r : Copy a marked region in the current buffer to a session.
 
-	* elisp/distel-ie.el (erl-ie-copy-buffer-to-session): Renamed
-	erl-ie-copy-to-session.
-	* elisp/distel-ie.el (erl-ie-copy-region-to-session): Same as 
-	erl-ie-copy-buffer-to-session but works on a marked region.
+        * elisp/distel-ie.el (erl-ie-copy-buffer-to-session): Renamed
+        erl-ie-copy-to-session.
+        * elisp/distel-ie.el (erl-ie-copy-region-to-session): Same as
+        erl-ie-copy-buffer-to-session but works on a marked region.
 
 2002-08-19  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/distel.el, elisp/erlang-mode-ext.el: Renamed
-	erlang-mode-ext.el to distel.el, so that it's obvious what the
-	"top level" is. Now you need to (require 'distel) in your init
-	file instead of (require 'erlang-mode-ext).
+        * elisp/distel.el, elisp/erlang-mode-ext.el: Renamed
+        erlang-mode-ext.el to distel.el, so that it's obvious what the
+        "top level" is. Now you need to (require 'distel) in your init
+        file instead of (require 'erlang-mode-ext).
 
-	* elisp/erl-service.el, distel.erl (fprof): Fixed the fprof
-	interface to handle multiple processes. Used the compiler as a
-	test case.
+        * elisp/erl-service.el, distel.erl (fprof): Fixed the fprof
+        interface to handle multiple processes. Used the compiler as a
+        test case.
 
-	The presentation of results is seriously inadequate for such large
-	quantities of data. What's needed is a sexy tree layout like the
-	OptimizeIt profiler for Java has.
+        The presentation of results is seriously inadequate for such large
+        quantities of data. What's needed is a sexy tree layout like the
+        OptimizeIt profiler for Java has.
 
 2002-08-18  david wallin  <david@dolly.csis.ul.ie>
 
-	* elisp/distel-ie.el (erl-ie-evaluate): Can now receive messages 
-	that should go into the minibuffer.
+        * elisp/distel-ie.el (erl-ie-evaluate): Can now receive messages
+        that should go into the minibuffer.
 
-	* elisp/distel-ie.el (erl-ie-evaluate): Slight correction on how
-	the output of formatted.
+        * elisp/distel-ie.el (erl-ie-evaluate): Slight correction on how
+        the output of formatted.
 
-	* elisp/distel-ie.el (erl-ie-fiddle-with-me): New function. Copies
-	the content of the current buffer into a session. So you can 'fiddle'
-	away on the code without screwing up the original file. 
-	(Suggestions for name change are welcome).
+        * elisp/distel-ie.el (erl-ie-fiddle-with-me): New function. Copies
+        the content of the current buffer into a session. So you can 'fiddle'
+        away on the code without screwing up the original file.
+        (Suggestions for name change are welcome).
 
-	* erl/distel_ie.erl (ensure_registered/0): Updates the 
-	group leader on an already running 'distel_ie' process. 
-	So if you do M-x erl-ie-session and connect to a node where 
-	distel_ie is already running, the stdin/stdout is correctly
-	redirected.
+        * erl/distel_ie.erl (ensure_registered/0): Updates the
+        group leader on an already running 'distel_ie' process.
+        So if you do M-x erl-ie-session and connect to a node where
+        distel_ie is already running, the stdin/stdout is correctly
+        redirected.
 
-	* erl/distel_ie.erl (evaluate/2): Defining a new function returns 
-	the function name and arity.
+        * erl/distel_ie.erl (evaluate/2): Defining a new function returns
+        the function name and arity.
 
-	* erl/distel_ie.erl (get_function_name/1): Returns the arity as well.
-	
+        * erl/distel_ie.erl (get_function_name/1): Returns the arity as well.
+
 2002-08-17  Luke Gorrie  <luke@bluetail.com>
 
-	* Buildscripts: Revamped the makefiles, inspired by host fast
-	Ghostscript does "the null make" without recursions. Stole all the
-	code from Darius Bacon's idel package - very handy.
+        * Buildscripts: Revamped the makefiles, inspired by host fast
+        Ghostscript does "the null make" without recursions. Stole all the
+        code from Darius Bacon's idel package - very handy.
 
-	Anyhoo, now you can do "./configure && make && make install" and
-	you get the files installed in all the usual bits of /usr/local/ -
-	even the manual in your Info directory.
+        Anyhoo, now you can do "./configure && make && make install" and
+        you get the files installed in all the usual bits of /usr/local/ -
+        even the manual in your Info directory.
 
-	For really lazy people, you can do "make conf_install", which will
-	patch your .emacs and .erlang to setup the right hooks to run
-	everything (this Should Be perfectly safe, not that I'd trust
-	someone else's program to do it to mine..)
+        For really lazy people, you can do "make conf_install", which will
+        patch your .emacs and .erlang to setup the right hooks to run
+        everything (this Should Be perfectly safe, not that I'd trust
+        someone else's program to do it to mine..)
 
-	You can also do "make dist" to build a distributable package (in
-	../) -- but if I start finding cheap knock-off Distel CDs selling
-	in china, I'm gonna come after you.
+        You can also do "make dist" to build a distributable package (in
+        ../) -- but if I start finding cheap knock-off Distel CDs selling
+        in china, I'm gonna come after you.
 
-	NOTE: When you checkout this from CVS, you will have to do
-	"autoconf && ./configure" to generate your Makefile.
-	
-	* doc/distel.texi: Brought up-to-date with recent changes.
+        NOTE: When you checkout this from CVS, you will have to do
+        "autoconf && ./configure" to generate your Makefile.
+
+        * doc/distel.texi: Brought up-to-date with recent changes.
 
 2002-08-14  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/edb.el (edb-attach-with-new-frame): Setting this variable
-	to non-nil makes the debugger create new frames to attach to
-	processes.
+        * elisp/edb.el (edb-attach-with-new-frame): Setting this variable
+        to non-nil makes the debugger create new frames to attach to
+        processes.
 
 2002-08-04  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/edb.el: Improved variables window (now you can press
-	return on a variable to popup its full value).
+        * elisp/edb.el: Improved variables window (now you can press
+        return on a variable to popup its full value).
 
-	* elisp/erl-service.el (erl-read-nodename): Now you can enter node
-	names without the @host part, and they're taken to refer to the
-	local host.
+        * elisp/erl-service.el (erl-read-nodename): Now you can enter node
+        names without the @host part, and they're taken to refer to the
+        local host.
 
-	* README: OSX setup instructions care of David Wallin.
+        * README: OSX setup instructions care of David Wallin.
 
-	* elisp/edb.el, distel.erl: Added up/down motion through the
-	stack in the debugger.
+        * elisp/edb.el, distel.erl: Added up/down motion through the
+        stack in the debugger.
 
 2002-08-03  Luke Gorrie  <luke@bluetail.com>
 
-	* Everywhere: Changed the datatype mapping so that tuples are just
-	vectors, so {ok, "foo"} becomes [ok "foo"] instead of
-	[tuple ok "foo"]. Pids and ports, which are also vectors, now
-	contain a special `erl-tag' in their first element, which is the
-	uninterned symbol `TYPE'. Because the symbol is uninterned, it's
-	not equal to what you get from 'TYPE, even though it looks the
-	same. It's distinct from any value that can appear in an actual
-	tuple, so the mapping is unambiguous.
+        * Everywhere: Changed the datatype mapping so that tuples are just
+        vectors, so {ok, "foo"} becomes [ok "foo"] instead of
+        [tuple ok "foo"]. Pids and ports, which are also vectors, now
+        contain a special `erl-tag' in their first element, which is the
+        uninterned symbol `TYPE'. Because the symbol is uninterned, it's
+        not equal to what you get from 'TYPE, even though it looks the
+        same. It's distinct from any value that can appear in an actual
+        tuple, so the mapping is unambiguous.
 
-	This modification is _not_ backwards compatible. Any tuple-based
-	pattern matching needs to be updated, and any accesses to tuple
-	elements with `elt' will now be off-by-one (there is a `tuple-elt'
-	function to use instead, which indexes from 1). I've fixed
-	everything that grepped on "elt" or "tuple", and everything seems
-	to work.
-	
-	I'd been scratching for a nice way to do this since the beginning
-	-- an uninterned symbol is just right.
-	
+        This modification is _not_ backwards compatible. Any tuple-based
+        pattern matching needs to be updated, and any accesses to tuple
+        elements with `elt' will now be off-by-one (there is a `tuple-elt'
+        function to use instead, which indexes from 1). I've fixed
+        everything that grepped on "elt" or "tuple", and everything seems
+        to work.
+
+        I'd been scratching for a nice way to do this since the beginning
+        -- an uninterned symbol is just right.
+
 2002-08-02  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/derl.el (ensure-have-dec32): Rewrite based on
-	`locate-library', hopefully now more portable.
+        * elisp/derl.el (ensure-have-dec32): Rewrite based on
+        `locate-library', hopefully now more portable.
 
 2002-08-01  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl-service.el (erl-goto-end-of-call-name): Added a
-	work-around for the installation on Tobbe's machine, which doesn't
-	put ':' in the same syntax class as mine does. Cause as yet
-	unknown.
+        * elisp/erl-service.el (erl-goto-end-of-call-name): Added a
+        work-around for the installation on Tobbe's machine, which doesn't
+        put ':' in the same syntax class as mine does. Cause as yet
+        unknown.
 
-	* elisp/erlang-mode-ext.el: Decided to hijack the TAGS key
-	bindings, so now M-. takes you from a function call to the
-	definition, and M-, jumps you back afterwards.
+        * elisp/erlang-mode-ext.el: Decided to hijack the TAGS key
+        bindings, so now M-. takes you from a function call to the
+        definition, and M-, jumps you back afterwards.
 
-	* elisp/erl-service.el (erl-find-source-unwind): Added "unwind"
-	feature for going back after following function calls to their
-	definitions (suggested by Tobbe, and very nice).
+        * elisp/erl-service.el (erl-find-source-unwind): Added "unwind"
+        feature for going back after following function calls to their
+        definitions (suggested by Tobbe, and very nice).
 
 2002-07-29  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl.el (erl-determine-hostname): Doing a better job of
-	figuring out the local hostname, to choose emacs's node name.
+        * elisp/erl.el (erl-determine-hostname): Doing a better job of
+        figuring out the local hostname, to choose emacs's node name.
 
-	* everywhere: On-line documentation improvements, so that
-	'describe-mode' (C-h m) will tell you about all the funky features
-	of the various modes.
-	
-	* erlang-mode-ext.el: Switch keybindings prefix to "C-cC-d". Now
-	have an "erlang-extended-mode" minor mode, which includes all
-	extensions including edb.
+        * everywhere: On-line documentation improvements, so that
+        'describe-mode' (C-h m) will tell you about all the funky features
+        of the various modes.
 
-	* elisp/erl.el (erl-run-process): When a process crashes due to an
-	elisp error, the exit reason is stringified to avoid e.g.  trying
-	to send buffer objects to erlang nodes inside an exit reason.
+        * erlang-mode-ext.el: Switch keybindings prefix to "C-cC-d". Now
+        have an "erlang-extended-mode" minor mode, which includes all
+        extensions including edb.
 
-	* edb.el, distel.erl: Debugger enhancements.
-	
-	* derl.el: Stopped including "TICK" messages in the
-	"*trace <nodename>*" buffers. They're too distracting.
+        * elisp/erl.el (erl-run-process): When a process crashes due to an
+        elisp error, the exit reason is stringified to avoid e.g.  trying
+        to send buffer objects to erlang nodes inside an exit reason.
+
+        * edb.el, distel.erl: Debugger enhancements.
+
+        * derl.el: Stopped including "TICK" messages in the
+        "*trace <nodename>*" buffers. They're too distracting.
 
 2002-07-27  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl.el (erl-idle): (erl-idle) puts the process into a
-	receive that matches nothing, making the process idle
-	indefinitely. This can be interrupted by executing code in the
-	process via an emacs command.
+        * elisp/erl.el (erl-idle): (erl-idle) puts the process into a
+        receive that matches nothing, making the process idle
+        indefinitely. This can be interrupted by executing code in the
+        process via an emacs command.
 
-	* elisp/erl-service.el (erl-show-process-info-item): Now possible
-	to view individual process items, with special support for
-	message queues and backtraces.
-	(erl-find-source): Better.
+        * elisp/erl-service.el (erl-show-process-info-item): Now possible
+        to view individual process items, with special support for
+        message queues and backtraces.
+        (erl-find-source): Better.
 
 2002-06-24  Luke Gorrie  <luke@bluetail.com>
 
-	* erl/distel.erl: Erlang-side debugger support. Fprof interface
-	can parse expressions.
+        * erl/distel.erl: Erlang-side debugger support. Fprof interface
+        can parse expressions.
 
-	* elisp/erlang-mode-ext.el: More key bindings ("C-c C-e" prefix),
-	moved debugging code to edb.el
+        * elisp/erlang-mode-ext.el: More key bindings ("C-c C-e" prefix),
+        moved debugging code to edb.el
 
-	* elisp/edb.el: New file for (much improved and extended) debugger
-	code.
+        * elisp/edb.el: New file for (much improved and extended) debugger
+        code.
 
-	* elisp/erl-service.el (erl-find-source): Added erl-find-source to
-	find and load the source code for a module by name.
-	(fprof): Fprof now takes an erlang expression as input instead of
-	MFA.
+        * elisp/erl-service.el (erl-find-source): Added erl-find-source to
+        find and load the source code for a module by name.
+        (fprof): Fprof now takes an erlang expression as input instead of
+        MFA.
 
-	* elisp/erl.el (erl-run-process): Saves current buffer when
-	invoking the process continuation, so that cleanup works when the
-	process returns in another buffer.
+        * elisp/erl.el (erl-run-process): Saves current buffer when
+        invoking the process continuation, so that cleanup works when the
+        process returns in another buffer.
 
 2002-06-17  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erlang-mode-ext.el, erl/distel.erl: Beginnings of
-	debugger support: partial implementation of the "monitor".
+        * elisp/erlang-mode-ext.el, erl/distel.erl: Beginnings of
+        debugger support: partial implementation of the "monitor".
 
 2002-06-02  Luke Gorrie  <luke@bluetail.com>
 
-	* erl/distel.erl: Added rpc_entry(M,F,A) which installs a
-	group_leader proxy/adapter.
+        * erl/distel.erl: Added rpc_entry(M,F,A) which installs a
+        group_leader proxy/adapter.
 
-	* elisp/net-fsm.el: Sprinkled some more multibyte-avoidance code
-	around. The default coding-system mangled messages on my laptop,
-	but with 'no-conversion' it now works.
+        * elisp/net-fsm.el: Sprinkled some more multibyte-avoidance code
+        around. The default coding-system mangled messages on my laptop,
+        but with 'no-conversion' it now works.
 
-	* elisp/erl.el: Added "real" group_leader support, with a default
-	group_leader writing output to *erl-output*. The group leader
-	protocol is not the same as Erlang's (needs to be adapted), and
-	supports just one message: {put_chars, Chars}.
+        * elisp/erl.el: Added "real" group_leader support, with a default
+        group_leader writing output to *erl-output*. The group leader
+        protocol is not the same as Erlang's (needs to be adapted), and
+        supports just one message: {put_chars, Chars}.
 
-	* elisp/erl-service.el (erl-send-rpc): RPCs now go via
-	distel:rpc_entry(M,F,A), to setup a group_leader.
-	(erl-eval-expression): Added - evaluates an erlang expression.
+        * elisp/erl-service.el (erl-send-rpc): RPCs now go via
+        distel:rpc_entry(M,F,A), to setup a group_leader.
+        (erl-eval-expression): Added - evaluates an erlang expression.
 
-	* elisp/derl.el: Giving a specific error when 'dec32' isn't
-	installed in PATH.
+        * elisp/derl.el: Giving a specific error when 'dec32' isn't
+        installed in PATH.
 
 2002-04-24  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl-service.el (fprof): Added a front-end to the 'fprof'
-	profiler. Very minimal so far.
+        * elisp/erl-service.el (fprof): Added a front-end to the 'fprof'
+        profiler. Very minimal so far.
 
 2002-04-22  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/erl.el (erl-run-process): Uncaught errors in processes
-	are now caught by the scheduler, which terminates the process and
-	then continues.
+        * elisp/erl.el (erl-run-process): Uncaught errors in processes
+        are now caught by the scheduler, which terminates the process and
+        then continues.
 
 2002-04-21  Luke Gorrie  <luke@bluetail.com>
 
-	*  elisp/*.el: XEmacs compatibility fixes.
+        *  elisp/*.el: XEmacs compatibility fixes.
 
 2002-04-20  Luke Gorrie  <luke@bluetail.com>
 
-	* elisp/*.el: Added 'receive' construct, and updated existing
-	programs to use it.
-
+        * elisp/*.el: Added 'receive' construct, and updated existing
+        programs to use it.

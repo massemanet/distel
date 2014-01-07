@@ -79,24 +79,24 @@ some time later, `erl-nodedown-hook' is run."
   (when (eq node erl-node-name)
     (error "Remote node has the same node name as Emacs: %S" node))
   (let* ((name (derl-node-name node))
-	 (host (derl-node-host node))
-	 (buffer (get-buffer-create (derl-buffer-name node)))
-	 ;; faking a closure with backtick. fun eh?
-	 ;; NB: (funcall '(lambda () 1))
-	 ;;       => 1
-	 ;;     (let ((n 1)) `(lambda () ,n))
-	 ;;       => (lambda () 1)
-	 (fail-cont `(lambda ()
-		       (kill-buffer ,buffer)
-		       (derl-nodedown ',node))))
+         (host (derl-node-host node))
+         (buffer (get-buffer-create (derl-buffer-name node)))
+         ;; faking a closure with backtick. fun eh?
+         ;; NB: (funcall '(lambda () 1))
+         ;;       => 1
+         ;;     (let ((n 1)) `(lambda () ,n))
+         ;;       => (lambda () 1)
+         (fail-cont `(lambda ()
+                       (kill-buffer ,buffer)
+                       (derl-nodedown ',node))))
     (epmd-port-please name host
-		      ;; success continuation
-		      `(lambda (port)
-			 (fsm-connect ,host port #'derl-state0 ',node
-				      nil
-				      ,fail-cont
-				      ,buffer))
-		      fail-cont)))
+                      ;; success continuation
+                      `(lambda (port)
+                         (fsm-connect ,host port #'derl-state0 ',node
+                                      nil
+                                      ,fail-cont
+                                      ,buffer))
+                      fail-cont)))
 
 (defun erl-dist-send (pid msg)
   "Send a message to a process on a remote node."
@@ -141,7 +141,7 @@ Use the distribution protocol's EXIT2 message."
   ;; Do nodedown when the buffer is killed in an unexpected way
   ;; (e.g. by user)
   (add-hook 'kill-buffer-hook
-	    (lambda () (when derl-alive (derl-nodedown derl-connection-node))))
+            (lambda () (when derl-alive (derl-nodedown derl-connection-node))))
   (derl-send-name)
   (fsm-change-state #'derl-recv-status))
 
@@ -151,22 +151,22 @@ Use the distribution protocol's EXIT2 message."
   (let ((msg (derl-take-msg)))
     (when msg
       (if (string= msg "sok")
-	  (fsm-change-state #'derl-recv-challenge t)
-	(fsm-fail)))))
+          (fsm-change-state #'derl-recv-challenge t)
+        (fsm-fail)))))
 
 (defun derl-recv-challenge (event data)
   "Receive challenge message, send response and our challenge."
   (check-event event 'data)
   (when (derl-have-msg)
     (goto-char (point-min))
-    (erlext-read2)			; skip length
+    (erlext-read2)                      ; skip length
     (let ((tag (erlext-read1)))
-      (unless (equal 110 tag)	; tag-check (n)
-	(fsm-fail (format nil "wrong-tag: %S" tag))))
+      (unless (equal 110 tag)   ; tag-check (n)
+        (fsm-fail (format nil "wrong-tag: %S" tag))))
     (let ((version (erlext-read2))
-	  (flags   (erlext-read4))
-	  (challenge (erlext-readn 4))
-	  (rem-node (buffer-substring (point) (derl-msg-end))))
+          (flags   (erlext-read4))
+          (challenge (erlext-readn 4))
+          (rem-node (buffer-substring (point) (derl-msg-end))))
       (derl-eat-msg)
       (derl-send-challenge-reply challenge)
       (fsm-change-state #'derl-recv-challenge-ack))))
@@ -179,20 +179,20 @@ Use the distribution protocol's EXIT2 message."
 (defun derl-recv-challenge-ack (event data)
   "Receive and check challenge ack. If it's OK then the handshake is
 complete and we become live."
-  (if (equal event 'closed) 
-      (message "Distel thinks the cookie is %s. Erlang seems to disagree." 
-	       (erl-cookie)))
+  (if (equal event 'closed)
+      (message "Distel thinks the cookie is %s. Erlang seems to disagree."
+               (erl-cookie)))
   (check-event event 'data)
   (when (derl-have-msg)
     (goto-char (point-min))
-    (erlext-read2)			; skip length
-    (unless (equal 97 (erlext-read1))	; tag-check (a)
+    (erlext-read2)                      ; skip length
+    (unless (equal 97 (erlext-read1))   ; tag-check (a)
       (fsm-fail 'wrong-tag))
     (let ((digest (buffer-substring (point) (+ (point) 16))))
       (derl-eat-msg)
       (if (equal (derl-string-make-unibyte (derl-gen-digest (string 0 0 0 42))) digest)
-	  (derl-go-live)
-	(fsm-fail)))))
+          (derl-go-live)
+        (fsm-fail)))))
 
 ;; Handshake support code
 
@@ -200,17 +200,17 @@ complete and we become live."
   (erase-buffer)
   (derl-send-msg
    (fsm-build-message
-     (fsm-encode1 110)			; tag (n)
-     (fsm-encode2 5)			; version
+     (fsm-encode1 110)                  ; tag (n)
+     (fsm-encode2 5)                    ; version
      (fsm-encode4 (logior derl-flag-extended-references
                           derl-flag-extended-pids-ports))
      (fsm-insert (symbol-name erl-node-name)))))
 
 (defun derl-send-challenge-reply (challenge)
   (derl-send-msg (fsm-build-message
-		   (fsm-encode1 114)	; 114 = ?r
-		   (fsm-encode4 42)
-		   (fsm-insert (derl-gen-digest challenge)))))
+                   (fsm-encode1 114)    ; 114 = ?r
+                   (fsm-encode4 42)
+                   (fsm-insert (derl-gen-digest challenge)))))
 
 (defun derl-gen-digest (challenge)
   "Generate a message digest as required for the specification's
@@ -222,10 +222,10 @@ gen_digest() function:
 (defun erl-cookie ()
   (or derl-cookie
       (with-temp-buffer
-	(insert-file-contents (concat (getenv "HOME") "/.erlang.cookie"))
-	(while (search-forward "\n" nil t)
-	  (replace-match ""))
-	(buffer-string))))
+        (insert-file-contents (concat (getenv "HOME") "/.erlang.cookie"))
+        (while (search-forward "\n" nil t)
+          (replace-match ""))
+        (buffer-string))))
 
 ;; ------------------------------------------------------------
 ;; Alive/connected state
@@ -243,59 +243,59 @@ gen_digest() function:
   (check-event event 'data 'closed)
   (if (eq event 'closed)
       (progn (derl-nodedown derl-connection-node)
-	     (setq derl-alive nil)
-	     (fsm-fail))
+             (setq derl-alive nil)
+             (fsm-fail))
     (while (derl-handle-tick))
     (when (derl-have-msg)
       (let ((msg (derl-take-msg))
-	    ctl
-	    req)
-	;; Decode the control message, and the request if it's present
-	(let (default-enable-multibyte-characters)
-	  (with-temp-buffer 
-	    (insert msg)
-	    (goto-char (point-min))
-	    (assert (= (erlext-read1) 112)) ; type = pass through..
-	    (setq ctl (erlext-read-whole-obj))
-	    (when (< (point) (point-max))
-	      (setq req (erlext-read-whole-obj)))))
-	(ecase (tuple-elt ctl 1)
-	  ((1) ;; link: [1 FROM TO]
-	   (let ((from (tuple-elt ctl 2))
-		 (to   (tuple-elt ctl 3)))
-	     (derl-trace-input "LINK: %S %S" from to)
-	     (add-to-list 'derl-remote-links (cons to from))
-	     (erl-add-link to from)))
-	  ((2) ;; send: [2 COOKIE TO-PID]
-	   (let ((to-pid (tuple-elt ctl 3)))
-	     (derl-trace-input "SEND: %S %S" to-pid req)
-	     (erl-send to-pid req)))
-	  ((3) ;; exit: [FROM TO REASON]
-	   (let ((from (tuple-elt ctl 1))
-		 (to   (tuple-elt ctl 2))
-		 (rsn  (tuple-elt ctl 3)))
-	     (derl-trace-input "EXIT: %S %S %S" from to rsn)
-	     (erl-send-exit from to rsn)))
-	  ((4) ;; unlink: [4 FROM TO]
-	   (let ((from (tuple-elt ctl 2))
-		 (to   (tuple-elt ctl 3)))
-	     (derl-trace-input "UNLINK: %S %S %S" from to)
-	     (erl-remove-link to from)))
-	  ((6) ;; reg_send: [6 FROM COOKIE NAME]
-	   (let ((from (tuple-elt ctl 2))
-		 (name (tuple-elt ctl 4)))
-	     (derl-trace-input "REG_SEND: %S %S %S" from name req)
-	     (condition-case data
-		 (erl-send name req)
-	       (erl-exit-signal
-		;; Ignore the error if the name isn't registered -
-		;; that's what the real nodes do. Seems reasonable,
-		;; since the send is async, and who knows what the
-		;; sender is up to now.
-		t))))))
+            ctl
+            req)
+        ;; Decode the control message, and the request if it's present
+        (let (default-enable-multibyte-characters)
+          (with-temp-buffer
+            (insert msg)
+            (goto-char (point-min))
+            (assert (= (erlext-read1) 112)) ; type = pass through..
+            (setq ctl (erlext-read-whole-obj))
+            (when (< (point) (point-max))
+              (setq req (erlext-read-whole-obj)))))
+        (ecase (tuple-elt ctl 1)
+          ((1) ;; link: [1 FROM TO]
+           (let ((from (tuple-elt ctl 2))
+                 (to   (tuple-elt ctl 3)))
+             (derl-trace-input "LINK: %S %S" from to)
+             (add-to-list 'derl-remote-links (cons to from))
+             (erl-add-link to from)))
+          ((2) ;; send: [2 COOKIE TO-PID]
+           (let ((to-pid (tuple-elt ctl 3)))
+             (derl-trace-input "SEND: %S %S" to-pid req)
+             (erl-send to-pid req)))
+          ((3) ;; exit: [FROM TO REASON]
+           (let ((from (tuple-elt ctl 1))
+                 (to   (tuple-elt ctl 2))
+                 (rsn  (tuple-elt ctl 3)))
+             (derl-trace-input "EXIT: %S %S %S" from to rsn)
+             (erl-send-exit from to rsn)))
+          ((4) ;; unlink: [4 FROM TO]
+           (let ((from (tuple-elt ctl 2))
+                 (to   (tuple-elt ctl 3)))
+             (derl-trace-input "UNLINK: %S %S %S" from to)
+             (erl-remove-link to from)))
+          ((6) ;; reg_send: [6 FROM COOKIE NAME]
+           (let ((from (tuple-elt ctl 2))
+                 (name (tuple-elt ctl 4)))
+             (derl-trace-input "REG_SEND: %S %S %S" from name req)
+             (condition-case data
+                 (erl-send name req)
+               (erl-exit-signal
+                ;; Ignore the error if the name isn't registered -
+                ;; that's what the real nodes do. Seems reasonable,
+                ;; since the send is async, and who knows what the
+                ;; sender is up to now.
+                t))))))
       ;; Recursively handle other messages
       (fsm-event 'data 'continue))))
-  
+
 (defun derl-handle-tick ()
   (when (derl-have-tick)
     (derl-eat-msg)
@@ -314,8 +314,8 @@ gen_digest() function:
 (defun derl-send-msg (string)
   "Send a message (with a length header)."
   (fsm-send-string (fsm-build-message
-		     (fsm-encode (length string) derl-hdrlen)
-		     (fsm-insert string))))
+                     (fsm-encode (length string) derl-hdrlen)
+                     (fsm-insert string))))
 
 (defun derl-take-msg ()
   "Read and return a message, removing it from the input buffer. If no
@@ -324,10 +324,10 @@ modified."
   (when (derl-have-msg)
     (goto-char (point-min))
     (let* ((length (erlext-read derl-hdrlen))
-	   (start  (point))
-	   (end    (+ start length)))
+           (start  (point))
+           (end    (+ start length)))
       (prog1 (buffer-substring start end)
-	(derl-eat-msg)))))
+        (derl-eat-msg)))))
 
 (defun derl-have-msg ()
   (goto-char (point-min))
@@ -354,11 +354,11 @@ initiated if necessary and the request is queued."
       (erl-connect node))
     (with-current-buffer derl-bufname
       (cond (derl-shutting-down
-	     nil)
-	    (derl-alive
-	     (derl-do-request request))
-	    (t
-	     (push request derl-request-queue))))))
+             nil)
+            (derl-alive
+             (derl-do-request request))
+            (t
+             (push request derl-request-queue))))))
 
 (defun derl-do-request (req)
   (apply (car req) (cdr req)))
@@ -390,8 +390,8 @@ initiated if necessary and the request is queued."
 
 (defun derl-send-request (control message &optional skip-message)
   (let* ((ctl (erlext-term-to-binary control))
-	 (msg (if skip-message "" (erlext-term-to-binary message)))
-	 (len (+ 1 (length ctl) (length msg))))
+         (msg (if skip-message "" (erlext-term-to-binary message)))
+         (len (+ 1 (length ctl) (length msg))))
     (fsm-send-string
      (fsm-build-message
        (fsm-encode4 len)
@@ -401,12 +401,12 @@ initiated if necessary and the request is queued."
 
 ;; Tracing
 
-(defface derl-trace-output-face 
+(defface derl-trace-output-face
   '((t (:inherit font-lock-string-face)))
   "Face for outgoing messages in the distributed erlang trace
 buffer.")
 
-(defface derl-trace-input-face 
+(defface derl-trace-input-face
   '((t (:inherit font-lock-comment-face)))
   "Face for incoming messages in the distributed erlang trace
 buffer.")
@@ -424,10 +424,10 @@ buffer.")
 (defun derl-trace (string)
   (if derl-use-trace-buffer
       (with-current-buffer (get-buffer-create
-			    (format "*trace %S*" derl-connection-node))
-	(goto-char (point-max))
-	(insert string)
-	(insert "\n"))))
+                            (format "*trace %S*" derl-connection-node))
+        (goto-char (point-max))
+        (insert string)
+        (insert "\n"))))
 
 ;; ------------------------------------------------------------
 ;; Utility
@@ -437,7 +437,7 @@ buffer.")
   (setq derl-shutting-down t)
   (dolist (link derl-remote-links)
     (let ((local  (car link))
-	  (remote (cdr link)))
+          (remote (cdr link)))
       (message "LOCAL: %S REMOTE %S" local remote)
       (erl-send-exit remote local 'noconnection)))
   (run-hook-with-args 'erl-nodedown-hook node))
@@ -451,8 +451,8 @@ buffer.")
     "Converts a 32-bit number (represented as a 4-byte string) into its
 decimal printed representation."
     (format "%.0f" (+ (+ (aref s 3) (* 256 (aref s 2)))
-		      (* (+ 0.0 (aref s 1) (* 256 (aref s 0)))
-			 65536)))))
+                      (* (+ 0.0 (aref s 1) (* 256 (aref s 0)))
+                         65536)))))
 
 ;; Try to establish whether we have enough precision in floating-point
 ;; The test is pretty lame, even if it succeeds we cannot be sure
@@ -473,17 +473,17 @@ as a string of octets."
   (if (null halves)
       (apply #'string (reverse acc))
     (derl-merge-halves (cddr halves)
-		       (cons (+ (ash (car halves) 4)
-				(cadr halves))
-			     acc))))
+                       (cons (+ (ash (car halves) 4)
+                                (cadr halves))
+                             acc))))
 
 (defun derl-hexchar-to-int (c)
   (cond ((and (<= ?0 c) (<= c ?9))
-	 (- c ?0))
-	((and (<= ?a c) (<= c ?f))
-	 (+ 10 (- c ?a)))
-	(t
-	 (error "Not hexchar" c))))
+         (- c ?0))
+        ((and (<= ?a c) (<= c ?f))
+         (+ 10 (- c ?a)))
+        (t
+         (error "Not hexchar" c))))
 
 (defun derl-node-p (node)
   "Check if `node' is a node name, e.g. \"foo@bar\". The @ character
@@ -516,11 +516,10 @@ is not allowed in the node or host name."
 
 (defun derl-go (port)
   (fsm-connect "localhost" port #'derl-state0
-	       nil
-	       (lambda (result)
-		 (message "RESULT: %S" result))
-	       (lambda ()
-		 (message "FAIL"))))
+               nil
+               (lambda (result)
+                 (message "RESULT: %S" result))
+               (lambda ()
+                 (message "FAIL"))))
 
 (provide 'derl)
-

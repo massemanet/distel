@@ -54,4 +54,3 @@ This procedure is like putting "127.0.0.1 <hostname>" into /etc/hosts
 on a UNIX machine. It's necessary so that Emacs can open sockets to
 the localhost via the hostname part of a nodename without talking to
 DNS.
-
