@@ -1044,7 +1044,7 @@ who_calls(Mm, Fm, Am) ->
 xform(M, F, A, L) ->
   {to_list(M),to_list(F),A,L}.
 
-rebuild_call_graph() ->
+rebuild_callgraph() ->
     xref_rebuild(xref_callgraph("")).
 %%-----------------------------------------------------------------
 %% Call graph mode:
