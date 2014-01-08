@@ -64,7 +64,7 @@ cache, give a prefix argument with C-u before using the command.
 \\[erl-reload-modules]  - Reload all Erlang modules that are out of date.
 \\[erl-find-module]     - Find a module.
 \\[erl-who-calls]       - Who calls function under point.
-\\[erl-rebuild-call-graph]      - Refresh erl-who-calls info.
+\\[erl-rebuild-callgraph]      - Refresh erl-who-calls info.
 
 \\[erl-process-list]    - List all Erlang processes (\"pman\").
 \\[edb-toggle-interpret]        - Toggle debug interpreting of the module.
@@ -140,7 +140,7 @@ about Emacs' online help, use \"\\[help-for-help]\".
     ("\C-c\C-dd" erl-fdoc-describe)
     ("\C-c\C-da" erl-fdoc-apropos)
     ("\C-c\C-dw" erl-who-calls)
-    ("\C-c\C-dW" erl-rebuild-call-graph)
+    ("\C-c\C-dW" erl-rebuild-callgraph)
     ("\C-c\C-dn" erl-choose-nodename)
     ("("         erl-openparen)
     ;; Possibly "controversial" shorter keys

@@ -1232,7 +1232,7 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
 
 ;;;; Cross-reference (i.e. xref))
 
-(defun erl-rebuild-call-graph (node)
+(defun erl-rebuild-callgraph (node)
   (interactive (list (erl-target-node)))
   (erl-rpc (lambda (result) (message "rebuilding: %s" result)) nil
            node 'distel 'rebuild_callgraph ()))
