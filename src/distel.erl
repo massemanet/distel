@@ -936,7 +936,7 @@ get_arglist_from_forms(Funs, Forms) ->
     map(fun({Fun, Arity}) -> src_args(Forms, to_atom(Fun), Arity) end, Funs).
 
 src_args(_, _, 0) -> [];
-src_args([{tree,function,_,{function,{tree,atom,_,Func}, Clauses}} = H | T],
+src_args([{tree,function,_,{func,{tree,atom,_,Func}, Clauses}} = H | T],
          Func, Arity) ->
     case erl_syntax_lib:analyze_function(H) of
         {_, Arity} ->
