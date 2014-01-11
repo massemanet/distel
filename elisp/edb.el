@@ -579,7 +579,7 @@ The *Variables* buffer is killed with the current buffer."
         (message msg)
         (&edb-attach-loop))
        (['show_variable value]
-        (save-excursion (display-message-or-view value "*Variable Value*"))
+        (save-excursion (erl-display-message-or-view value "*Variable Value*"))
         (&edb-attach-loop))
        (other
         (message "Other: %S" other)
