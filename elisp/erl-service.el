@@ -392,12 +392,12 @@ Available commands:
                            'distel 'process_info_item (list pid item))
              (erl-receive (item pid)
                  ((['rex ['ok string]]
-                   (display-message-or-view string "*pinfo item*"))
+                   (erl-display-message-or-view string "*pinfo item*"))
                   (other
                    (message "Error from erlang side of process_info:\n  %S"
                             other)))))))))
 
-(defun display-message-or-view (msg bufname &optional select)
+(defun erl-display-message-or-view (msg bufname &optional select)
   "Like `display-buffer-or-message', but with `view-buffer-other-window'.
 That is, if a buffer pops up it will be in view mode, and pressing q
 will get rid of it.
@@ -660,7 +660,7 @@ time it spent in subfunctions."
                   (list string))
     (erl-receive ()
         ((['rex ['ok string]]
-          (display-message-or-view string "*Expression Result*"))
+          (erl-display-message-or-view string "*Expression Result*"))
          (['rex ['error reason]]
           (message "Error: %S" reason))
          (other
@@ -1096,7 +1096,7 @@ variables."
   "Show MATCHES from fdoc. Each match is [MOD FUNC ARITY DOC]."
   (if (null matches)
       (message "No matches.")
-    (display-message-or-view
+    (erl-display-message-or-view
      (with-temp-buffer
        (dolist (match matches)
          (mlet [mod func arity doc] match

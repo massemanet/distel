@@ -139,8 +139,8 @@ call or an expression."
                     (insert "\n")
                     (goto-char my-point)
                     (push-mark (point) t)))
-              (display-message-or-view (format "Result: %s" value)
-                                       "*Evaluation Result*")))
+              (erl-display-message-or-view (format "Result: %s" value)
+                                           "*Evaluation Result*")))
 
            (['msg msg]
             (with-current-buffer buffer
