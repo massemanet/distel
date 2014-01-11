@@ -264,17 +264,6 @@ On an error, Result will be [badrpc Reason]."
   (erl-receive (k kargs)
       ((['rex reply] (apply k (cons reply kargs))))))
 
-(defun erpc (node m f a)
-  "Make an RPC to an erlang node."
-  (interactive (list (erl-target-node)
-                     (intern (read-string "Module: "))
-                     (intern (read-string "Function: "))
-                     (eval-minibuffer "Args: ")))
-  (erl-rpc (lambda (result) (message "RPC result: %S" result))
-           nil
-           node
-           m f a))
-
 (defun erl-ping (node)
   "Ping the NODE, uploading distel code as a side effect."
   (interactive (list (erl-target-node)))
@@ -348,19 +337,18 @@ When BURY is non-nil, buries the buffer instead of killing it."
   (interactive)
   (erl-quit-viewer t))
 
-(defvar process-list-mode-map nil
+(defvar erl-process-list-mode-map
+  (let ((m (make-sparse-keymap)))
+    (define-key m "u" 'erl-process-list)
+    (define-key m "g" 'erl-process-list)
+    (define-key m "q" 'erl-quit-viewer)
+    (define-key m "k" 'erl-pman-kill-process)
+    (define-key m "\r" 'erl-show-process-info)
+    (define-key m "i" 'erl-show-process-info-item)
+    (define-key m "b" 'erl-show-process-backtrace)
+    (define-key m "m" 'erl-show-process-messages)
+    m)
   "Keymap for Process List mode.")
-
-(when (null process-list-mode-map)
-  (setq process-list-mode-map (make-sparse-keymap))
-  (define-key process-list-mode-map [?u] 'erl-process-list)
-  (define-key process-list-mode-map [?q] 'erl-quit-viewer)
-  (define-key process-list-mode-map [?k] 'erl-pman-kill-process)
-  (define-key process-list-mode-map [return] 'erl-show-process-info)
-  (define-key process-list-mode-map [(control m)] 'erl-show-process-info)
-  (define-key process-list-mode-map [?i] 'erl-show-process-info-item)
-  (define-key process-list-mode-map [?b] 'erl-show-process-backtrace)
-  (define-key process-list-mode-map [?m] 'erl-show-process-messages))
 
 (defun process-list-mode ()
   "Major mode for viewing Erlang process listings.
@@ -376,11 +364,11 @@ Available commands:
 \\[erl-show-process-messages]   - Show the message queue for the process at point."
   (interactive)
   (kill-all-local-variables)
-  (use-local-map process-list-mode-map)
+  (use-local-map erl-process-list-mode-map)
   (setq mode-name "Process List")
   (setq major-mode 'process-list-mode)
   (setq erl-old-window-configuration (current-window-configuration))
-  (run-hooks 'process-list-mode-hook))
+  (run-hooks 'erl-process-list-mode-hook))
 
 (defun erl-show-process-info ()
   "Show information about process at point in a summary buffer."
@@ -457,7 +445,7 @@ truncate to fit on the screen."
     (if buf
         (select-window (display-buffer buf))
       (erl-spawn
-        (process-view-mode)
+        (erl-process-view-mode)
         (setq erl-old-window-configuration (current-window-configuration))
         (setq erl-viewed-pid pid)
         (erl-send-rpc (erl-pid-node pid)
@@ -482,21 +470,19 @@ truncate to fit on the screen."
   (format "*pinfo %S on %S*"
           (erl-pid-id pid) (erl-pid-node pid)))
 
-(defvar process-view-mode-map nil
+(defvar erl-process-view-mode-map (let ((m (make-sparse-keymap)))
+                                    (define-key m "q" 'erl-quit-viewer)
+                                    m)
   "Keymap for Process View mode.")
 
-(unless process-view-mode-map
-  (setq process-view-mode-map (make-sparse-keymap))
-  (define-key process-view-mode-map [?q] 'erl-quit-viewer))
-
-(defun process-view-mode ()
+(defun erl-process-view-mode ()
   "Major mode for viewing an Erlang process."
   (interactive)
   (kill-all-local-variables)
-  (use-local-map process-view-mode-map)
+  (use-local-map erl-process-view-mode-map)
   (setq mode-name "Process View")
   (setq major-mode 'process-view)
-  (run-hooks 'process-view-mode-hook))
+  (run-hooks 'erl-process-view-mode-hook))
 
 (defun &erl-process-trace-loop ()
   (erl-receive ()
@@ -1089,14 +1075,10 @@ variables."
   "Face for function names in `fdoc' results."
   :group 'distel)
 
-(defun maybe-select-db-rebuild ()
-  (and current-prefix-arg
-       (equal (read-string "Rebuild DB (yes/no)? " "no") "yes")))
-
 (defun erl-fdoc-apropos (node regexp rebuild-db)
   (interactive (list (erl-target-node)
                      (read-string "Regexp: ")
-                     (maybe-select-db-rebuild)))
+                     (and current-prefix-arg (yes-or-no-p "Rebuild DB? "))))
   (unless (string= regexp "")
     (erl-spawn
       (erl-send-rpc node 'distel 'apropos (list regexp
@@ -1149,7 +1131,7 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
 
 (defun erl-fdoc-describe (node rebuild-db)
   (interactive (list (erl-target-node)
-                     (maybe-select-db-rebuild)))
+                     (and current-prefix-arg (yes-or-no-p "Rebuild DB? "))))
   (let* ((mfa (erl-read-call-mfa))
          (defaultstr (if (null mfa)
                          nil
