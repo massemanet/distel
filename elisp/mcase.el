@@ -1,11 +1,16 @@
-;; -*- comment-column: 32 -*-
-
 (eval-when-compile (require 'cl))
+(require 'erlext)                       ; for `erl-tag'.
+
+(eval-and-compile
+  (defun mcase-parse-clauses (clauses)
+    `(list ,@(mapcar #'(lambda (clause)
+                         `(list ',(car clause)
+                                (lambda () ,@(cdr clause))))
+                     clauses))))
 
 (put 'mcase 'lisp-indent-function 1)
-(put 'pmatch 'lisp-indent-function 2)
-(put 'mlet 'lisp-indent-function 2)
 
+;;;###autoload
 (defmacro mcase (object &rest clauses)
   "Pattern-matching case expression.
 The syntax is like the normal `case':
@@ -18,21 +23,15 @@ The body of the first matching pattern is executed, with pattern
 variables bound to their matching values. If no patterns match, an
 error is signaled.
 
-See `mlet' for a description of pattern syntax."
+See `mcase-let' for a description of pattern syntax."
   `(mcase* ,object ,(mcase-parse-clauses clauses)))
 
-(eval-and-compile
-(defun mcase-parse-clauses (clauses)
-  `(list ,@(mapcar #'(lambda (clause)
-                       `(list ',(car clause)
-                              (lambda () ,@(cdr clause))))
-                   clauses))))
+(define-obsolete-function-alias 'mlet 'mcase-let "2014-01-12")
 
-(defmacro pmatch (&rest args)
-  "Deprecated; see `mlet'."
-  `(mlet ,@args))
+(put 'mcase-let 'lisp-indent-function 2)
 
-(defmacro mlet (pattern object &rest body)
+;;;###autoload
+(defmacro mcase-let (pattern object &rest body)
   "Match PATTERN with OBJECT, and execute BODY with all bindings.
 The pattern syntax is:
 
@@ -72,20 +71,20 @@ Sequence: (pat1 ...), [pat1 ...]
     (let* ((clause  (car clauses))
            (pattern (car clause))
            (action  (cadr clause))
-           (result  (patmatch pattern object)))
+           (result  (mcase-match pattern object)))
       (if (eq result 'fail)
           (mcase-choose object (cdr clauses))
         `(lambda ()
-           (let ,(alist-to-letlist result)
+           (let ,(mcase-alist-to-letlist result)
              (funcall ,action)))))))
 
-(defun alist-to-letlist (alist)
+(defun mcase-alist-to-letlist (alist)
   "Convert an alist into `let' binding syntax, eg: ((A . B)) => ((A 'B))"
   (mapcar (lambda (cell)
             (list (car cell) (list 'quote (cdr cell))))
           alist))
 
-(defun pmatch-tail (seq)
+(defun mcase-tail (seq)
   (if (consp seq)
       (cdr seq)
     (let ((new (make-vector (1- (length seq)) nil)))
@@ -93,77 +92,76 @@ Sequence: (pat1 ...), [pat1 ...]
         (aset new i (aref seq (1+ i))))
       new)))
 
-(defun patmatch (pattern object &optional bindings)
+(defun mcase-match (pattern object &optional bindings)
   "Match OBJECT with PATTERN, and return an alist of bindings."
   (if (eq bindings 'fail)
       'fail
-    (cond ((pmatch-wildcard-p pattern)
+    (cond ((mcase-wildcard-p pattern)
            bindings)
-          ((pmatch-constant-p pattern) ; '(x)
-           (pmatch-constant pattern object bindings))
-          ((pmatch-bound-var-p pattern) ; ,foo
-           (pmatch-match-var pattern object bindings))
-          ((pmatch-unbound-var-p pattern) ; foo
-           (pmatch-bind-var pattern object bindings))
-          ((pmatch-trivial-p pattern) ; nil, t, any-symbol
+          ((mcase-constant-p pattern) ; '(x)
+           (mcase-constant pattern object bindings))
+          ((mcase-bound-var-p pattern) ; ,foo
+           (mcase-match-var pattern object bindings))
+          ((mcase-unbound-var-p pattern) ; foo
+           (mcase-bind-var pattern object bindings))
+          ((mcase-trivial-p pattern) ; nil, t, any-symbol
            (if (equal pattern object) bindings 'fail))
           ((consp pattern)
            (if (consp object)
-               (patmatch (cdr pattern) (cdr object)
-                         (patmatch (car pattern) (car object) bindings))
+               (mcase-match (cdr pattern) (cdr object)
+                            (mcase-match (car pattern) (car object) bindings))
              'fail))
           ((vectorp pattern)
            (if (and (vectorp object)
                     (= (length pattern) (length object)))
-               (patmatch (coerce pattern 'list) (coerce object 'list) bindings)
+               (mcase-match (coerce pattern 'list) (coerce object 'list) bindings)
              'fail))
           (t
            'fail))))
 
-(defun pmatch-wildcard-p (pat)
+(defun mcase-wildcard-p (pat)
   (eq pat '_))
 
-(defun pmatch-trivial-p (pat)
+(defun mcase-trivial-p (pat)
   "Test for patterns which can always be matched literally with `equal'."
   (or (numberp pat)
       (equal pat [])
       (equal pat nil)
       (equal pat t)))
 
-(defun pmatch-constant-p (pat)
+(defun mcase-constant-p (pat)
   "Test for (quoted) constant patterns.
 Example: (QUOTE QUOTE)"
   (and (consp pat)
        (= (length pat) 2)
        (eq (car pat) 'quote)))
 
-(defun pmatch-constant-value (pat)
-  "The value of a constant pattern.
-(QUOTE X) => X"
+(defun mcase-constant-value (pat)
+  "The value of a constant pattern.  (QUOTE X) => X"
   (cadr pat))
 
-(defun pmatch-constant (pat object bindings)
+(defun mcase-constant (pat object bindings)
   "Match OBJECT with the constant pattern PAT."
-  (if (equal (pmatch-constant-value pat) object)
+  (if (equal (mcase-constant-value pat) object)
       bindings
     'fail))
 
-(defun pmatch-unbound-var-p (obj)
+(defun mcase-unbound-var-p (obj)
   "Unbound variable is any symbol except nil or t."
   (and (symbolp obj)
        (not (eq obj nil))
        (not (eq obj t))))
 
-(defun pmatch-unbound-var-symbol (sym)
+(defun mcase-unbound-var-symbol (sym)
   sym)
 
-(defun pmatch-bind-var (pat object bindings)
+(defun mcase-bind-var (pat object bindings)
   "Add a binding of pattern variable VAR to OBJECT in BINDINGS."
   (if (eq object erl-tag)
       ;; `erl-tag' cannot bind to a variable; this is to prevent pids
       ;; or ports from matching tuple patterns.
       'fail
-    (let* ((var (pmatch-unbound-var-symbol pat))
+    (let* ((var (mcase-unbound-var-symbol pat))
            (binding (assoc var bindings)))
       (cond ((null binding)
              (acons var object bindings))
@@ -172,53 +170,51 @@ Example: (QUOTE QUOTE)"
             (t
              'fail)))))
 
-(eval-when-compile (defvar pattern)) ; dynamic
-
-(defun pmatch-match-var (var object bindings)
+(defun mcase-match-var (var object bindings)
   "Match the value of the Lisp variable VAR with OBJECT."
-  (if (equal (symbol-value (pmatch-bound-var-name pattern)) object)
+  (if (equal (symbol-value (mcase-bound-var-name var)) object)
       bindings
     'fail))
 
-(defun pmatch-bound-var-p (obj)
+(defun mcase-bound-var-p (obj)
   (and (symbolp obj)
        (eq (elt (symbol-name obj) 0) ?,)))
 
-(defun pmatch-bound-var-name (sym)
+(defun mcase-bound-var-name (sym)
   (intern (substring (symbol-name sym) 1)))
 
-(defun pmatch-alist-keysort (alist)
+(defun mcase-alist-keysort (alist)
   (sort alist (lambda (a b)
                 (string< (symbol-name (car a))
                          (symbol-name (car b))))))
 
 ;;; Test suite
 
-(defun pmatch-expect (pattern object expected)
+(defun mcase-expect (pattern object expected)
   "Assert that matching PATTERN with OBJECT yields EXPECTED.
 EXPECTED is either 'fail or a list of bindings (in any order)."
-  (let ((actual (patmatch pattern object)))
+  (let ((actual (mcase-match pattern object)))
     (if (or (and (eq actual 'fail)
                  (eq actual expected))
             (and (listp expected)
                  (listp actual)
-                 (equal (pmatch-alist-keysort actual)
-                        (pmatch-alist-keysort expected))))
+                 (equal (mcase-alist-keysort actual)
+                        (mcase-alist-keysort expected))))
         t
-      (error "Patmatch: %S %S => %S, expected %S"
+      (error "mcase: %S %S => %S, expected %S"
              pattern object actual expected))))
 
-(defun pmatch-test ()
+(defun mcase-test ()
   "Test the pattern matcher."
   (interactive)
-  (pmatch-expect t t ())
-  (pmatch-expect '(t nil 1) '(t nil 1) ())
+  (mcase-expect t t ())
+  (mcase-expect '(t nil 1) '(t nil 1) ())
   (let ((foo 'foo))
-    (pmatch-expect '(FOO ,foo 'foo [FOO]) '(foo foo foo [foo])
+    (mcase-expect '(FOO ,foo 'foo [FOO]) '(foo foo foo [foo])
                    '((FOO . foo))))
-  (pmatch-expect 1 2 'fail)
-  (pmatch-expect '(x x) '(1 2) 'fail)
-  (pmatch-expect '_ '(1 2) 'nil)
+  (mcase-expect 1 2 'fail)
+  (mcase-expect '(x x) '(1 2) 'fail)
+  (mcase-expect '_ '(1 2) 'nil)
   (assert (equal 'yes
                  (mcase '(call 42 lists length ((1 2 3)))
                    (t 'no)
@@ -228,4 +224,4 @@ EXPECTED is either 'fail or a list of bindings (in any order)."
                    (_ 'no))))
   (message "Smooth sailing"))
 
-(provide 'patmatch)
+(provide 'mcase)

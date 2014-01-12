@@ -775,8 +775,7 @@ default.)"
   "Find the source code for MODULE in a buffer, loading it if necessary.
 When FUNCTION is specified, the point is moved to its start."
   ;; Add us to the history list
-  (ring-insert-at-beginning erl-find-history-ring
-                            (copy-marker (point-marker)))
+  (ring-insert-at-beginning erl-find-history-ring (point-marker))
   (if (equal module (erlang-get-module))
       (when function
         (erl-search-function function arity))
@@ -1099,7 +1098,7 @@ variables."
     (erl-display-message-or-view
      (with-temp-buffer
        (dolist (match matches)
-         (mlet [mod func arity doc] match
+         (mcase-let [mod func arity doc] match
            (let ((entry (format "%s:%s/%s" mod func arity)))
              (put-text-property 0 (length entry)
                                 'face 'erl-fdoc-name-face
@@ -1240,7 +1239,7 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
             (let ((inhibit-read-only t))
               (erase-buffer)
               (dolist (call calls)
-                (mlet [m f a line] call
+                (mcase-let [m f a line] call
                   (erl-propertize-insert (list 'module m
                                                'function f
                                                'arity a

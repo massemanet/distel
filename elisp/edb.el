@@ -313,7 +313,7 @@ Returns NIL if this cannot be ensured."
                 (ewoc-create 'edb-monitor-insert-process
                              (edb-monitor-header)))
           (mapc (lambda (item)
-                  (mlet [pid mfa status info] item
+                  (mcase-let [pid mfa status info] item
                     (ewoc-enter-last edb-processes
                                      (make-edb-process pid
                                                        mfa

@@ -19,7 +19,7 @@
 (provide 'erl)                          ; avoid recursive require
 (require 'derl)
 (require 'erl-service)
-(require 'patmatch)
+(require 'mcase)
 
 ;; Process ID structure.
 ;;
@@ -299,7 +299,7 @@ The overall syntax for receive is:
        ...)
     . AFTER)
 
-The pattern syntax is the same as `pmatch'."
+The pattern syntax is the same as `mcase-let'."
   `(erl-start-receive (capture-bindings ,@vars)
                         ,(mcase-parse-clauses clauses)
                         (lambda () ,@after)))
