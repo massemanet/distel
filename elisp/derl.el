@@ -135,7 +135,7 @@ Use the distribution protocol's EXIT2 message."
 
 (defun derl-state0 (event node-name)
   "Start state: send-name and then transition."
-  (check-event event 'init)
+  (fsm-check-event event 'init)
   (setq derl-connection-node node-name)
   (setq fsm-put-data-in-buffer t)
   ;; Do nodedown when the buffer is killed in an unexpected way
@@ -147,7 +147,7 @@ Use the distribution protocol's EXIT2 message."
 
 (defun derl-recv-status (event data)
   "Wait for status message."
-  (check-event event 'data)
+  (fsm-check-event event 'data)
   (let ((msg (derl-take-msg)))
     (when msg
       (if (string= msg "sok")
@@ -156,7 +156,7 @@ Use the distribution protocol's EXIT2 message."
 
 (defun derl-recv-challenge (event data)
   "Receive challenge message, send response and our challenge."
-  (check-event event 'data)
+  (fsm-check-event event 'data)
   (when (derl-have-msg)
     (goto-char (point-min))
     (erlext-read2)                      ; skip length
@@ -182,7 +182,7 @@ complete and we become live."
   (if (equal event 'closed)
       (message "Distel thinks the cookie is %s. Erlang seems to disagree."
                (derl-cookie)))
-  (check-event event 'data)
+  (fsm-check-event event 'data)
   (when (derl-have-msg)
     (goto-char (point-min))
     (erlext-read2)                      ; skip length
@@ -240,7 +240,7 @@ gen_digest() function:
   (fsm-change-state #'derl-alive t))
 
 (defun derl-alive (event data)
-  (check-event event 'data 'closed)
+  (fsm-check-event event 'data 'closed)
   (if (eq event 'closed)
       (progn (derl-nodedown derl-connection-node)
              (setq derl-alive nil)

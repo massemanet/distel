@@ -7,7 +7,7 @@
 (defvar epmd-port 4369)
 
 (defun epmd-process (event arg)
-  (check-event event 'init)
+  (fsm-check-event event 'init)
   ;; Arg is the request
   (let* ((len (length arg))
          (len-msb (ash len -8))
@@ -20,7 +20,7 @@
     ((?a) (fsm-change-state #'epmd-recv-alive-resp))))
 
 (defun epmd-recv-names-resp (event data)
-  (check-event event 'data)
+  (fsm-check-event event 'data)
   (assert (>= (length data) 4))
   (fsm-terminate (substring arg 4)))
 
@@ -52,7 +52,7 @@
        (fsm-fail)))))
 
 (defun epmd-alive (event data)
-  (check-event event 'close)
+  (fsm-check-event event 'close)
   (fsm-fail))
 
 (defun epmd-show-nodes ()
