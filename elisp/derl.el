@@ -181,7 +181,7 @@ Use the distribution protocol's EXIT2 message."
 complete and we become live."
   (if (equal event 'closed)
       (message "Distel thinks the cookie is %s. Erlang seems to disagree."
-               (erl-cookie)))
+               (derl-cookie)))
   (check-event event 'data)
   (when (derl-have-msg)
     (goto-char (point-min))
@@ -217,9 +217,9 @@ complete and we become live."
 gen_digest() function:
   (md5 (concat challenge-as-ascii-decimal cookie))"
   (derl-hexstring-to-binstring
-   (md5 (concat (erl-cookie) (derl-int32-to-decimal challenge)))))
+   (md5 (concat (derl-cookie) (derl-int32-to-decimal challenge)))))
 
-(defun erl-cookie ()
+(defun derl-cookie ()
   (or derl-cookie
       (with-temp-buffer
         (insert-file-contents (concat (getenv "HOME") "/.erlang.cookie"))

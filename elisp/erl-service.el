@@ -292,7 +292,7 @@ when ready."
 
 (defun erl-show-process-list (reply node)
   (with-current-buffer (get-buffer-create (format "*plist %S*" node))
-    (process-list-mode)
+    (erl-process-list-mode)
     (setq buffer-read-only t)
     (let ((buffer-read-only nil))
       (erase-buffer)
@@ -350,7 +350,7 @@ When BURY is non-nil, buries the buffer instead of killing it."
     m)
   "Keymap for Process List mode.")
 
-(defun process-list-mode ()
+(defun erl-process-list-mode ()
   "Major mode for viewing Erlang process listings.
 
 Available commands:
@@ -365,8 +365,8 @@ Available commands:
   (interactive)
   (kill-all-local-variables)
   (use-local-map erl-process-list-mode-map)
-  (setq mode-name "Process List")
-  (setq major-mode 'process-list-mode)
+  (setq mode-name "Erlang-Processes")
+  (setq major-mode 'erl-process-list-mode)
   (setq erl-old-window-configuration (current-window-configuration))
   (run-hooks 'erl-process-list-mode-hook))
 
@@ -846,11 +846,11 @@ mfa at point; if HOW is nil, prompts for an mfa."
 (defun erl-search-function (function arity)
   "Goto the definition of FUNCTION/ARITY in the current buffer."
   (let ((origin (point))
-        (str (concat "\n" function "("))
+        (re (concat "^" (regexp-quote function) "\\s-*("))
         (searching t))
     (goto-char (point-min))
     (while searching
-      (cond ((search-forward str nil t)
+      (cond ((re-search-forward re nil t)
              (backward-char)
              (when (or (null arity)
                        (eq (erl-arity-at-point) arity))
@@ -860,7 +860,10 @@ mfa at point; if HOW is nil, prompts for an mfa."
              (setq searching nil)
              (goto-char origin)
              (if arity
-                 (message "Couldn't find function %S/%S" function arity)
+                 (progn
+                   (message "Function %s/%s not found; ignoring arity..."
+                            function arity)
+                   (erl-search-function function nil))
                (message "Couldn't find function %S" function)))))))
 
 (defun erl-read-symbol-or-nil (prompt)
