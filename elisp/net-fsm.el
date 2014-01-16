@@ -79,7 +79,7 @@ argument. CONT is a function which is called with the FSM's result if
 it terminates successfully. FAIL-CONT is called with no arguments if
 the FSM fails."
   (when buffer
-    (replace-process-buffer socket buffer))
+    (fsm-replace-process-buffer socket buffer))
   (with-current-buffer (process-buffer socket)
     (unless (featurep 'xemacs)
       (set-buffer-multibyte nil))
@@ -90,7 +90,7 @@ the FSM fails."
     (setq fsm-fail-cont fail-cont)
     (set-process-sentinel socket #'fsm-sentinel)
     (set-process-filter   socket #'fsm-filter)
-    (init-fsm init-arg)))
+    (fsm-init init-arg)))
 
 (defmacro with-fsm (fsm &rest body)
   "Execute BODY in the context (buffer) of FSM."
@@ -110,7 +110,7 @@ the FSM fails."
 
 (defun fsm-event (event &optional arg)
   "Process `event' in the current state."
-  (assert-fsm-invariants)
+  (fsm-assert-invariants)
   (fsm-debug "EVENT: %S - %S\n" event arg)
   (with-error-cleanup
       (fsm-fail (format "Error on event %S in state %S"
@@ -121,7 +121,7 @@ the FSM fails."
   "Terminate an FSM with success. The continuation function, if
 available, is called with RESULT."
   (fsm-debug "TERM : %S\n" result)
-  (assert-fsm-invariants)
+  (fsm-assert-invariants)
   (let ((cont fsm-cont))
     (fsm-shutdown)
     (when cont
@@ -153,9 +153,9 @@ available, is called with RESULT."
         (unless (featurep 'xemacs)
           (set-buffer-multibyte nil))
         (goto-char (point-max))
-        (insert (apply #'format (cons fmt (mapcar #'summarise args)))))))
+        (insert (apply #'format (cons fmt (mapcar #'fsm-summarise args)))))))
 
-(defun check-event (event &rest allowed)
+(defun fsm-check-event (event &rest allowed)
   "Ensure that an event is allowed. If EVENT is not one of ALLOWED, an
 error is signaled."
   (unless (memq event allowed)
@@ -216,7 +216,7 @@ buffer."
 ;; Internals
 ;; ----------------------------------------------------------------------
 
-(defun init-fsm (init-arg)
+(defun fsm-init (init-arg)
   "Deliver initial events: INIT, and possibly DATA if some has arrived."
   (let ((data (buffer-string)))
     (erase-buffer)
@@ -245,26 +245,26 @@ buffer."
     (set-process-sentinel fsm-process nil)
     (kill-buffer (process-buffer fsm-process))))
 
-(defun assert-fsm-invariants ()
+(defun fsm-assert-invariants ()
   (assert fsm-buffer-p)
   (assert (not (null fsm-state))))
 
-(defun summarise (x)
+(defun fsm-summarise (x)
   (if (stringp x)
       (with-temp-buffer
         (insert x)
         (goto-char (point-min))
         (while (search-forward "\n" nil t)
           (replace-match "\\n" nil t))
-        (elide-string (buffer-string) 30))
+        (fsm-elide-string (buffer-string) 30))
     x))
 
-(defun elide-string (s len)
+(defun fsm-elide-string (s len)
   (if (> (length s) len)
       (concat (substring s 0 (- len 3)) "...")
     s))
 
-(defun replace-process-buffer (process buffer)
+(defun fsm-replace-process-buffer (process buffer)
   (let ((oldbuffer (process-buffer process)))
     (set-process-buffer process buffer)
     (kill-buffer oldbuffer)))

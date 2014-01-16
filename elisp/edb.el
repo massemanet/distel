@@ -180,7 +180,13 @@ Use edb-restore-dbg-state to restore the state to the erlang node."
 (defvar edb-monitor-node nil
   "Node we are debug-monitoring.")
 
-(defvar edb-monitor-mode-map nil
+(defvar edb-monitor-mode-map
+  (let ((m (make-sparse-keymap)))
+    (define-key m "\r" 'edb-attach-command)
+    (define-key m "a" 'edb-attach-command)
+    (define-key m "q" 'erl-bury-viewer)
+    (define-key m "k" 'erl-quit-viewer)
+    m)
   "Keymap for Erlang debug monitor mode.")
 
 (defvar edb-interpreted-modules '()
@@ -188,14 +194,6 @@ Use edb-restore-dbg-state to restore the state to the erlang node."
 
 (defvar edb-saved-interpreted-modules '()
   "Set of (module filename) to interpret if edb-restore-dbg-state is called.")
-
-(unless edb-monitor-mode-map
-  (setq edb-monitor-mode-map (make-sparse-keymap))
-  (define-key edb-monitor-mode-map [return] 'edb-attach-command)
-  (define-key edb-monitor-mode-map [(control m)] 'edb-attach-command)
-  (define-key edb-monitor-mode-map [?a] 'edb-attach-command)
-  (define-key edb-monitor-mode-map [?q] 'erl-bury-viewer)
-  (define-key edb-monitor-mode-map [?k] 'erl-quit-viewer))
 
 (defvar edb-processes nil
   "EWOC of processes running interpreted code.")
@@ -217,7 +215,7 @@ Available commands:
   (setq buffer-read-only t)
   (setq erl-old-window-configuration (current-window-configuration))
   (use-local-map edb-monitor-mode-map)
-  (setq mode-name "EDB Monitor")
+  (setq mode-name "EDB-Monitor")
   (setq major-mode 'edb-monitor-mode))
 
 (defun edb-monitor-insert-process (p)
@@ -230,22 +228,20 @@ Available commands:
     (insert text)))
 
 (defun edb-monitor-format (pid mfa status info)
-  (format "%s %s %s %s"
-          (padcut pid 12)
-          (padcut mfa 21)
-          (padcut status 9)
-          (cut info 21)))
-
-(defun padcut (s w)
-  (let ((len (length s)))
-    (cond ((= len w) s)
-          ((< len w) (concat s (make-string (- w len) ? )))
-          ((> len w) (substring s 0 w)))))
-
-(defun cut (s w)
-  (if (> (length s) w)
-      (substring s 0 w)
-    s))
+  (labels ((cut (s w)
+                (if (> (length s) w)
+                    (substring s 0 w)
+                  s))
+           (padcut (s w)
+                   (let ((len (length s)))
+                     (cond ((= len w) s)
+                           ((< len w) (concat s (make-string (- w len) ? )))
+                           ((> len w) (substring s 0 w))))))
+    (format "%s %s %s %s"
+            (padcut pid 12)
+            (padcut mfa 21)
+            (padcut status 9)
+            (cut info 21))))
 
 (defun edb-monitor-header ()
   (edb-monitor-format "PID" "Initial Call" "Status" "Info"))
@@ -521,20 +517,19 @@ The *Variables* buffer is killed with the current buffer."
       (setq edb-pid meta-pid)
       (current-buffer))))
 
+(defvar edb-variables-mode-map
+  (let ((m (make-sparse-keymap)))
+    (define-key m "m" 'edb-show-variable)
+    (define-key m "\r" 'edb-show-variable)
+    m)
+  "Keymap for EDB variables viewing.")
+
 (defun edb-variables-mode ()
   (kill-all-local-variables)
   (setq major-mode 'edb-variables)
-  (setq mode-name "EDB Variables")
+  (setq mode-name "EDB-Variables")
   (setq buffer-read-only t)
   (use-local-map edb-variables-mode-map))
-
-(defvar edb-variables-mode-map nil
-  "Keymap for EDB variables viewing.")
-
-(when (null edb-variables-mode-map)
-  (setq edb-variables-mode-map (make-sparse-keymap))
-  (define-key edb-variables-mode-map [?m]          'edb-show-variable)
-  (define-key edb-variables-mode-map [(control m)] 'edb-show-variable))
 
 (defun edb-show-variable ()
   "Pop a window showing the full value of the variable at point."
@@ -691,22 +686,22 @@ Available commands:
    "Nil if the breakpoints in the buffer are stale (out of synch)."))
 
 ;; breakpoints
-(defun make-bp (mod line) (list mod line))
-(defun bp-mod (bp) (car bp))
-(defun bp-line (bp) (cadr bp))
+(defun edb-make-bp (mod line) (list mod line))
+(defun edb-bp-mod (bp) (car bp))
+(defun edb-bp-line (bp) (cadr bp))
 
 ;; buffer breakpoints
-(defun make-bbp (mod line ov) (list mod line ov))
-(defun bbp-mod (bbp) (car bbp))
-(defun bbp-line (bbp) (cadr bbp))
-(defun bbp-ov (bbp) (caddr bbp))
+(defun edb-make-bbp (mod line ov) (list mod line ov))
+(defun edb-bbp-mod (bbp) (car bbp))
+(defun edb-bbp-line (bbp) (cadr bbp))
+(defun edb-bbp-ov (bbp) (caddr bbp))
 
 (defun edb-init-breakpoints (breaks)
   (setq edb-breakpoints
         (mapcar (lambda (pos)
                   (let ((mod (aref pos 0))
                         (line (aref pos 1)))
-                    (make-bp mod line)))
+                    (edb-make-bp mod line)))
                 breaks))
   (mapc
    (lambda (buf)
@@ -718,13 +713,13 @@ Available commands:
 
 (defun edb-create-breakpoint (mod line)
   "Updates all internal structures in all buffers with new breakpoint."
-  (push (make-bp mod line) edb-breakpoints)
+  (push (edb-make-bp mod line) edb-breakpoints)
   (mapc
    (lambda (buf)
      (with-current-buffer buf
        (if (and erlang-extended-mode
                 (eq (edb-source-file-module-name) mod))
-           (let ((bbp (make-bbp mod line (edb-make-breakpoint-overlay line))))
+           (let ((bbp (edb-make-bbp mod line (edb-make-breakpoint-overlay line))))
              (push bbp edb-buffer-breakpoints)))))
    (buffer-list)))
 
@@ -737,17 +732,17 @@ Available commands:
 (defun edb-delete-breakpoints (mod)
   "Updates all internal structures in all buffers."
   (edb-del-breakpoints
-   (lambda (bp) (eq (bp-mod bp) mod))
-   (lambda (bbp) (eq (bbp-mod bbp) mod))
+   (lambda (bp) (eq (edb-bp-mod bp) mod))
+   (lambda (bbp) (eq (edb-bbp-mod bbp) mod))
    mod))
 
 (defun edb-delete-breakpoint (mod line)
   "Updates all internal structures in all buffers."
   (edb-del-breakpoints
-   (lambda (bp) (and (eq (bp-mod bp) mod)
-                     (eq (bp-line bp) line)))
-   (lambda (bbp) (and (eq (bbp-mod bbp) mod)
-                      (eq (bbp-line bbp) line)))
+   (lambda (bp) (and (eq (edb-bp-mod bp) mod)
+                     (eq (edb-bp-line bp) line)))
+   (lambda (bbp) (and (eq (edb-bbp-mod bbp) mod)
+                      (eq (edb-bbp-line bbp) line)))
    mod))
 
 (defun edb-create-buffer-breakpoints (mod)
@@ -786,7 +781,7 @@ I.e. deletes all old breakpoints, and re-applies them at the current line."
               (let ((bbp (car new-bbp))
                     (new-line (cdr new-bbp)))
                 (erl-rpc id nil node 'distel 'break_delete
-                         (list (bbp-mod bbp) (bbp-line bbp)))
+                         (list (edb-bbp-mod bbp) (edb-bbp-line bbp)))
                 (erl-rpc id nil node 'distel 'break_add
                          (list module new-line))))
             (edb-new-bbps))
@@ -800,7 +795,7 @@ breakpoints are already marked as stale."
              (not edb-buffer-breakpoints-stale)
              edb-module-interpreted)
     (mapc (lambda (bbp)
-            (let ((ov (bbp-ov bbp)))
+            (let ((ov (edb-bbp-ov bbp)))
               (overlay-put ov 'face 'edb-breakpoint-stale-face)))
           edb-buffer-breakpoints)
     (setq edb-buffer-breakpoints-stale t)))
@@ -820,8 +815,8 @@ breakpoints are already marked as stale."
                    (push (list cur-mod new-lines) edb-saved-breakpoints)))))))
      (buffer-list))
     (mapc (lambda (bp)
-            (unless (member (bp-mod bp) modules)
-              (push (list (bp-mod bp) (list (bp-line bp)))
+            (unless (member (edb-bp-mod bp) modules)
+              (push (list (edb-bp-mod bp) (list (edb-bp-line bp)))
                     edb-saved-breakpoints)))
           edb-breakpoints)))
 
@@ -835,7 +830,7 @@ breakpoints are already marked as stale."
 
 (defun edb-new-bbps ()
   (mapcar (lambda (bbp)
-            (let* ((new-pos (overlay-start (bbp-ov bbp)))
+            (let* ((new-pos (overlay-start (edb-bbp-ov bbp)))
                    (new-line (+ (count-lines (point-min) new-pos) 1)))
               (cons bbp new-line)))
           edb-buffer-breakpoints))
@@ -843,11 +838,11 @@ breakpoints are already marked as stale."
 (defun edb-mk-bbps (mod)
   (edb-zf
    (lambda (bp)
-     (let ((bmod (bp-mod bp))
-           (line (bp-line bp)))
+     (let ((bmod (edb-bp-mod bp))
+           (line (edb-bp-line bp)))
        (if (eq bmod mod)
            (let ((ov (edb-make-breakpoint-overlay line)))
-             (make-bbp bmod line ov))
+             (edb-make-bbp bmod line ov))
          nil)))
    edb-breakpoints))
 
@@ -855,7 +850,7 @@ breakpoints are already marked as stale."
   (edb-zf
    (lambda (bbp)
      (cond ((funcall pred bbp)
-            (delete-overlay (bbp-ov bbp))
+            (delete-overlay (edb-bbp-ov bbp))
             nil)
            (t bbp)))
    list))
