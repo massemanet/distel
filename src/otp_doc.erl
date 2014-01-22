@@ -311,7 +311,7 @@ fold_file_lines(FD,Fun,Acc) ->
 trim_nl(Str) -> lists:reverse(tl(lists:reverse(Str))).
 
 %% --------------------------------------------------------------------------
-%% Schönfinkelisation
+%% SchÃ¶nfinkelisation
 curry(F,Arg) ->
   case erlang:fun_info(F,arity) of
     %% {_,1} -> fun() -> F(Arg) end;
