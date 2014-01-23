@@ -1,0 +1,27 @@
+ECS -- Erlang Compile Server for Distel
+------------------------------------------------------------
+
+ECS shows a colored overlay with erlang errors and warnings without
+compiling the module that you are working on. It will check for
+compiling errors and warnings, xref and dialyzer warnings and
+execute eunit tests. There is also support for external warnings
+setting the list `erl-ecs-user-specified-errors'.
+
+To execute ECS, run `erl-ecs-evaluate' (C-c C-d q). This is also
+done when saving the file (`erl-ecs-check-on-save'). As default it
+will check compilation errors/warnings, xref and dialyzer warnings and
+eunit tests (`erl-ecs-backends').
+
+You can skip to the next error using `erl-ecs-next-error' (C-c C-n)
+or previous error by `erl-ecs-prev-error' (C-c C-p).
+
+If the variable `erl-ecs-compile-if-ok' is non-nil it will compile
+the module if there is no compilation errors/warnings.
+
+To set compile options use the `erl-ecs-compile-options' variable.
+
+There is different colors/faces and meanings:
+Red    - `erl-ecs-error-line'          - compilation errors
+Blue   - `erl-ecs-warning-line'        - compilation warnings
+Green  - `erl-ecs-lesser-line'         - xref/dialyzer/eunit warnings
+Yellow - `erl-ecs-user-specified-line' - external or user specified errors
