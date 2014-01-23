@@ -69,15 +69,20 @@ gl_proxy(GL) ->
         {io_request, From, ReplyAs, {put_chars, C}} ->
             GL ! {put_chars, C},
             From ! {io_reply, ReplyAs, ok};
+        {io_request, From, ReplyAs, {put_chars, unicode, C}} ->
+            GL ! {put_chars, C},
+            From ! {io_reply, ReplyAs, ok};
         {io_request, From, ReplyAs, {put_chars, M, F, A}} ->
             GL ! {put_chars, flatten(apply(M, F, A))},
             From ! {io_reply, ReplyAs, ok};
-        {io_request, From, ReplyAs, {put_chars,unicode,M,F,A}} ->
+        {io_request, From, ReplyAs, {put_chars, unicode,M,F,A}} ->
             GL ! {put_chars, flatten(apply(M, F, A))},
             From ! {io_reply, ReplyAs, ok};
         {io_request, From, ReplyAs, {get_until, _, _, _}} ->
             %% Input not supported, yet
-            From ! {io_reply, ReplyAs, eof}
+            From ! {io_reply, ReplyAs, eof};
+        Unknown ->
+            GL ! {put_chars, to_bin(io_lib:format("GL DEBUG: ~p~n", [Unknown]))}
     end,
     gl_proxy(GL).
 
