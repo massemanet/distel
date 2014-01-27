@@ -331,19 +331,19 @@ The pattern syntax is the same as `mcase-let'."
 
 (defun erl-register (name &optional process)
   "Register PROCESS with NAME."
-  (if (get-buffer (regname-to-bufname name))
+  (if (get-buffer (erl-regname-to-bufname name))
       (erl-exit (tuple 'badarg (tuple 'already-registered name)))
     (with-erl-process (or process erl-self)
-      (rename-buffer (regname-to-bufname name)))))
+      (rename-buffer (erl-regname-to-bufname name)))))
 
 (defun erl-whereis (name)
   "Get the PID of the process registered with NAME, or nil if the name
 is unregistered."
-  (let ((buf (get-buffer (regname-to-bufname name))))
+  (let ((buf (get-buffer (erl-regname-to-bufname name))))
     (if buf
         (with-current-buffer buf erl-self))))
 
-(defun regname-to-bufname (name)
+(defun erl-regname-to-bufname (name)
   (format "*reg %S*" name))
 
 (defalias 'erl-term-to-binary #'erlext-term-to-binary)
