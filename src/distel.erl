@@ -7,32 +7,43 @@
 %%% Created : 18 Mar 2002 by Luke Gorrie <luke@bluetail.com>
 %%%-------------------------------------------------------------------
 -module(distel).
-
 -author('luke@bluetail.com').
+
+%% API
+-export([rpc_entry/3, reload_modules/0, reload_module/2,
+         eval_expression/1, find_source/1]).
+-export([process_list/0, process_info_item/2, process_summary/1,
+         process_summary_and_trace/2]).
+-export([fprof/1, fprof/3]).
+-export([debug_toggle/2, debug_add/1, break_toggle/2, break_delete/2,
+         break_add/2, break_restore/1, debug_subscribe/1, debug_attach/2]).
+-export([modules/1, functions/2, xref_modules/1, xref_functions/2,
+         rebuild_completions/0]).
+-export([free_vars/1]).
+-export([apropos/2, describe/4, get_arglists/2]).
+-export([xref_callgraph/1, who_calls/3, rebuild_callgraph/0]).
 
 -include_lib("kernel/include/file.hrl").
 
--import(lists, [any/2
-                , append/1
-                , duplicate/2
-                , filter/2
-                , flatten/1
-                , foldl/3
-                , foreach/2
-                , keysearch/3
-                , map/2
-                , member/2
-                , prefix/2
-                , reverse/1
-                , sort/1
-                , usort/1
-               ]).
+-import(lists, [any/2,
+                append/1,
+                duplicate/2,
+                filter/2,
+                flatten/1,
+                foldl/3,
+                foreach/2,
+                keysearch/3,
+                map/2,
+                member/2,
+                prefix/2,
+                reverse/1,
+                sort/1,
+                usort/1]).
 
--import(filename, [dirname/1
-                   , join/1
-                   , basename/2]).
+-import(filename, [dirname/1, join/1, basename/2]).
 
--compile(export_all).
+%% internal use
+-export([gl_proxy/1, tracer_init/2, debug_subscriber_init/2, attach_init/2]).
 
 fmt(F, A) -> to_bin(io_lib:fwrite(F,A)).
 
