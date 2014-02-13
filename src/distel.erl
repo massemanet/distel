@@ -43,7 +43,8 @@
 -import(filename, [dirname/1, join/1, basename/2]).
 
 %% internal use
--export([gl_proxy/1, tracer_init/2, debug_subscriber_init/2, attach_init/2]).
+-export([gl_proxy/1, tracer_init/2, debug_subscriber_init/2,
+         attach_init/2, attach_loop/1]).
 
 fmt(F, A) -> to_bin(io_lib:fwrite(F,A)).
 
