@@ -20,7 +20,7 @@
     (unless (equal (sort v #'<) '(1 2 3 4))
       (error "Error, v = %S" v))))
 
-(make-local-variable 'erl-test-thingo)
+(make-variable-buffer-local 'erl-test-thingo)
 
 (defun erl-exit-test ()
   "Check that exits propagate along links."

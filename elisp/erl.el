@@ -547,10 +547,8 @@ during the next `erl-schedule'."
   "Setup pid->buffer mapping state for the current process."
   (push (cons (erl-pid-id erl-self) (current-buffer))
         erl-process-buffer-alist)
-  (make-local-variable 'kill-buffer-hook)
-  (put 'kill-buffer-hook 'permanent-local t)
-  (add-hook 'kill-buffer-hook 'erl-unenroll-process)
-  (add-hook 'kill-buffer-hook 'erl-propagate-exit))
+  (add-hook 'kill-buffer-hook #'erl-unenroll-process nil t)
+  (add-hook 'kill-buffer-hook #'erl-propagate-exit nil t))
 
 (defun erl-remove-if (predicate list)
   "Return a copy of LIST with all items satisfying PREDICATE removed."

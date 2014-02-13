@@ -63,10 +63,8 @@ The interpreted status refers to the node currently being monitored by
 edb."))
 
 (defun edb-setup-source-buffer ()
-  (make-local-variable 'kill-buffer-hook)
-  (add-hook 'kill-buffer-hook 'edb-delete-buffer-breakpoints)
-  (make-local-variable 'after-change-functions)
-  (add-to-list 'after-change-functions 'edb-make-breakpoints-stale)
+  (add-hook 'kill-buffer-hook #'edb-delete-buffer-breakpoints nil t)
+  (add-hook 'after-change-functions #'edb-make-breakpoints-stale nil t)
   (edb-update-interpreted-status)
   (when edb-module-interpreted
     (edb-create-buffer-breakpoints (edb-module))))
@@ -104,7 +102,7 @@ edb."))
   "Toggle a breakpoint on the current line."
   (interactive (list (erl-target-node)
                      (edb-module)
-                     (edb-line-number)))
+                     (line-number-at-pos)))
   (unless (edb-module-interpreted-p module)
     (error "Module is not interpreted, can't set breakpoints."))
   (if edb-buffer-breakpoints-stale
@@ -133,14 +131,6 @@ edb."))
 
 (defun edb-module-interpreted-p (module)
   (assoc module edb-interpreted-modules))
-
-(defun edb-line-number ()
-  "Current line number."
-  ;; Taken from `count-lines' in gud.el
-  (save-restriction
-    (widen)
-    (+ (count-lines 1 (point))
-       (if (bolp) 1 0))))
 
 (defun edb-save-dbg-state (node)
   "Save debugger state (modules to interpret and breakpoints).
@@ -297,8 +287,7 @@ Returns NIL if this cannot be ensured."
     (setq edb-monitor-buffer (current-buffer))
     (rename-buffer (edb-monitor-buffer-name node))
     (edb-monitor-mode)
-    (make-local-variable 'kill-buffer-hook)
-    (add-hook 'kill-buffer-hook 'edb-monitor-cleanup)
+    (add-hook 'kill-buffer-hook #'edb-monitor-cleanup nil t)
     (erl-send-rpc node 'distel 'debug_subscribe (list erl-self))
     (erl-receive (node)
         ((['rex [interpreted breaks snapshot]]
@@ -499,9 +488,8 @@ The *Variables* buffer is killed with the current buffer."
   (split-window-vertically (edb-variables-window-height))
   (let ((vars-buf (edb-make-variables-buffer)))
     (setq edb-variables-buffer vars-buf)
-    (make-local-variable 'kill-buffer-hook)
     (add-hook 'kill-buffer-hook
-              (lambda () (kill-buffer edb-variables-buffer)))
+              (lambda () (kill-buffer edb-variables-buffer)) nil t)
     (other-window 1)
     (switch-to-buffer vars-buf)
     (other-window -1)))
