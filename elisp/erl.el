@@ -16,24 +16,31 @@
 ;; it terminates with 'normal' status.
 
 (eval-when-compile (require 'cl))
-(provide 'erl)                          ; avoid recursive require
-(require 'derl)
-(require 'erl-service)
 (require 'mcase)
+
+(autoload 'erl-dist-send "derl")
+(autoload 'erl-dist-reg-send "derl")
+(autoload 'erl-dist-exit "derl")
+
+(defgroup erl nil
+  "Erlang-style process runtime system."
+  ;; Would prefer 'erlang should erlang.el define it.
+  :group 'languages)
 
 ;; Process ID structure.
 ;;
 ;; Exactly matches the [ERL-TAG erl-pid NODE ID SERIAL CREATION] vector used
 ;; in the `erlext' mapping, so don't change it!
+(defvar erl-pid-counter) (defvar erl-node-name) ; defined below
 (defstruct (erl-pid
             (:type vector)
             :named
             (:initial-offset 1)         ; make room for erl-tag (TYPE)
             (:constructor nil)          ; no default constructor
             (:constructor %make-erl-local-pid (&optional (id (incf erl-pid-counter))
-                                                        (node erl-node-name)
-                                                        (serial 0)
-                                                        (creation 0))))
+                                                         (node erl-node-name)
+                                                         (serial 0)
+                                                         (creation 0))))
   node id serial creation)
 
 (defun make-erl-local-pid (&optional id)
@@ -47,9 +54,6 @@
 
 ;; Global book keeping state
 
-(defvar erl-node-name nil               ; initialised below
-  "Node name for Emacs.")
-
 (defun erl-determine-hostname ()
   "Figure out the short-names hostname."
   (let ((fqdn (system-name)))
@@ -59,9 +63,9 @@
           (match-string 0 fqdn)
         (error "erl: Can't determine hostname.")))))
 
-(when (null erl-node-name)
-  (setq erl-node-name
-        (intern (format "distel_%S@%s" (emacs-pid) (erl-determine-hostname)))))
+(defvar erl-node-name
+  (intern (format "distel_%S@%s" (emacs-pid) (erl-determine-hostname)))
+  "Node name for Emacs.")
 
 (defconst erl-null-pid (make-erl-local-pid 0)
   "\"Null process\", the /dev/null of erl processes.
@@ -110,16 +114,13 @@ command `erl-schedule' to continue.")
 ;; Process-local variables
 
 (eval-when-compile
-(defmacro defprocvar (symbol &optional initvalue docstring)
-  "Define SYMBOL as a buffer-local process variable."
-  `(prog1 (defvar ,symbol ,initvalue ,docstring)
-     (make-variable-buffer-local ',symbol)
-     ;; stop major modes' `kill-all-local-variables' from rubbing out
-     ;; the process state
-     (put ',symbol 'permanent-local t))))
-
-;; FIXME - what's the right incantation to have defprocvar fontified
-;; as a keyword?
+  (defmacro defprocvar (symbol &optional initvalue docstring)
+    "Define SYMBOL as a buffer-local process variable."
+    `(prog1 (defvar ,symbol ,initvalue ,docstring)
+       (make-variable-buffer-local ',symbol)
+       ;; stop major modes' `kill-all-local-variables' from rubbing
+       ;; out the process state.
+       (put ',symbol 'permanent-local t))))
 
 (defprocvar erl-self erl-null-pid
   "Current process' pid.
@@ -639,3 +640,6 @@ during the next `erl-schedule'."
         (erl-spawn
           (erl-register 'group-leader)
           (&erl-group-leader-loop))))
+
+(provide 'erl)
+;;; erl.el ends here

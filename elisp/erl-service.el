@@ -11,6 +11,7 @@
 (require 'erlang)
 (eval-when-compile (require 'cl))
 (require 'erl)
+(require 'derl)
 
 ;;;; Base framework
 

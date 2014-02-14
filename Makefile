@@ -19,7 +19,8 @@ ERL_SRC_DIR = ${datadir}/distel/src
 ERL_SRC := $(wildcard src/*.erl)
 ERL_OBJ := $(patsubst src/%.erl,ebin/%.beam,${ERL_SRC})
 
-ELISP_SRC := elisp/erlext.el elisp/mcase.el elisp/net-fsm.el elisp/epmd.el
+ELISP_SRC := elisp/erlext.el elisp/mcase.el elisp/net-fsm.el elisp/epmd.el \
+	elisp/erl.el elisp/derl.el
 ELISP_OBJ := $(patsubst %.el,%.elc,${ELISP_SRC})
 
 DOC_SRC  := doc/distel.texi

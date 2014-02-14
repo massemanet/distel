@@ -20,11 +20,13 @@
     ((?a) (fsm-change-state #'epmd-recv-alive-resp))))
 
 (defun epmd-recv-names-resp (event data)
+  (declare (special arg))
   (fsm-check-event event 'data)
   (assert (>= (length data) 4))
   (fsm-terminate (substring arg 4)))
 
 (defun epmd-recv-port-resp (event data)
+  (declare (special arg))
   (message "Event: %s" event)
   (message "data: %s" data)
   (message "arg: %s" arg)
