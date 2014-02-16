@@ -777,7 +777,7 @@ When FUNCTION is specified, the point is moved to its start."
   (ring-insert-at-beginning erl-find-history-ring (point-marker))
   (if (equal module (erlang-get-module))
       (when function
-        (erl-search-function function arity))
+        (erl-search-definition function arity))
     (let ((node (erl-target-node)))
       (erl-spawn
         (erl-send-rpc node 'distel 'find_source (list (intern module)))
@@ -785,7 +785,7 @@ When FUNCTION is specified, the point is moved to its start."
             ((['rex ['ok path]]
               (find-file path)
               (when function
-                (erl-search-function function arity)))
+                (erl-search-definition function arity)))
              (['rex ['error reason]]
               ;; Remove the history marker, since we didn't go anywhere
               (ring-remove erl-find-history-ring)
@@ -842,14 +842,15 @@ mfa at point; if HOW is nil, prompts for an mfa."
              (['rex [reaso reason]]
               (message "Error: %s %s" reaso reason))))))))
 
-(defun erl-search-function (function arity)
-  "Goto the definition of FUNCTION/ARITY in the current buffer."
+(defun erl-search-definition (name arity &optional type)
+  "Goto the definition of NAME/ARITY in the current buffer."
   (let ((origin (point))
-        (re (concat "^" (regexp-quote function) "\\s-*("))
+        (re (concat "^" (and type "-type\\s-*")
+                    (regexp-quote name) "\\s-*("))
         (searching t))
     (goto-char (point-min))
     (while searching
-      (cond ((re-search-forward re nil t)
+      (cond ((let ((case-fold-search nil)) (re-search-forward re nil t))
              (backward-char)
              (when (or (null arity)
                        (eq (erl-arity-at-point) arity))
@@ -858,12 +859,15 @@ mfa at point; if HOW is nil, prompts for an mfa."
             (t
              (setq searching nil)
              (goto-char origin)
-             (if arity
-                 (progn
-                   (message "Function %s/%s not found; ignoring arity..."
-                            function arity)
-                   (erl-search-function function nil))
-               (message "Couldn't find function %S" function)))))))
+             (cond
+              ((and arity (not type))
+               (message "Function %s/%s not found; ignoring arity..."
+                        name arity)
+               (erl-search-definition name nil))
+              ((not type)
+               (message "Searching type definition...")
+               (erl-search-definition name 0 t))
+              (t (message "Couldn't find function or type %S" name))))))))
 
 (defun erl-read-symbol-or-nil (prompt)
   "Read a symbol, or NIL on empty input."
