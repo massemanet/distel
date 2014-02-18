@@ -24,11 +24,9 @@ commands. Using C-u to bypasses the cache.")
   "The historical list of node names that have been selected.")
 
 (defun erl-target-node ()
-  "Return the name of the default target node for commands.
-Force node selection if no such node has been choosen yet, or when
-invoked with a prefix argument."
-  (or (and (not current-prefix-arg) erl-nodename-cache)
-      (erl-choose-nodename)))
+  "Get the name of the default target node for commands.
+Use \\[erl-choose-nodename] to set or change default node name."
+  (or erl-nodename-cache (erl-choose-nodename)))
 
 (defun erl-set-cookie ()
   "Prompt the user for the cookie."
@@ -779,7 +777,7 @@ When FUNCTION is specified, the point is moved to its start."
   (if (equal module (erlang-get-module))
       (when function
         (erl-search-function function arity))
-    (let ((node (or erl-nodename-cache (erl-target-node))))
+    (let ((node (erl-target-node)))
       (erl-spawn
         (erl-send-rpc node 'distel 'find_source (list (intern module)))
         (erl-receive (function arity)
@@ -823,7 +821,7 @@ mfa at point; if HOW is nil, prompts for an mfa."
               (erl-parse-mfa (read-string "Function reference: ") "-")
             (erl-mfa-at-point))
           (error "No call at point."))
-    (let ((node (or erl-nodename-cache (erl-target-node)))
+    (let ((node (erl-target-node))
           (arity (or ari -1))
           (module (if (equal mod "-") fun mod))
           (function (if (equal mod "-") nil fun)))
@@ -1270,7 +1268,7 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
   (interactive)
   (let ((line (get-text-property (line-beginning-position) 'line))
         (module (get-text-property (line-beginning-position) 'module))
-        (node (or erl-nodename-cache (erl-target-node))))
+        (node (erl-target-node)))
     (erl-spawn
       (erl-send-rpc node 'distel 'find_source (list (intern module)))
       (erl-receive (line)
