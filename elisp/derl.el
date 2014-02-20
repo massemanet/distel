@@ -10,15 +10,16 @@
 (require 'epmd)
 (require 'erlext)
 (require 'md5)
+(require 'erl)
 (eval-when-compile
   (require 'cl))
 
 (defvar erl-nodeup-hook nil
-  "Called with two args, NODE and FSM. NODE is a string of the form
-\"mynode@cockatoo\", FSM is the net-fsm process of the connection.")
+  "Called with two args, NODE and FSM. NODE is a symbol of the form
+mynode@cockatoo, FSM is the net-fsm process of the connection.")
 
 (defvar erl-nodedown-hook nil
-  "Called with one arg, NODE, a string of the form \"mynode@cockatoo\"")
+  "Called with one arg, NODE, a symbol of the form mynode@cockatoo")
 
 (defcustom derl-use-trace-buffer t
   "*Store erlang message communication in a trace buffer."
@@ -251,14 +252,14 @@ gen_digest() function:
             ctl
             req)
         ;; Decode the control message, and the request if it's present
-        (let (default-enable-multibyte-characters)
-          (with-temp-buffer
-            (insert msg)
-            (goto-char (point-min))
-            (assert (= (erlext-read1) 112)) ; type = pass through..
-            (setq ctl (erlext-read-whole-obj))
-            (when (< (point) (point-max))
-              (setq req (erlext-read-whole-obj)))))
+        (with-temp-buffer
+          (set-buffer-multibyte nil)
+          (insert msg)
+          (goto-char (point-min))
+          (assert (= (erlext-read1) 112)) ; type = pass through..
+          (setq ctl (erlext-read-whole-obj))
+          (when (< (point) (point-max))
+            (setq req (erlext-read-whole-obj))))
         (ecase (tuple-elt ctl 1)
           ((1) ;; link: [1 FROM TO]
            (let ((from (tuple-elt ctl 2))
@@ -401,15 +402,13 @@ initiated if necessary and the request is queued."
 
 ;; Tracing
 
-(defface derl-trace-output-face
-  '((t (:inherit font-lock-string-face)))
-  "Face for outgoing messages in the distributed erlang trace
-buffer.")
+(defface derl-trace-output-face '((t (:inherit font-lock-string-face)))
+  "Face for outgoing messages in the distributed erlang trace buffer."
+  :group 'erl)
 
-(defface derl-trace-input-face
-  '((t (:inherit font-lock-comment-face)))
-  "Face for incoming messages in the distributed erlang trace
-buffer.")
+(defface derl-trace-input-face '((t (:inherit font-lock-comment-face)))
+  "Face for incoming messages in the distributed erlang trace buffer."
+  :group 'erl)
 
 (defun derl-trace-output (fmt &rest args)
   (let ((msg (format ">> %s" (apply #'format (cons fmt args)))))
@@ -446,13 +445,12 @@ buffer.")
   ;; NB: only callable from the state machine
   (run-hook-with-args 'erl-nodeup-hook node fsm-process))
 
-(eval-and-compile
-  (defun derl-int32-to-decimal (s)
-    "Converts a 32-bit number (represented as a 4-byte string) into its
+(defun derl-int32-to-decimal (s)
+  "Converts a 32-bit number (represented as a 4-byte string) into its
 decimal printed representation."
-    (format "%.0f" (+ (+ (aref s 3) (* 256 (aref s 2)))
-                      (* (+ 0.0 (aref s 1) (* 256 (aref s 0)))
-                         65536)))))
+  (format "%.0f" (+ (+ (aref s 3) (* 256 (aref s 2)))
+                    (* (+ 0.0 (aref s 1) (* 256 (aref s 0)))
+                       65536))))
 
 ;; Try to establish whether we have enough precision in floating-point
 ;; The test is pretty lame, even if it succeeds we cannot be sure
@@ -483,7 +481,7 @@ as a string of octets."
         ((and (<= ?a c) (<= c ?f))
          (+ 10 (- c ?a)))
         (t
-         (error "Not hexchar" c))))
+         (error "Not hexchar: %c" c))))
 
 (defun derl-node-p (node)
   "Check if `node' is a node name, e.g. \"foo@bar\". The @ character
@@ -523,3 +521,4 @@ is not allowed in the node or host name."
                  (message "FAIL"))))
 
 (provide 'derl)
+;;; derl.el ends here

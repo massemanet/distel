@@ -168,8 +168,9 @@ error is signaled."
 (defmacro fsm-build-message (&rest body)
   "Execute BODY, and return the message that it creates via calls to
 fsm-{insert,encode}*."
-  `(let ((fsm-work-buffer (let ((default-enable-multibyte-characters nil))
-                             (generate-new-buffer " *fsm-msg*"))))
+  `(let ((fsm-work-buffer (with-current-buffer (generate-new-buffer " *fsm-msg*")
+                            (set-buffer-multibyte nil)
+                            (current-buffer))))
      (unwind-protect
          (progn ,@body
                 (with-current-buffer fsm-work-buffer (buffer-string)))
