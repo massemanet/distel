@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 function usage () {
     echo "$0 major|minor|patch"
@@ -11,7 +11,7 @@ else
     size=$1
 fi
 
-OVSN=`git tag | head -1`
+OVSN=`git tag | tail -1`
 MAJOR=`echo $OVSN | cut -f1 -d"."`
 MINOR=`echo $OVSN | cut -f2 -d"."`
 PATCH=`echo $OVSN | cut -f3 -d"."`
