@@ -1,4 +1,12 @@
-commit 88c81c58233f50075b3f5a7a5af286d0544e331c
+commit f02a4510191c4a93b867bfbe081de5df57177e28
+Author: mats cronqvist <masse@klarna.com>
+Date:   Tue Feb 25 20:17:40 2014 +0100
+
+    v4.0.5
+
+NEWS
+
+commit a8a7dff39e0bb4fa037b83cfec2a85901a1c6b6d
 Author: mats cronqvist <masse@klarna.com>
 Date:   Tue Feb 25 19:05:15 2014 +0100
 
