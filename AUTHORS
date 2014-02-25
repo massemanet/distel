@@ -1,11 +1,10 @@
-Authors and contributors:
-
-Luke Gorrie <luke@bluetail.com>
-Vladimir Sekissov <svg@surnet.ru> (dilber)
-David Wallin <david.wallin@ul.ie> (distel-ie)
-Darius Bacon <darius@accesscom.com> (design and doc advice)
-Mats Cronqvist <masse@cronqvi.st> (debugger patches, otp_doc)
-Martin Björklund <mbj@bluetail.com> (major debugger hacking)
-Bill Clementson  (this and that)
-Matthias Radestock (who-calls)
-Dimitris Dinodimos (emacs-23-unicode)
+ Mats Cronqvist <masse@cronqvi.st>
+ Benjamin Nortier <bjnortier@gmail.com>
+ Bill Clementson <billclem@gmail.com>
+ Jannik SchuÌˆrg <jannschu@gmail.com>
+ Leo Liu <sdl.web@gmail.com>
+ Luca Favatella <luca.favatella@erlang-solutions.com>
+ Lukasz Milewski <lmmilewski@gmail.com>
+ Luke Gorrie <luke@bup.co.nz>
+ Magnus Henoch <magnus.henoch@gmail.com>
+ Richard Carlsson <richardc@klarna.com>
