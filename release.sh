@@ -26,6 +26,8 @@ else
 fi
 
 echo $OVSN"->"$NVSN
+echo -e "Version $NVSN. "`date`"\n" | cat - NEWS > /tmp/$$ && mv /tmp/$$ NEWS
+git add NEWS
 git commit -m"v$NVSN"
 git log --name-only --no-merges | grep -Ev '^[ ]+$$|git-svn-id' > ChangeLog
 echo " amongst others:" > AUTHORS
