@@ -29,7 +29,7 @@ echo $OVSN"->"$NVSN
 git commit -m"v$NVSN"
 git log --name-only --no-merges | grep -Ev '^[ ]+$$|git-svn-id' > ChangeLog
 echo " amongst others:" > AUTHORS
-echo " mats cronqvist <masse@cronqvi.st>" >> AUTHORS
+echo " mats cronqvist (maintainer) <masse@cronqvi.st>" >> AUTHORS
 echo " Martin Bjorklund <mbj <at> tail-f.com>" >> AUTHORS
 echo " david wallin <david.wallin@ul.ie>" >> AUTHORS
 git log | grep Author | grep -Evi "vagrant|no author|ronqvist" | sort -u | cut -c8- >> AUTHORS

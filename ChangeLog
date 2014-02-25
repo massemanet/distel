@@ -1,9 +1,21 @@
-commit 7bdc2c576b77883fc65fc506d118891b1a71db27
+commit 88c81c58233f50075b3f5a7a5af286d0544e331c
+Author: mats cronqvist <masse@klarna.com>
+Date:   Tue Feb 25 19:05:15 2014 +0100
+
+    cosmetic
+
+AUTHORS
+ChangeLog
+release.sh
+
+commit b8fbbd47de335c6dc25f8c2d6a165b238d3aa9d8
 Author: mats cronqvist <masse@klarna.com>
 Date:   Tue Feb 25 19:00:47 2014 +0100
 
     fix AUTHORS generator
 
+AUTHORS
+ChangeLog
 release.sh
 
 commit 8815839b69044cee67f15c3c393b74537a36a323
