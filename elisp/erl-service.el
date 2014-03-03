@@ -770,6 +770,14 @@ default.)"
   (interactive)
   (erl-find-source (read-string "module: ")))
 
+(defun erl-flash-region (&optional beg end timeout)
+  "Temporarily highlight region between BEG and END for TIMEOUT seconds.
+BEG and END default to the beginning and end of current line."
+  (let ((o (make-overlay (or beg (line-beginning-position))
+                         (or end (line-end-position)))))
+    (overlay-put o 'face 'match)
+    (run-with-timer (or timeout 0.3) nil #'delete-overlay o)))
+
 (defun erl-find-source (module &optional function arity)
   "Find the source code for MODULE in a buffer, loading it if necessary.
 When FUNCTION is specified, the point is moved to its start."
@@ -777,7 +785,8 @@ When FUNCTION is specified, the point is moved to its start."
   (ring-insert-at-beginning erl-find-history-ring (point-marker))
   (if (equal module (erlang-get-module))
       (when function
-        (erl-search-definition function arity))
+        (and (erl-search-definition function arity)
+             (erl-flash-region)))
     (let ((node (erl-target-node)))
       (erl-spawn
         (erl-send-rpc node 'distel 'find_source (list (intern module)))
@@ -785,7 +794,8 @@ When FUNCTION is specified, the point is moved to its start."
             ((['rex ['ok path]]
               (find-file path)
               (when function
-                (erl-search-definition function arity)))
+                (and (erl-search-definition function arity)
+                     (erl-flash-region))))
              (['rex ['error reason]]
               ;; Remove the history marker, since we didn't go anywhere
               (ring-remove erl-find-history-ring)
@@ -843,31 +853,28 @@ mfa at point; if HOW is nil, prompts for an mfa."
               (message "Error: %s %s" reaso reason))))))))
 
 (defun erl-search-definition (name arity &optional type)
-  "Goto the definition of NAME/ARITY in the current buffer."
-  (let ((origin (point))
-        (re (concat "^" (and type "-type\\s-*")
-                    (regexp-quote name) "\\s-*("))
-        (searching t))
-    (goto-char (point-min))
-    (while searching
-      (cond ((let ((case-fold-search nil)) (re-search-forward re nil t))
-             (backward-char)
-             (when (or (null arity)
-                       (eq (erl-arity-at-point) arity))
-               (beginning-of-line)
-               (setq searching nil)))
-            (t
-             (setq searching nil)
-             (goto-char origin)
-             (cond
-              ((and arity (not type))
-               (message "Function %s/%s not found; ignoring arity..."
-                        name arity)
-               (erl-search-definition name nil))
-              ((not type)
-               (message "Searching type definition...")
-               (erl-search-definition name 0 t))
-              (t (message "Couldn't find function or type %S" name))))))))
+  "Goto the definition of NAME/ARITY in the current buffer.
+Value is non-nil if search is successful."
+  (let ((re (concat "^" (and type "-type\\s-*") (regexp-quote name) "\\s-*("))
+        found)
+    (save-excursion
+      (goto-char (point-min))
+      (while (and (not found)
+                  (let ((case-fold-search nil)) (re-search-forward re nil t)))
+        (backward-char)
+        (when (or (null arity) (eq (erl-arity-at-point) arity))
+          (setq found (line-beginning-position)))))
+    (cond
+     (found (goto-char found))
+     ((and arity (not type))
+      (message "Function %s/%s not found; ignoring arity..."
+               name arity)
+      (erl-search-definition name nil nil))
+     ((not type)
+      (message "Searching type definition...")
+      (erl-search-definition name 0 t))
+     (t (message "Couldn't find function or type %S" name)
+        nil))))
 
 (defun erl-read-symbol-or-nil (prompt)
   "Read a symbol, or NIL on empty input."
