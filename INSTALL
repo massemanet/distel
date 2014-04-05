@@ -2,7 +2,7 @@ Installation
 ------------
 
 * distel is an extension to erlang-mode, so erlang-mode must be
-  present. erlang-node is distributed with OTP, here;
+  present. erlang-mode is distributed with OTP, here;
 $OTP_PATH/lib/tools-*/emacs/erlang.el
 
   So you must have something like this in you .emacs;
