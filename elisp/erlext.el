@@ -10,7 +10,7 @@
 ;; term format.  For format details see erts/emulator/internal_doc/ in
 ;; the Erlang/OTP sources.
 ;;
-;; Supported mappings from/to erlext to elisp:
+;; Supported mappings from/to erlext to/from elisp:
 ;;   atom    -> symbol
 ;;   string  -> string
 ;;   integer -> integer
@@ -19,6 +19,7 @@
 ;;   tuple   -> (vector ...)
 ;;   pid     -> (vector ERL-TAG 'pid node id serial creation)
 ;;   binary  -> string
+;;   map     -> hashtable
 ;; Not mapped/supported yet:
 ;;   ref, port, bignum, function, ...
 ;;
@@ -57,7 +58,8 @@
     (bin        . 109)
     (smallBig   . 110)
     (largeBig   . 111)
-    (newRef     . 114)))
+    (newRef     . 114)
+    (map        . 116)))
 
 (defconst erlext-max-atom-length 255 "The maximum length of an erlang atom.")
 (defconst erlext-protocol-version 131)
@@ -139,6 +141,8 @@
                 (apply #'erlext-write-new-ref elts))
                ((erl-binary)
                 (erlext-write-binary (car elts)))))))
+        ((hash-table-p obj)
+         (erlext-write-map obj))
         ((integerp obj)
          (erlext-write-int obj))
         ((floatp obj)
@@ -268,6 +272,7 @@
   (assert (> arity 0))
   (erlext-write1 (erlext-get-code 'list))
   (erlext-write4 arity))
+
 (defun erlext-write-tuple (elts)
   (assert (listp elts))
   (let ((arity (length elts)))
@@ -299,6 +304,14 @@
   (erlext-write-obj node)
   (erlext-write1 creation)
   (erlext-writen id))
+
+(defun erlext-write-map (obj)
+  (erlext-write1 (erlext-get-code 'map))
+  (erlext-write4 (hash-table-count obj))
+  (maphash (lambda (k v)
+             (erlext-write-obj k)
+             (erlext-write-obj v))
+           obj))
 
 ;; ------------------------------------------------------------
 ;; Decoding
@@ -353,6 +366,7 @@
       ((newRef)     (erlext-read-newref))
       ((smallBig)   (erlext-read-small-bignum))
       ((largeBig)   (erlext-read-large-bignum))
+      ((map)        (erlext-read-map))
       (t
        (error "Unknown tag: %S" tag)))))
 
@@ -461,6 +475,12 @@
 (defun erlext-read-large-bignum ()
   (erlext-read (erlext-read4))
   'LARGE-BIGNUM)
+
+(defun erlext-read-map ()
+  (let ((table (make-hash-table :test #'equal)))
+    (loop repeat (erlext-read4)
+          do (puthash (erlext-read-obj) (erlext-read-obj) table))
+    table))
 
 ;; ------------------------------------------------------------
 ;; Helpers
