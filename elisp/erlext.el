@@ -14,6 +14,7 @@
 ;;   atom    -> symbol
 ;;   string  -> string
 ;;   integer -> integer
+;;   bignum  -> math-bignum
 ;;   float   -> float
 ;;   list    -> list
 ;;   tuple   -> (vector ...)
@@ -21,7 +22,7 @@
 ;;   binary  -> string
 ;;   map     -> hashtable
 ;; Not mapped/supported yet:
-;;   ref, port, bignum, function, ...
+;;   ref, port, function, ...
 ;;
 ;; ----------------------------------------------------------------------
 ;; Revision history:
@@ -41,12 +42,12 @@
 ;; type tags
 
 (defconst erlext-tag-alist
-  '((newFloat   . 70)
+  '((cached     . 67)
+    (newFloat   . 70)
     (smallInt   . 97)
     (int        . 98)
     (float      . 99)                   ;superseded by newFloat
     (atom       . 100)
-    (cached     . 67)
     (ref        . 101)                  ;superseded by newRef
     (port       . 102)
     (pid        . 103)
@@ -119,7 +120,11 @@
 
 (defun erlext-write-obj (obj)
   (cond ((listp obj)                    ; lists at top since (symbolp '()) => t
-         (erlext-write-list obj))
+         (if (and (memq (car obj) '(bigneg bigpos))
+                  (ignore-errors (every #'integerp (cdr obj))))
+             ;; math-bignum
+             (erlext-write-bignum obj)
+           (erlext-write-list obj)))
         ((stringp obj)
          (erlext-write-string obj))
         ((symbolp obj)
@@ -180,16 +185,71 @@
     (erlext-write2 (length string))
     (erlext-writen string)))
 
+;;; Test for erlext-write-int
+;; (cl-labels ((test (x expected)
+;;               (with-temp-buffer
+;;                 (set-buffer-multibyte nil)
+;;                 (erlext-write-int x)
+;;                 (goto-char (point-min))
+;;                 (equal (cl-loop repeat (length expected)
+;;                                 collect (prog1 (get-byte) (forward-char 1)))
+;;                        expected))))
+;;   (cl-mapcar #'test
+;;              (list -953877499181397206
+;;                    953877499181397206
+;;                    most-positive-fixnum ; 2305843009213693951
+;;                    most-negative-fixnum ; -2305843009213693952
+;;                    )
+;;              ;; Results
+;;              '((110 8 1 214 244 241 25 136 218 60 13)
+;;                (110 8 0 214 244 241 25 136 218 60 13)
+;;                (110 8 0 255 255 255 255 255 255 255 31)
+;;                (110 8 1 0 0 0 0 0 0 0 32))))
+;; => (t t t t)
 (defun erlext-write-int (n)
   (assert (integerp n))
   (cond ((= n (logand n 255))
          (erlext-write1 (erlext-get-code 'smallInt))
          (erlext-write1 n))
-        ;; elisp has small numbers so 32bit on the wire is as far as
-        ;; we need bother supporting
-        (t
+        ((or (< (log most-positive-fixnum 2) 32)
+             (= n (logand n #xffffffff)))
          (erlext-write1 (erlext-get-code 'int))
-         (erlext-write4 n))))
+         (erlext-write4 n))
+        (t
+         ;; Could use (erlext-write-bignum (math-bignum n)) but may
+         ;; fail for `most-negative-fixnum'.
+         ;; See http://debbugs.gnu.org/17556
+         ;;
+         ;; Let's not depend on calc.el unless necessary
+         ;;
+         (erlext-write1 (erlext-get-code 'smallBig))
+         ;; Note: (= (abs most-negative-fixnum) most-negative-fixnum)
+         (erlext-write1 (1+ (ceiling (log (abs (ash n -8)) 256))))
+         (erlext-write1 (if (< n 0) 1 0))
+         (while (not (zerop n))
+           (erlext-write1 (logand (abs n) 255))
+           (setq n (ash (abs n) -8))))))
+
+(autoload 'math-lessp   "calc-ext")
+(autoload 'math-idivmod "calc")
+(autoload 'math-abs     "calc-arith")
+(autoload 'math-zerop   "calc-misc")
+
+(defun erlext-write-bignum (bignum)
+  (let ((sign (if (math-lessp bignum 0) 1 0))
+        (bytes (loop for (x . mod) = (math-idivmod (math-abs bignum) 256)
+                     then (math-idivmod x 256)
+                     collect mod into result
+                     do (and (math-zerop x) (return result)))))
+    (cond
+     ((null (nthcdr 255 bytes))
+      (erlext-write1 (erlext-get-code 'smallBig))
+      (erlext-write1 (length bytes)))
+     (t
+      (erlext-write1 (erlext-get-code 'largeBig))
+      (erlext-write4 (length bytes))))
+    (erlext-write1 sign)
+    (mapc #'erlext-write1 bytes)))
 
 ;; Test erlext-encode-ieee-double
 ;;
@@ -229,10 +289,9 @@
              (fill result 0 :start 1 :end 12)
              (fill-mantissa result S))
             ;; Move factor 2 to S so that S >= 1.0
-            (t (loop with x = (+ (1- E) bias)
+            (t (loop for x = (+ (1- E) bias) then (ash x -1)
                      for i from 11 downto 1
-                     do (setf (aref result i) (prog1 (logand x 1)
-                                                (setq x (ash x -1)))))
+                     do (setf (aref result i) (logand x 1)))
                (fill-mantissa result (1- (* 2 (abs S))))))
       (bytes result))))
 
@@ -240,7 +299,7 @@
   (cond
    ((fboundp 'frexp)
     ;; Function `frexp' was introduced in emacs 24.1;
-    ;; Erlang R11B-4 and later is able decode this representation.
+    ;; Erlang R11B-4 and later is able to decode this representation.
     (erlext-write1 (erlext-get-code 'newFloat))
     (mapc #'erlext-write1 (erlext-encode-ieee-double n)))
    (t
@@ -465,16 +524,23 @@
          (id (erlext-readn (* 4 len))))
     (vector erl-tag 'erl-new-ref node creation id)))
 
-;; We don't actually support bignums. When we get one, we skip over it
-;; and return the symbol {SMALL|LARGE}-BIGNUM.
+(autoload 'math-mul "calc")
+(autoload 'math-add "calc")
+
+(defun erlext-read--bignum (n sign)
+  ;; Helper routine for `erlext-read-small-bignum' and
+  ;; `erlext-read-large-bignum'.
+  (loop with result = 0
+        repeat n
+        for b = 1 then (math-mul b 256)
+        do (setq result (math-add result (math-mul b (erlext-read1))))
+        finally (return (math-mul (if (zerop sign) 1 -1) result))))
 
 (defun erlext-read-small-bignum ()
-  (erlext-read (erlext-read1))
-  'SMALL-BIGNUM)
+  (erlext-read--bignum (erlext-read1) (erlext-read1)))
 
 (defun erlext-read-large-bignum ()
-  (erlext-read (erlext-read4))
-  'LARGE-BIGNUM)
+  (erlext-read--bignum (erlext-read4) (erlext-read1)))
 
 (defun erlext-read-map ()
   (let ((table (make-hash-table :test #'equal)))
