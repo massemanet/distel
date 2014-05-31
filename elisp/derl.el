@@ -366,11 +366,11 @@ initiated if necessary and the request is queued."
 
 (defun derl-send (pid msg)
   (derl-trace-output "SEND: %S %S" pid msg)
-  (derl-send-request (tuple 2 empty-symbol pid) msg))
+  (derl-send-request (tuple 2 erlext-empty-symbol pid) msg))
 
 (defun derl-reg-send (from to term)
   (derl-trace-output "REG_SEND: %S %S %S" from to term)
-  (derl-send-request (tuple 6 from empty-symbol to) term))
+  (derl-send-request (tuple 6 from erlext-empty-symbol to) term))
 
 (defun derl-link (from to)
   (derl-trace-output "LINK: %S %S" from to)
