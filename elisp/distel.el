@@ -4,8 +4,6 @@
 (require 'erlang)
 (require 'easy-mmode)
 
-(provide 'distel)
-
 ;; Customization
 
 (defgroup distel '()
@@ -281,3 +279,5 @@ Please see the documentation of `erlang-menu-base-items'.")
   (let ((pos (point)))
     (insert string)
     (indent-rigidly pos (point) level)))
+
+(provide 'distel)

@@ -16,10 +16,10 @@
 (eval-when-compile (require 'cl))
 (require 'erlang)
 (require 'erl)
+(require 'erl-service)
 
-(make-variable-buffer-local
- (defvar erl-ie-node nil
-   "Erlang node that the session is hosted on."))
+(defvar-local erl-ie-node nil
+  "Erlang node that the session is hosted on.")
 
 ;;
 ;; erl-ie-session

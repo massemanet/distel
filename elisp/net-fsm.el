@@ -1,42 +1,41 @@
 ; Network state machine engine
 
-(eval-when-compile (require 'cl))
+(eval-when-compile
+  (require 'cl)
+  (or (fboundp 'defvar-local)
+      (defmacro defvar-local (var val &optional docstring)
+        (declare (debug defvar) (doc-string 3))
+        (list 'progn (list 'defvar var val docstring)
+              (list 'make-variable-buffer-local (list 'quote var))))))
 
 (defcustom fsm-use-debug-buffer nil
   "*Store fsm debug messages in a buffer."
   :type 'boolean
   :group 'distel)
 
-(defvar fsm-buffer-p nil
+(defvar-local fsm-buffer-p nil
   "Set to t in buffers belonging to FSMs, for sanity-checking.")
-(defvar fsm-state nil
-  "Current state.")
-(defvar fsm-process nil
+(defvar-local fsm-state nil "Current state.")
+(defvar-local fsm-process nil
   "Socket associated with this FSM.")
-(defvar fsm-cont nil
+(defvar-local fsm-cont nil
   "Continuation function called with the result of the FSM, if it
-  terminates successfully (with fsm-terminate).")
-(defvar fsm-fail-cont nil
+terminates successfully (with fsm-terminate).")
+(defvar-local fsm-fail-cont nil
   "Continuation function called with the result of the FSM, if it
-  terminates in failure.")
-(defvar fsm-work-buffer nil
+terminates in failure.")
+(defvar-local fsm-work-buffer nil
   "Buffer used for creating messages, dynamically bound in
-  `fsm-build-message'")
-(defvar fsm-put-data-in-buffer nil
+`fsm-build-message'.")
+(defvar-local fsm-put-data-in-buffer nil
   "When set to `t', new data is appended to the FSM's buffer in
 addition to being passed as an argument.")
-(defvar fsm-cleanup-hook nil)
 
-(make-variable-buffer-local 'fsm-buffer-p)
-(make-variable-buffer-local 'fsm-state)
-(make-variable-buffer-local 'fsm-process)
-(make-variable-buffer-local 'fsm-cont)
-(make-variable-buffer-local 'fsm-fail-cont)
-(make-variable-buffer-local 'fsm-work-buffer)
-(make-variable-buffer-local 'fsm-put-data-in-buffer)
+(defvar fsm-cleanup-hook nil)           ; unused
 
-(defmacro with-error-cleanup (cleanup &rest body)
+(defmacro fsm-with-error-cleanup (cleanup &rest body)
   "Execute BODY, and if it hits an error run CLEANUP."
+  (declare (indent 1))
   (let ((success (make-symbol "success")))
     `(let (,success)
        (unwind-protect
@@ -44,18 +43,16 @@ addition to being passed as an argument.")
              (setq ,success t))
          (unless ,success ,cleanup)))))
 
-(put 'with-error-cleanup 'lisp-indent-function 1)
-
 ;; ----------------------------------------------------------------------
 ;; External API
 ;; ----------------------------------------------------------------------
 
 (defun fsm-open-socket (host port)
   (let ((buf (generate-new-buffer " *net-fsm*")))
-    (with-error-cleanup (kill-buffer buf)
+    (fsm-with-error-cleanup (kill-buffer buf)
       (let ((p (open-network-stream "netfsm" buf host port)))
         (set-process-coding-system p 'no-conversion 'no-conversion)
-        (if (fboundp 'set-process-filter-multibyte)
+        (when (fboundp 'set-process-filter-multibyte)
           (set-process-filter-multibyte p nil))
         p))))
 
@@ -67,7 +64,7 @@ INIT-ARG is passed to the state machine as the `init' event's
 argument. CONT is a function which is called with the FSM's result if
 it terminates successfully. FAIL-CONT is called with no arguments if
 the FSM fails."
-  (with-error-cleanup (funcall fail-cont)
+  (fsm-with-error-cleanup (funcall fail-cont)
     (let ((socket (fsm-open-socket host port)))
       (fsm-attach socket state0 init-arg cont fail-cont buffer))))
 
@@ -92,7 +89,7 @@ the FSM fails."
     (set-process-filter   socket #'fsm-filter)
     (fsm-init init-arg)))
 
-(defmacro with-fsm (fsm &rest body)
+(defmacro with-fsm (fsm &rest body)     ; unused
   "Execute BODY in the context (buffer) of FSM."
   `(with-current-buffer (process-buffer ,fsm)
      ,@body))
@@ -112,10 +109,10 @@ the FSM fails."
   "Process `event' in the current state."
   (fsm-assert-invariants)
   (fsm-debug "EVENT: %S - %S\n" event arg)
-  (with-error-cleanup
+  (fsm-with-error-cleanup
       (fsm-fail (format "Error on event %S in state %S"
                         event fsm-state))
-        (funcall fsm-state event arg)))
+    (funcall fsm-state event arg)))
 
 (defun fsm-terminate (&optional result)
   "Terminate an FSM with success. The continuation function, if
