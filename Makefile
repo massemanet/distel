@@ -26,13 +26,15 @@ ELISP_OBJ := $(patsubst %.el,%.elc,${ELISP_SRC})
 DOC_SRC  := doc/distel.texi
 INFO_OBJ := doc/distel.info
 PS_OBJ   := doc/distel.ps
+PDF_OBJ  := doc/distel.pdf doc/dbg.pdf
 
-OBJECTS := ${ERL_OBJ} ${ELISP_OBJ} ${C_OBJ} ${INFO_OBJ} ${PS_OBJ}
+OBJECTS := ${ERL_OBJ} ${ELISP_OBJ} ${C_OBJ} ${INFO_OBJ} ${PS_OBJ} ${PDF_OBJ}
 
 base: ebin ${ERL_OBJ} ${ELISP_OBJ} ${C_OBJ}
 info: ${INFO_OBJ}
 postscript: ${PS_OBJ}
-all: base info postscript
+pdf: ${PDF_OBJ}
+all: base info postscript pdf
 ebin:
 	mkdir ebin
 
@@ -60,12 +62,19 @@ doc/distel.ps: doc/distel.dvi
 doc/distel.dvi: ${DOC_SRC}
 	(cd doc; texi2dvi distel.texi)
 
+doc/dbg.pdf: doc/dbg.eps
+	(cd doc && epspdf dbg.eps)
+
+doc/distel.pdf: doc/distel.texi doc/dbg.pdf
+	(cd doc && texi2pdf distel.texi)
+
 ########################################
 
 clean:
 	-rm -f ${OBJECTS} 2>/dev/null
 
 distclean: clean
+	-(cd doc && rm -f *.aux *.cp *.fn *.ky *.log *.pg *.toc *.tp *.vr)
 	-rm -f *~ */*~ 2>/dev/null
 
 install: base
