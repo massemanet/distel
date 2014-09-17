@@ -63,7 +63,8 @@ Use \\[erl-choose-nodename] to set or change default node name."
       (error "No node name given"))
     (setq erl-nodename-cache name)
     (setq distel-modeline-node name-string)
-    (force-mode-line-update))
+    (force-mode-line-update)
+    (erl-ping name))
   erl-nodename-cache)
 
 ;;;;; Call MFA lookup
