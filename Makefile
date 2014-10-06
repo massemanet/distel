@@ -1,5 +1,5 @@
 PACKAGE := distel
-VERSION := 4.02
+VERSION := $(shell git describe --tags 2> /dev/null)
 
 prefix      = /usr/local
 exec_prefix = ${prefix}
@@ -40,6 +40,18 @@ erl: ${ERL_OBJ}
 
 ########################################
 ## Rules
+.PHONY: release release_patch release_minor release_major
+
+release: release_patch
+
+release_major:
+	./release.sh major
+
+release_minor:
+	./release.sh minor
+
+release_patch:
+	./release.sh patch
 
 ## Erlang
 ebin/%.beam: src/%.erl
