@@ -1,9 +1,72 @@
-commit 5afd2cab2c63a42e38478637fddd2e706270e600
+commit 6c5a112882bde8da9ddc25de7a80d229e1b69718
+Author: mats cronqvist <masse@klarna.com>
+Date:   Mon Oct 6 11:20:27 2014 +0200
+
+    v4.0.7
+
+NEWS
+
+commit 6ea7f874efccd0e2240ab750b94137f1cd7c87ca
+Author: mats cronqvist <masse@klarna.com>
+Date:   Mon Oct 6 11:17:27 2014 +0200
+
+    add 'release' targets in Makefile
+
+Makefile
+release.sh
+
+commit 9eeaa6bbdfe70fd79f55cb74df3fe5a94cc6da4f
+Author: Eric Liang <eric.l.2046@gmail.com>
+Date:   Fri Sep 12 15:42:56 2014 +0800
+
+    ping the node after choosing name to fix the lazy-connect strategy side effect like:
+    http://erlang.org/pipermail/erlang-questions/2009-September/046406.html
+
+elisp/erl-service.el
+
+commit d12a46b8f159321c58b89b10049f70bcf74c046d
+Author: Leo Liu <sdl.web@gmail.com>
+Date:   Fri May 23 13:13:38 2014 +0800
+
+    erlext.el: Support smll- and large-bignums using math-bignum
+
+elisp/erlext.el
+
+commit 6bb004e6a1e4e39a42b96bab9d4376ff321c3359
+Author: Leo Liu <sdl.web@gmail.com>
+Date:   Thu May 22 19:46:29 2014 +0800
+
+    erlext.el: Map elisp's hash table to/from erlang's map
+
+elisp/erlext.el
+
+commit d2cefa5c4d61212c4c11774ca6d5b7588bad1eeb
+Author: Leo Liu <sdl.web@gmail.com>
+Date:   Thu May 22 15:48:40 2014 +0800
+
+    erlext.el: Add support for float and new_float
+    Rename empty-symbol to erlext-empty-symbol.
+
+elisp/derl.el
+elisp/erlext.el
+
+commit 59450e6e1a5852031bb0b7f0f2c4f69b09b769e0
+Author: Leo Liu <sdl.web@gmail.com>
+Date:   Fri Feb 28 17:47:31 2014 +0800
+
+    Give erl-search-definition a meaningful return value
+    New helper erl-flash-region and use it in erl-find-source to provide
+    visual hint for successful searches.
+
+elisp/erl-service.el
+
+commit fc339325bceaf153042c6955d7af7c946807f379
 Author: mats cronqvist <masse@klarna.com>
 Date:   Tue Feb 25 20:41:38 2014 +0100
 
     v4.0.6
 
+ChangeLog
 NEWS
 
 commit 39fd6c0c29862921b5c5c8dcae79a01c35d86739
