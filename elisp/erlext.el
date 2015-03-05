@@ -56,7 +56,8 @@
     (bin        . 109)
     (smallBig   . 110)
     (largeBig   . 111)
-    (newRef     . 114)))
+    (newRef     . 114)
+    (map        . 116)))
 
 (defconst erlext-max-atom-length 255 "The maximum length of an erlang atom.")
 (defconst erlext-protocol-version 131)
@@ -140,6 +141,8 @@
                 (erlext-write-binary (car elts)))))))
         ((integerp obj)
          (erlext-write-int obj))
+        ((hash-table-p obj)
+         (erlext-write-map obj))
         (t
          (error "erlext can't marshal %S" obj))))
 
@@ -189,6 +192,11 @@
     (progn (erlext-write-list-head (length lst))
            (mapc 'erlext-write-obj lst)
            (erlext-write-null))))
+(defun erlext-write-map (map)
+  (assert (hash-table-p map))
+  (erlext-write1 (erlext-get-code 'map))
+  (erlext-write4 (hash-table-count map))
+  (maphash (lambda (k v) (list (erlext-write-obj k) (erlext-write-obj v))) map))
 (defun erlext-write-string (str)
   (assert (stringp str))
   (erlext-write1 (erlext-get-code 'string))
@@ -288,6 +296,7 @@
       ((newRef)     (erlext-read-newref))
       ((smallBig)   (erlext-read-small-bignum))
       ((largeBig)   (erlext-read-large-bignum))
+      ((map)        (erlext-read-map))
      (t
       (error "Unknown tag: %S" tag)))))
 
@@ -332,6 +341,12 @@
       ;; included as elements, and no mention of how it works in the
       ;; erl_ext_dist.txt
       (assert (eq (erlext-get-code 'null) (erlext-read1))))))
+(defun erlext-read-map ()
+  (let* ((arity (erlext-read4))
+         (map (make-hash-table :size arity)))
+    (progn (loop for x from 1 to arity
+                 do (puthash (erlext-read-obj) (erlext-read-obj) map))
+           map)))
 (defun erlext-read-tuple (arity)
   (apply #'vector (loop for x from 1 to arity
                         collect (erlext-read-obj))))
