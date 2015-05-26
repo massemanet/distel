@@ -218,7 +218,7 @@ Available commands:
     (insert text)))
 
 (defun edb-monitor-format (pid mfa status info)
-  (labels ((cut (s w)
+  (cl-labels ((cut (s w)
                 (if (> (length s) w)
                     (substring s 0 w)
                   s))
