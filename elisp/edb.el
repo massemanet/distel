@@ -613,6 +613,7 @@ Available commands:
 \\[edb-attach-next]     - Next (over expression)
 \\[edb-attach-up]       - Up to the next stack frame
 \\[edb-attach-down]     - Down to the next stack frame
+\\[edb-attach-finish]   - Finish (finish current function)
 \\[edb-attach-continue] - Continue (until breakpoint)
 \\[edb-toggle-breakpoint]       - Toggle a breakpoint on the current line."
   nil
@@ -622,6 +623,7 @@ Available commands:
     ([?c] . edb-attach-continue)
     ([?u] . edb-attach-up)
     ([?d] . edb-attach-down)
+    ([?f] . edb-attach-finish)
     ([?q] . erl-quit-viewer)
     ([?h] . edb-attach-help)
     ([?b] . edb-toggle-breakpoint)))
@@ -645,6 +647,9 @@ Available commands:
 (defun edb-attach-down ()
   (interactive)
   (edb-attach-meta-cmd 'down))
+(defun edb-attach-finish ()
+  (interactive)
+  (edb-attach-meta-cmd 'finish))
 
 (defun edb-attach-meta-cmd (cmd)
   (erl-send edb-pid `[emacs meta ,cmd]))
