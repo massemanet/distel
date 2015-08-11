@@ -13,6 +13,10 @@
 (require 'erl)
 (require 'derl)
 
+(eval-and-compile
+  (or (fboundp 'special-mode)
+      (defalias 'special-mode 'fundamental-mode)))
+
 ;;;; Base framework
 
 ;;;;; Target node
@@ -186,7 +190,7 @@ If not then try to send the module over as a binary and load it in."
               (filename (concat distel-ebin-directory "/" file)))
           (push (list module filename) modules))))
     (if (null modules)
-        (erl-warn-backend-problem "don't have beam files")
+        (erl-warn-backend-problem node "don't have beam files")
       (&erl-load-backend-modules node modules))))
 
 (defun &erl-load-backend-modules (node modules)
@@ -203,11 +207,11 @@ If not then try to send the module over as a binary and load it in."
                              ,(erl-group-leader)]])
       (erl-receive (node modules)
           ((['rex ['error reason]]
-            (erl-warn-backend-problem reason))
+            (erl-warn-backend-problem node reason))
            (['rex _]
             (&erl-load-backend-modules node (rest modules))))))))
 
-(defun erl-warn-backend-problem (reason)
+(defun erl-warn-backend-problem (node reason)
   (with-current-buffer (get-buffer-create "*Distel Warning*")
     (erase-buffer)
     (insert (format "\
@@ -292,35 +296,39 @@ when ready."
 
 (defun erl-show-process-list (reply node)
   (with-current-buffer (get-buffer-create (format "*plist %S*" node))
-    (erl-process-list-mode)
-    (setq buffer-read-only t)
-    (let ((buffer-read-only nil))
+    (let ((cfg erl-old-window-configuration))
+      (erl-process-list-mode)
+      ;; Don't update erl-old-window-configuration if already shown.
+      (when (and cfg (get-buffer-window))
+        (setq erl-old-window-configuration cfg)))
+    (let ((inhibit-read-only t)
+          (line (line-number-at-pos)))
       (erase-buffer)
-      (let ((header (tuple-elt reply 1))
-            (infos (tuple-elt reply 2)))
-        (put-text-property 0 (length header) 'face 'bold header)
-        (insert header)
-        (mapc #'erl-insert-process-info infos))
-      (goto-char (point-min))
-      (next-line 1))
-    (select-window (display-buffer (current-buffer)))))
+      (mcase reply
+        ([header infos]
+         (put-text-property 0 (length header) 'face 'bold header)
+         (insert header)
+         (mapc #'erl-insert-process-info infos))
+        (_ nil))
+      (erl-forward-to-line (max 2 line))
+      (erl-flash-region))
+    (pop-to-buffer (current-buffer))))
 
 (defun erl-insert-process-info (info)
   "Insert INFO into the buffer.
 INFO is [PID SUMMARY-STRING]."
-  (let ((pid (tuple-elt info 1))
-        (text (tuple-elt info 2)))
-    (put-text-property 0 (length text) 'erl-pid pid text)
-    (insert text)))
+  (mcase info
+    ([pid text]
+     (put-text-property 0 (length text) 'erl-pid pid text)
+     (insert text))
+    (_ nil)))
 
 ;; Process list major mode
 
-(defvar erl-viewed-pid nil
-  "PID being viewed.")
-(make-variable-buffer-local 'erl-viewed-pid)
-(defvar erl-old-window-configuration nil
+(defvar-local erl-viewed-pid nil "PID being viewed.")
+
+(defvar-local erl-old-window-configuration nil
   "Window configuration to return to when viewing is finished.")
-(make-variable-buffer-local 'erl-old-window-configuration)
 
 (defun erl-quit-viewer (&optional bury)
   "Quit the current view and restore the old window config.
@@ -329,7 +337,7 @@ When BURY is non-nil, buries the buffer instead of killing it."
   (let ((cfg erl-old-window-configuration))
     (if bury
         (bury-buffer)
-      (kill-this-buffer))
+      (kill-buffer))
     (set-window-configuration cfg)))
 
 (defun erl-bury-viewer ()
@@ -347,28 +355,11 @@ When BURY is non-nil, buries the buffer instead of killing it."
     (define-key m "i" 'erl-show-process-info-item)
     (define-key m "b" 'erl-show-process-backtrace)
     (define-key m "m" 'erl-show-process-messages)
-    m)
-  "Keymap for Process List mode.")
+    m))
 
-(defun erl-process-list-mode ()
-  "Major mode for viewing Erlang process listings.
-
-Available commands:
-
-\\[erl-quit-viewer]     - Quit the process listing viewer, restoring old window config.
-\\[erl-process-list]    - Update the process list.
-\\[erl-pman-kill-process]       - Send an EXIT signal with reason 'kill' to process at point.
-\\[erl-show-process-info]       - Show process_info for process at point.
-\\[erl-show-process-info-item]  - Show a piece of process_info for process at point.
-\\[erl-show-process-backtrace]  - Show a backtrace for the process at point.
-\\[erl-show-process-messages]   - Show the message queue for the process at point."
-  (interactive)
-  (kill-all-local-variables)
-  (use-local-map erl-process-list-mode-map)
-  (setq mode-name "Erlang-Processes")
-  (setq major-mode 'erl-process-list-mode)
-  (setq erl-old-window-configuration (current-window-configuration))
-  (run-hooks 'erl-process-list-mode-hook))
+(define-derived-mode erl-process-list-mode special-mode "Erlang-Processes"
+  "Major mode for viewing Erlang process listings."
+  (setq erl-old-window-configuration (current-window-configuration)))
 
 (defun erl-show-process-info ()
   "Show information about process at point in a summary buffer."
@@ -378,9 +369,30 @@ Available commands:
         (message "No process at point.")
       (erl-view-process pid))))
 
+(defvar erl-process-info-items
+  '("backtrace"              "binary"
+    "catchlevel"             "current_function"
+    "current_location"       "current_stacktrace"
+    "dictionary"             "error_handler"
+    "garbage_collection"     "group_leader"
+    "heap_size"              "initial_call"
+    "links"                  "last_calls"
+    "memory"                 "message_queue_len"
+    "messages"               "min_heap_size"
+    "min_bin_vheap_size"     "monitored_by"
+    "monitors"               "priority"
+    "reductions"             "registered_name"
+    "sequential_trace_token" "stack_size"
+    "status"                 "suspending"
+    "total_heap_size"        "trace"
+    "trap_exit")
+  "A list of erlang type process_info_item().
+See documentation on `erlang:process_info/2' for details.")
+
 (defun erl-show-process-info-item (item)
   "Show a piece of information about process at point."
-  (interactive (list (intern (read-string "Item: "))))
+  (interactive
+   (list (make-symbol (completing-read "Item: " erl-process-info-items))))
   (let ((pid (get-text-property (point) 'erl-pid)))
     (cond ((null pid)
            (message "No process at point."))
@@ -414,8 +426,8 @@ truncate to fit on the screen."
           (erase-buffer)
           (insert msg)
           (goto-char (point-min))
-          (let ((win (display-buffer (current-buffer))))
-            (when select (select-window win)))))
+          (funcall (if select #'pop-to-buffer #'display-buffer)
+                   (current-buffer))))
     ;; Print only the part before the newline (if there is
     ;; one). Newlines in messages are displayed as "^J" in emacs20,
     ;; which is ugly
@@ -442,8 +454,7 @@ truncate to fit on the screen."
 
 (defun erl-view-process (pid)
   (let ((buf (get-buffer (erl-process-view-buffer-name pid))))
-    (if buf
-        (select-window (display-buffer buf))
+    (if buf (pop-to-buffer buf)
       (erl-spawn
         (erl-process-view-mode)
         (setq erl-old-window-configuration (current-window-configuration))
@@ -457,11 +468,11 @@ truncate to fit on the screen."
               (message "Bad RPC: %s" reason))
              (['rex summary]
               (rename-buffer (erl-process-view-buffer-name pid))
-              (erase-buffer)
-              (insert summary)
-              (setq buffer-read-only t)
+              (let ((inhibit-read-only t))
+                (erase-buffer)
+                (insert summary))
               (goto-char (point-min))
-              (select-window (display-buffer (current-buffer)))
+              (pop-to-buffer (current-buffer))
               (&erl-process-trace-loop))
              (other
               (message "Unexpected reply: %S" other))))))))
@@ -470,26 +481,21 @@ truncate to fit on the screen."
   (format "*pinfo %S on %S*"
           (erl-pid-id pid) (erl-pid-node pid)))
 
-(defvar erl-process-view-mode-map (let ((m (make-sparse-keymap)))
-                                    (define-key m "q" 'erl-quit-viewer)
-                                    m)
-  "Keymap for Process View mode.")
+(defvar erl-process-view-mode-map
+  (let ((m (make-sparse-keymap)))
+    (define-key m "q" 'erl-quit-viewer)
+    m))
 
-(defun erl-process-view-mode ()
-  "Major mode for viewing an Erlang process."
-  (interactive)
-  (kill-all-local-variables)
-  (use-local-map erl-process-view-mode-map)
-  (setq mode-name "Process View")
-  (setq major-mode 'process-view)
-  (run-hooks 'erl-process-view-mode-hook))
+(define-derived-mode erl-process-view-mode special-mode "ProcessView"
+  "Major mode for viewing an Erlang process.")
 
 (defun &erl-process-trace-loop ()
   (erl-receive ()
       ((['trace_msg text]
-        (goto-char (point-max))
-        (let ((buffer-read-only nil))
-          (insert text))))
+        (save-excursion
+          (goto-char (point-max))
+          (let ((inhibit-read-only t))
+            (insert text)))))
     (&erl-process-trace-loop)))
 
 ;;;; fprof
@@ -548,7 +554,7 @@ This is received from the Erlang module.")
     (insert fprof-header)
     (mapc #'fprof-add-entry entries)
     (goto-char (point-min))
-    (select-window (display-buffer (current-buffer)))))
+    (pop-to-buffer (current-buffer))))
 
 (defun fprof-add-entry (entry)
   "Add a profiled function entry."
@@ -608,10 +614,9 @@ time it spent in subfunctions."
         (message "Don't know where that's implemented.")
       (let* ((src (fprof-sourcefile beamfile))
              (mfa (fprof-lookup (fprof-tag-at-point) 'mfa))
-             (arity (caddr mfa))
-             (orig-window (selected-window)))
+             (arity (caddr mfa)))
         (when src
-          (with-current-buffer (find-file-other-window src)
+          (with-selected-window (display-buffer (find-file-noselect src))
             (goto-char (point-min))
             ;; Find the right function/arity
             (let (found)
@@ -622,8 +627,7 @@ time it spent in subfunctions."
                     (setq found t)
                   (forward-line)))
               (if found
-                  (recenter 5))))
-          (select-window orig-window))))))
+                  (recenter 5)))))))))
 
 (defun fprof-tag-at-point ()
   (or (get-text-property (point) 'fprof-tag)
@@ -1005,8 +1009,7 @@ Returns non-nil iff the window was scrolled."
       (with-current-buffer (window-buffer window)
         (if (pos-visible-in-window-p (point-max) window)
             (set-window-start window (point-min))
-          (save-selected-window
-            (select-window window)
+          (with-selected-window window
             (scroll-up))))
       t)))
 
@@ -1167,7 +1170,7 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
             (erl-send-rpc node 'distel 'describe
                           (list (intern mod)
                                 (if fun (intern fun) '_)
-                                (if arity (string-to-int arity) '_)
+                                (if arity (string-to-number arity) '_)
                                 (if rebuild-db 'true 'false)))
             (message "Sent request; waiting for results..")
             (erl-receive ()
@@ -1287,13 +1290,20 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
       (erl-receive (line)
           ((['rex ['ok path]]
             (find-file path)
-            (goto-line line))
+            (erl-forward-to-line line))
            (['rex ['error reason]]
             (message "Error: %s" reason)))))))
 
+(defun erl-forward-to-line (line)
+  (save-restriction
+    (widen)
+    (goto-char (point-min))
+    (and (plusp line)
+         (forward-line (1- line)))))
+
 (defmacro erl-propertize-insert (props &rest body)
   "Execute and insert BODY and add PROPS to all the text that is inserted."
-  (let ((start (gensym)))
+  (let ((start (make-symbol "start")))
     `(let ((,start (point)))
        (prog1 (progn (insert ,@body))
          (add-text-properties ,start (point) ,props)))))

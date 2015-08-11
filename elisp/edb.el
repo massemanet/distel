@@ -9,6 +9,8 @@
 (eval-and-compile
   (autoload 'erlang-extended-mode "distel"))
 
+(defvar erlang-extended-mode)
+
 (when (featurep 'xemacs)
   (require 'overlay))
 
@@ -55,12 +57,11 @@ or an attached process exiting."
 ;; ----------------------------------------------------------------------
 ;; Integration with erlang-extended-mode buffers.
 
-(make-variable-buffer-local
- (defvar edb-module-interpreted nil
-   "Non-nil means that the buffer's Erlang module is interpreted.
+(defvar-local edb-module-interpreted nil
+  "Non-nil means that the buffer's Erlang module is interpreted.
 This variable is meaningful in erlang-extended-mode buffers.
 The interpreted status refers to the node currently being monitored by
-edb."))
+edb.")
 
 (defun edb-setup-source-buffer ()
   (add-hook 'kill-buffer-hook #'edb-delete-buffer-breakpoints nil t)
@@ -209,7 +210,7 @@ Available commands:
   (setq major-mode 'edb-monitor-mode))
 
 (defun edb-monitor-insert-process (p)
-  (let ((buffer-read-only nil)
+  (let ((inhibit-read-only t)
         (text (edb-monitor-format (erl-pid-to-string (edb-process-pid p))
                                   (edb-process-mfa p)
                                   (edb-process-status p)
@@ -248,7 +249,7 @@ Available commands:
     (condition-case nil
         (progn
           (search-forward "break")
-          (move-beginning-of-line))
+          (beginning-of-line))
       (error nil))))
     ;;    (goto-char (point-max))
     ;;   (forward-line -2)))
@@ -408,25 +409,17 @@ When MOD is given, only update those visiting that module."
 ;; ----------------------------------------------------------------------
 ;; Attach process
 
-(make-variable-buffer-local
- (defvar edb-pid nil
-   "Pid of attached process."))
+(defvar-local edb-pid nil "Pid of attached process.")
 
-(make-variable-buffer-local
- (defvar edb-node nil
-   "Node of attached process."))
+(defvar-local edb-node nil "Node of attached process.")
 
-(make-variable-buffer-local
- (defvar edb-module nil
-   "Current module source code in attach buffer."))
+(defvar-local edb-module nil
+  "Current module source code in attach buffer.")
 
-(make-variable-buffer-local
- (defvar edb-variables-buffer nil
-   "Buffer showing variable bindings of attached process."))
+(defvar-local edb-variables-buffer nil
+  "Buffer showing variable bindings of attached process.")
 
-(make-variable-buffer-local
- (defvar edb-attach-buffer nil
-   "True if buffer is attach buffer."))
+(defvar-local edb-attach-buffer nil "True if buffer is attach buffer.")
 
 (defvar edb-attach-with-new-frame nil
   "When true, attaching to a process opens a new frame.")
@@ -547,7 +540,7 @@ The *Variables* buffer is killed with the current buffer."
         ;; {variables, [{Name, String}]}
         (when (buffer-live-p edb-variables-buffer)
           (with-current-buffer edb-variables-buffer
-            (let ((buffer-read-only nil))
+            (let ((inhibit-read-only t))
               (erase-buffer)
               (mapc (lambda (b)
                       (let ((name   (tuple-elt b 1))
@@ -583,7 +576,7 @@ Once loaded, reenters the attach loop."
       ((['rex ['ok path]]
         (if (file-regular-p path)
             (progn (setq edb-module module)
-                   (let ((buffer-read-only nil))
+                   (let ((inhibit-read-only t))
                      (erase-buffer)
                      (insert-file-contents path))
                    (edb-delete-buffer-breakpoints)
@@ -593,7 +586,7 @@ Once loaded, reenters the attach loop."
     (&edb-attach-loop)))
 
 (defun edb-attach-goto-line (line)
-  (goto-line line)
+  (erl-forward-to-line line)
   (setq overlay-arrow-string "=>")
   (setq overlay-arrow-position (copy-marker (point))))
 
@@ -665,13 +658,11 @@ Available commands:
 (defvar edb-saved-breakpoints '()
   "List of breakpoints to set if edb-restore-dbg-state is called.")
 
-(make-variable-buffer-local
- (defvar edb-buffer-breakpoints nil
-   "List of active buffer breakpoints."))
+(defvar-local edb-buffer-breakpoints nil
+  "List of active buffer breakpoints.")
 
-(make-variable-buffer-local
- (defvar edb-buffer-breakpoints-stale nil
-   "Nil if the breakpoints in the buffer are stale (out of synch)."))
+(defvar-local edb-buffer-breakpoints-stale nil
+  "Nil if the breakpoints in the buffer are stale (out of synch).")
 
 ;; breakpoints
 (defun edb-make-bp (mod line) (list mod line))
@@ -846,7 +837,7 @@ breakpoints are already marked as stale."
 (defun edb-make-breakpoint-overlay (line)
   "Creats an overlay at line"
   (save-excursion
-    (goto-line line)
+    (erl-forward-to-line line)
     (let ((ov (make-overlay (line-beginning-position)
                             (line-beginning-position 2)
                             (current-buffer)
