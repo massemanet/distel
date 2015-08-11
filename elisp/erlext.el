@@ -37,7 +37,7 @@
 ;; March 2002: Big cleanup for use in distributed erlang. Removed the
 ;; old networking code.
 
-(require 'cl)
+(eval-when-compile (require 'cl))
 
 ;; type tags
 
@@ -121,7 +121,7 @@
 (defun erlext-write-obj (obj)
   (cond ((listp obj)                    ; lists at top since (symbolp '()) => t
          (if (and (memq (car obj) '(bigneg bigpos))
-                  (ignore-errors (every #'integerp (cdr obj))))
+                  (ignore-errors (cl-every #'integerp (cdr obj))))
              ;; math-bignum
              (erlext-write-bignum obj)
            (erlext-write-list obj)))
@@ -262,7 +262,7 @@
 ;; => (t t t t)
 (defun erlext-encode-ieee-double (n)
   ;; Ref: http://en.wikipedia.org/wiki/Double-precision_floating-point_format
-  (labels ((fill-mantissa (vec frac)
+  (cl-labels ((fill-mantissa (vec frac)
              (loop for i from 12 to 63
                    for tmp = (- frac (expt 0.5 (- i 11)))
                    when (>= tmp 0)
@@ -281,12 +281,12 @@
       (when (< S 0)
         (setf (aref result 0) 1))
       ;; Exponent & Mantissa
-      (cond ((isnan n) (fill result 1 :start 1 :end 64))
+      (cond ((isnan n) (cl-fill result 1 :start 1 :end 64))
             ((member S '(1.0e+INF -1.0e+INF))
-             (fill result 1 :start 1 :end 12)
-             (fill result 0 :start 12 :end 64))
+             (cl-fill result 1 :start 1 :end 12)
+             (cl-fill result 0 :start 12 :end 64))
             ((zerop E)                  ; subnormals
-             (fill result 0 :start 1 :end 12)
+             (cl-fill result 0 :start 1 :end 12)
              (fill-mantissa result S))
             ;; Move factor 2 to S so that S >= 1.0
             (t (loop for x = (+ (1- E) bias) then (ash x -1)
@@ -467,7 +467,7 @@
 ;;   (mapcar #'test '(1.0e+INF -1.0e+INF -12.2 1.0000000000000004)))
 ;; => (t t t t)
 (defun erlext-read-ieee-double ()
-  (labels ((to-bits (byte)
+  (cl-labels ((to-bits (byte)
              (nreverse (loop repeat 8
                              collect (prog1 (logand byte 1)
                                        (setq byte (ash byte -1)))))))

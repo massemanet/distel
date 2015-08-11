@@ -114,7 +114,9 @@ Sequence: (pat1 ...), [pat1 ...]
           ((vectorp pattern)
            (if (and (vectorp object)
                     (= (length pattern) (length object)))
-               (mcase-match (coerce pattern 'list) (coerce object 'list) bindings)
+               (mcase-match (cl-coerce pattern 'list)
+                            (cl-coerce object 'list)
+                            bindings)
              'fail))
           (t
            'fail))))
