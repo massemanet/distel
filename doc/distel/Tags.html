@@ -1,0 +1,91 @@
+<html lang="en">
+<head>
+<title>Tags - Distel User Manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Distel User Manual">
+<meta name="generator" content="makeinfo 4.11">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Programming-Aids.html#Programming-Aids" title="Programming Aids">
+<link rel="prev" href="Programming-Aids.html#Programming-Aids" title="Programming Aids">
+<link rel="next" href="Completion.html#Completion" title="Completion">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Tags"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Completion.html#Completion">Completion</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Programming-Aids.html#Programming-Aids">Programming Aids</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Programming-Aids.html#Programming-Aids">Programming Aids</a>
+<hr>
+</div>
+
+<h3 class="section">2.1 Cross-Referencing (Tags)</h3>
+
+<p>A &ldquo;dynamic tags&rdquo; facility effectively makes each function call in an
+Erlang source file into a hyperlink to the definition of that
+function. For example, if you have a line of code like this:
+
+<pre class="example">     lists:keysort(2, L).
+</pre>
+   <p>You can place the point on the function name, press <kbd>M-.</kbd>, and up
+pops <samp><span class="file">lists.erl</span></samp> at the definition of <code>keysort/2</code>. After you
+have perused the definition to your satisfaction, you press <kbd>M-,</kbd>
+to jump back where you came from. You can also jump through several
+(sub)function definitions and then use <kbd>M-,</kbd> several times to
+unwind step-by-step back to where you came from.
+
+   <p>This feature is a dynamic version of a traditional Emacs facility
+called &ldquo;Tags.&rdquo;  Whereas Tags needs you to maintain a special
+<samp><span class="file">TAGS</span></samp> file to keep track of definitions, Distel simply asks an
+Erlang node, &ldquo;Where is the source file for module <code>foo</code>?&rdquo; The
+Erlang node makes a well-educated guess at which source file we want
+(based on the location and attributes of the beam file for the same
+module), and sends back the path. Emacs then opens the file and scans
+down to the definition of the function with the right arity.
+
+   <p>If you have several versions of the same source file (perhaps
+belonging to separate branches in revision control), then Distel will
+find the one that matches the code in the Erlang node you're talking
+to. So, to work on a particular source tree you just connect to a node
+that has the matching code in its code path.
+
+     <dl>
+<dt><kbd>M-.</kbd><dd>Jump from a function call to the definition of the function
+(<code>erl-find-source-under-point</code>). If the variable
+<code>distel-tags-compliant</code> is non-nil, or a prefix argument is
+given, this command prompts for the function name to lookup.
+
+     <br><dt><kbd>M-,</kbd><dd>Jump back from a function definition
+(<code>erl-find-source-unwind</code>). This is a multi-level unwind through
+a stack of positions from which you have jumped with <kbd>M-.</kbd> The
+command is also bound to <kbd>M-*</kbd> for consistency with &ldquo;etags.&rdquo;
+</dl>
+
+   <p>To actually find the source file for a particular module, the Erlang
+node first ensures that it can load the module, and then tries each of
+these locations in order:
+
+     <ol type=1 start=1>
+<li>Same directory as the beam file. 
+<li><samp><span class="file">../src/</span></samp> from the beam file. 
+<li><samp><span class="file">../erl/</span></samp> from the beam file. 
+<li>The directory from which the beam file was compiled. We can find this
+using <code>module_info/1</code>, because the compiler records it as an
+attribute in the beam file.
+        </ol>
+
+   </body></html>
+

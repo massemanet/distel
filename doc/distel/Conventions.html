@@ -1,0 +1,64 @@
+<html lang="en">
+<head>
+<title>Conventions - Distel User Manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Distel User Manual">
+<meta name="generator" content="makeinfo 4.11">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Introduction.html#Introduction" title="Introduction">
+<link rel="prev" href="Principles.html#Principles" title="Principles">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Conventions"></a>
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Principles.html#Principles">Principles</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Introduction.html#Introduction">Introduction</a>
+<hr>
+</div>
+
+<h3 class="section">1.2 Conventions of Use</h3>
+
+<p>Most Distel commands need to know which Erlang node to talk to. 
+(Distel doesn't start an Erlang node, you have to do that yourself.) 
+The first command you use will prompt in the minibuffer for the name
+of the node to use. You can answer with either a <code>name@host</code>
+node name, or with just the <code>name</code> part as an abbreviation for a
+node on the local machine.
+
+   <p>As a convenience, the node name you enter is cached and then reused in
+future commands. If you later want to talk to a different node you can
+use the command <code>erl-choose-nodename</code> (<kbd>C-c C-d n</kbd>) to select
+a new node to talk to. The currently cached node name is always shown
+in the modeline.
+
+   <p>Some commands accept a prefix argument to alter their behaviour in some
+specific way. You can give a prefix with <kbd>C-u</kbd> followed by the
+command you want to call. For example, <kbd>C-u M-.</kbd> tells the <kbd>M-.</kbd>
+command to prompt for the function to lookup, instead choosing one by
+looking at the source text in the buffer. The effect, if any, of a
+prefix on a command is included in the command's documentation. In
+addition, many commands take a node name as a parameter and, by default,
+the node name is defaulted to the last node name that was
+selected. However, if the command is called with a prefix, the node name
+will be prompted for.
+
+   <p>The command <code>erl-ping</code> (<kbd>C-c C-d g</kbd>) can be used to determine
+whether distel can communicate with a specific node. As a side effect,
+erl-ping will also load the distel modules into the node.
+
+   </body></html>
+

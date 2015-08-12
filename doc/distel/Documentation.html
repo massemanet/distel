@@ -1,0 +1,81 @@
+<html lang="en">
+<head>
+<title>Documentation - Distel User Manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Distel User Manual">
+<meta name="generator" content="makeinfo 4.11">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Programming-Aids.html#Programming-Aids" title="Programming Aids">
+<link rel="prev" href="Refactoring.html#Refactoring" title="Refactoring">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Documentation"></a>
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Refactoring.html#Refactoring">Refactoring</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Programming-Aids.html#Programming-Aids">Programming Aids</a>
+<hr>
+</div>
+
+<h3 class="section">2.5 Documentation</h3>
+
+<p>Browsing of the OTP documentation is provided by an Erlang program
+called <code>otp_doc</code>. The OTP html docs are scanned on-the-fly, and
+for each M:F/A two pieces of data are extracted (and cached): the
+<strong>signature</strong> and the <strong>link</strong>.
+
+   <p>The signature is a string describing the functions name, arguments
+and return value;
+<code>lists:usort(List1) -&gt; List2</code>
+Signature(s) are printed in the mini-buffer by the
+<code>erl-find-sig</code> functions. Note that there is implicit
+wildcarding; running <code>erl-find-sig</code> on <code>"li:fl"</code>
+will print this in the mini-buffer;
+<pre class="example">     lib:flush_receive() -&gt; void()
+     lists:flatlength(DeepList) -&gt; int()
+     lists:flatmap(Fun, List1) -&gt; List2
+     lists:flatten(DeepList, Tail) -&gt; List
+     lists:flatten(DeepList) -&gt; List
+</pre>
+   <p>The link is used by the <code>erl-find-doc</code> functions to display the
+full documentation in Emacs (requires the <code>w3m</code> package.) If
+there is more than one match (see above), a list of candidates will
+be written in the mini-buffer;
+<pre class="example">     candidates: lib:flush_receive/0, lists:flatlength/1, lists:flatmap/2,
+     lists:flatten/2, lists:flatten/1
+</pre>
+   <p>Simple online Erlang documentation is provided via an Erlang program
+called <code>fdoc</code>. The documentation is automatically scanned out of
+source files by building a searchable database of the comments
+appearing before each function. Naturally, the quality of
+documentation provided by this scheme will depend on the style in
+which the source files are commented.
+
+     <dl>
+<dt><kbd>C-c C-d d</kbd><dd>Describe an Erlang module or function by
+name. (<code>erl-fdoc-describe</code>)
+<br><dt><kbd>C-c C-d a</kbd><dd>Show apropos information about Erlang functions, by regular
+expression. All functions whose names or comments match the regexp are
+displayed. (<code>erl-fdoc-apropos</code>)
+</dl>
+
+   <p>With a prefix argument, these commands rebuild the <code>fdoc</code>
+database before searching. This is useful after (re)loading a lot of
+modules, since <code>fdoc</code> only scans the currently loaded modules for
+documentation when it builds the database.
+
+   </body></html>
+

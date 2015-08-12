@@ -1,0 +1,61 @@
+<html lang="en">
+<head>
+<title>Attach Buffer - Distel User Manual</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="Distel User Manual">
+<meta name="generator" content="makeinfo 4.11">
+<link title="Top" rel="start" href="index.html#Top">
+<link rel="up" href="Debugger.html#Debugger" title="Debugger">
+<link rel="prev" href="Monitor-Buffer.html#Monitor-Buffer" title="Monitor Buffer">
+<link rel="next" href="Synchronising-Breakpoints.html#Synchronising-Breakpoints" title="Synchronising Breakpoints">
+<link href="http://www.gnu.org/software/texinfo/" rel="generator-home" title="Texinfo Homepage">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+  span.sc    { font-variant:small-caps }
+  span.roman { font-family:serif; font-weight:normal; } 
+  span.sansserif { font-family:sans-serif; font-weight:normal; } 
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+<a name="Attach-Buffer"></a>
+Next:&nbsp;<a rel="next" accesskey="n" href="Synchronising-Breakpoints.html#Synchronising-Breakpoints">Synchronising Breakpoints</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="Monitor-Buffer.html#Monitor-Buffer">Monitor Buffer</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="Debugger.html#Debugger">Debugger</a>
+<hr>
+</div>
+
+<h4 class="subsection">3.2.3 Attach Buffer</h4>
+
+<p>An attach buffer corresponds to a particular Erlang process that is
+being debugged. It displays the source to the module currently being
+executed and, when the process is stopped at a breakpoint, an arrow
+showing the next line of execution. The attach buffer is accompanied
+by a buffer showing the variable bindings in the current stack frame.
+
+     <dl>
+<dt><kbd>SPC</kbd><dd>Step into the next expression. If the expression is a function call,
+the debugger will enter that function. (<code>edb-attach-step</code>)
+<br><dt><kbd>n</kbd><dd>Step over the next expression, without going down into a subfunction. 
+(<code>edb-attach-next</code>)
+<br><dt><kbd>c</kbd><dd>Continue execution until the next breakpoint. 
+(<code>edb-attach-continue</code>)
+<br><dt><kbd>u</kbd><dd>Show the previous stack frame. (<code>edb-attach-up</code>)
+<br><dt><kbd>d</kbd><dd>Show the next stack frame. (<code>edb-attach-down</code>)
+<br><dt><kbd>b</kbd><dd>Toggle a breakpoint on the current line. 
+(<code>edb-toggle-breakpoint</code>)
+<br><dt><kbd>q</kbd><dd>Kill the attach buffer. This does not affect the actual Erlang
+process. 
+<br><dt><kbd>h</kbd><dd>Display online help, showing essentially this information. 
+(<code>edb-attach-help</code>)
+</dl>
+
+   </body></html>
+
