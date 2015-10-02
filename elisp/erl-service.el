@@ -1220,7 +1220,7 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
                       (message "%s:%s%s"  call-mod fun argss))))))))))))
 
 (defun erl-format-arglists (arglists)
-  (setq arglists (sort* arglists '< :key 'length))
+  (setq arglists (cl-sort arglists '< :key 'length))
   (format "%s"
           (mapconcat 'identity
                      (mapcar (lambda (arglist)
