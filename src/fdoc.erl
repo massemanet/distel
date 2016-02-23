@@ -237,6 +237,15 @@ remove_dups([H|T]) ->
 remove_dups([]) ->
     [].
 
+-ifdef(scan_token_info).  %% up until OTP 17, use this.
+token_text(Token) -> {text,T} = erl_scan:token_info(Token,text), T.
+-else.
+token_text(Token) ->
+  try erl_scan:text(Token)
+  catch error:undef -> error('erlc too old. compile with -Dscan_token_info')
+  end.
+-endif.
+
 scan_lines([], _) ->
     [];
 scan_lines(S0, Acc) when hd(S0) == $% ->
@@ -251,9 +260,9 @@ scan_lines(S0 = "-spec" ++ _, Acc) ->
                     Text = lists:flatten(
                              lists:map(
                                fun(Token) ->
-                                       {text, Text} = erl_scan:token_info(Token, text),
-                                       Text
-                               end, Tokens)),
+                                   token_text(Token)
+                               end,
+                               Tokens)),
                     scan_lines(S1, [Text|Acc]);
                 _ ->
                     %% Couldn't parse: ignore the spec
