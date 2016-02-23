@@ -1,9 +1,46 @@
-commit 7c5265c6bfd6066f425cfd6a2ef9bb0c9c6d0727
+commit be4962c4a7c7fe740b2b2bc01126c50fea24935b
+Author: mats cronqvist <masse@cronqvi.st>
+Date:   Tue Feb 23 13:52:59 2016 +0100
+
+    v4.1.1
+
+NEWS
+
+commit d78741c08b8d5ac4289e19f6a4cca8f8e273bced
+Author: mats cronqvist <masse@cronqvi.st>
+Date:   Tue Feb 23 13:43:58 2016 +0100
+
+    fixed deprecation warning
+    erl_scan:token_info/2: deprecated (will be removed in OTP 19).
+    Changed code to use erl_scan:text instead.
+    Compile with -Dscan_token_info to get old behaviour.
+
+src/fdoc.erl
+
+commit da5be6af567d6e7ecaf6fb24f9c874a81a4d3be7
+Author: Leo Liu <sdl.web@gmail.com>
+Date:   Thu Oct 1 22:32:06 2015 +0800
+
+    Replace sort* with cl-sort
+
+elisp/erl-service.el
+
+commit a28907229794b54b10f16ab24eacf11f79919ed9
+Author: mats cronqvist <mats.cronqvist@gmail.com>
+Date:   Wed Mar 11 18:49:45 2015 +0100
+
+    ignore emacs droppings
+
+.gitignore
+
+commit 573ae1b06d23dc2c37b0db486962d74082a4a9e2
 Author: mats cronqvist <masse@cronqvi.st>
 Date:   Tue Aug 11 13:10:48 2015 +0200
 
     v4.1.0
 
+AUTHORS
+ChangeLog
 NEWS
 
 commit 17127a5efa512e212698f4ae63cda8430bbf0809
