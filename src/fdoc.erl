@@ -257,12 +257,7 @@ scan_lines(S0 = "-spec" ++ _, Acc) ->
         {done, Result, S1} ->
             case Result of
                 {ok, Tokens, _EndLocation} ->
-                    Text = lists:flatten(
-                             lists:map(
-                               fun(Token) ->
-                                   token_text(Token)
-                               end,
-                               Tokens)),
+                    Text = lists:flatten(lists:map(fun token_text/1, Tokens)),
                     scan_lines(S1, [Text|Acc]);
                 _ ->
                     %% Couldn't parse: ignore the spec
