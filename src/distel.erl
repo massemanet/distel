@@ -180,16 +180,13 @@ find_source(Mod) ->
   end.
 
 %% Ret: AbsName | throw(Reason)
+%% Ret: AbsName | throw(Reason)
 guess_source_file(Mod, BeamFName) ->
   Erl = to_list(Mod) ++ ".erl",
   Dir = dirname(BeamFName),
   DotDot = dirname(Dir),
   try_srcs([src_from_beam(Mod),
-            join([Dir, Erl]),
-            join([DotDot, "src", Erl]),
-            join([DotDot, "src", "*", Erl]),
-            join([DotDot, "esrc", Erl]),
-            join([DotDot, "erl", Erl])]).
+            filelib:wildcard(join([DotDot, "**", Erl]))]).
 
 try_srcs([]) -> throw(nothing);
 try_srcs(["" | T]) -> try_srcs(T);
