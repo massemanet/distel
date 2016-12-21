@@ -177,10 +177,12 @@ If not then try to send the module over as a binary and load it in."
            (_ t))))))
 
 (defvar distel-ebin-directory
-  (file-truename
-   (concat (file-name-directory
-            (or (locate-library "distel") load-file-name)) "../ebin"))
-   "Directory where beam files are located.")
+  (let* ((d0 (file-name-directory
+              (or (locate-library "distel") load-file-name)))
+         (d1 (file-truename (concat d0 "ebin")))
+         (d2 (file-truename (concat d0 "../ebin"))))
+    (if (file-exists-p d1) d1 d2))
+  "Directory where beam files are located.")
 
 (defun &erl-load-backend (node)
   (let ((modules '()))
