@@ -49,6 +49,7 @@
     (float      . 99)                   ;superseded by newFloat
     (atom       . 100)                  ;superseded by atom_utf8
     (atom_utf8  . 118)
+    (smallAtom_utf8  . 119)
     (ref        . 101)                  ;superseded by newRef
     (port       . 102)
     (pid        . 103)
@@ -401,6 +402,7 @@
       ((float)      (erlext-read-float))
       ((atom)       (erlext-read-atom))
       ((atom_utf8)  (erlext-read-atom))
+      ((smallAtom_utf8)  (erlext-read-small-atom))
       ((smallTuple) (erlext-read-small-tuple))
       ((largeTuple) (erlext-read-large-tuple))
       ((list)       (erlext-read-list))
@@ -496,6 +498,9 @@
 
 (defun erlext-read-atom ()
   (let ((length (erlext-read2)))
+    (intern (erlext-readn length))))
+(defun erlext-read-small-atom ()
+  (let ((length (erlext-read1)))
     (intern (erlext-readn length))))
 (defun erlext-read-small-tuple ()
   (erlext-read-tuple (erlext-read1)))
