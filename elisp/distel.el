@@ -1,5 +1,12 @@
 ;;; distel.el --- Top-level of distel package, loads all subparts
 
+;; Author: Luke Gorrie <luke@bup.co.nz>
+;; Maintainer: Mats Cronqvist <masse@cronqvi.st>
+;; URL: https://github.com/massemanet/distel
+;; Version: 4.1.2
+;; Keywords: erlang, tools
+;; Package-Requires: ((erlang "2.3") (emacs "24.3"))
+
 ;; Prerequisites
 (require 'erlang)
 (require 'easy-mmode)
@@ -216,6 +223,11 @@ about Emacs' online help, use \"\\[help-for-help]\".
 
 Please see the documentation of `erlang-menu-base-items'.")
 
+;; Compile erlang source files when installed as emacs package
+
+(eval-when-compile
+  (when (file-exists-p "Makefile")
+    (require 'compile) (compile "make ebin erl")))
 
 ;; Bug reportage
 
