@@ -200,6 +200,7 @@ complete and we become live."
      (fsm-encode2 5)                    ; version
      (fsm-encode4 (logior derl-flag-extended-references
                           derl-flag-extended-pids-ports
+                          derl-flag-new-fun-tags
                           derl-flag-utf8-atoms))
      (fsm-insert (symbol-name erl-node-name)))))
 
