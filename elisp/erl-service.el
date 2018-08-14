@@ -1251,6 +1251,8 @@ The match positions are erl-mfa-regexp-{module,function,arity}-match.")
     (erl-receive ()
         ((['rex ['error reason]]
           (message "Error: %s" reason))
+         (['rex nil]
+          (message "No callers"))
          (['rex calls]
           (with-current-buffer (get-buffer-create "*Erlang Calls*")
             (erl-who-calls-mode)

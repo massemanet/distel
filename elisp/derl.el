@@ -11,15 +11,20 @@
 (require 'erlext)
 (require 'md5)
 (require 'erl)
+
+;;; Code:
+
 (eval-when-compile
   (require 'cl))
 
 (defvar erl-nodeup-hook nil
-  "Called with two args, NODE and FSM. NODE is a symbol of the form
+  "Called when peer appears.
+Called with two args, NODE and FSM.  NODE is a symbol of the form
 mynode@cockatoo, FSM is the net-fsm process of the connection.")
 
 (defvar erl-nodedown-hook nil
-  "Called with one arg, NODE, a symbol of the form mynode@cockatoo")
+  "Called when peer disappears.
+Called with one arg, NODE, a symbol of the form mynode@cockatoo")
 
 (defcustom derl-use-trace-buffer t
   "*Store erlang message communication in a trace buffer."
