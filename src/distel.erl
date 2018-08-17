@@ -793,8 +793,48 @@ fdoc_binaryify(Other) -> Other.
 %% Return: [Arglist]
 %% Arglist = [string()]
 get_arglists(ModName, FunName) when is_list(ModName), is_list(FunName) ->
-    arglists(to_atom(ModName), FunName).
+    Mod = list_to_atom(ModName),
+    Fun = list_to_atom(FunName),
+    case beam_lib:chunks(code:which(Mod), [abstract_code]) of
+        {ok, {code, [{abstract_code, {raw_abstract_v1, AST}}]}} ->
+            [[Args] || {F, _Arity, Args} <- stx_faas(AST), Fun == F];
+        _ ->
+            error
+    end.
 
+stx_faas(AST) ->
+    Forms = erl_syntax:form_list(AST),
+    erl_syntax_lib:fold_subtrees(fun stx_subtree/2, [], Forms).
+
+stx_subtree(ST, O) ->
+    case erl_syntax:type(ST) of
+        function -> [stx_function(ST)|O];
+        _ -> O
+    end.
+
+stx_function(Tree) ->
+    {erl_syntax:atom_value(erl_syntax:function_name(Tree)),
+     erl_syntax:function_arity(Tree),
+     stx_args(Tree)}.
+
+stx_args(Tree) ->
+    lists:foldl(fun take_longest(), [], stx_args_strings(Tree)).
+
+stx_args_strings(Tree) ->
+    [stx_pretty_arglist(C) || C <- erl_syntax:function_clauses(Tree)].
+
+stx_pretty_arglist(Clause) ->
+    string:join(stx_args(Clause),",").
+
+stx_pretty_args(Clause) ->
+    [erl_prettypr:format(CP) || CP <- erl_syntax:clause_patterns(Clause)].
+
+take_longest(String, Leader) when length(String) < length(Leader) ->
+    Leader;
+take_longest(String,_) ->
+    String.
+
+%    arglists(to_atom(ModName), FunName).
 arglists(Mod, Fun) ->
     case get_abst_from_debuginfo(Mod) of
         {ok, Abst} ->
@@ -952,6 +992,7 @@ get_exports(BeamFile) ->
         _ ->
             error
     end.
+
 %%-----------------------------------------------------------------------
 %% BEGIN Code snitched from beam_disasm.erl; slightly modified
 %%-----------------------------------------------------------------------
