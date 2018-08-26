@@ -793,8 +793,8 @@ fdoc_binaryify(Other) -> Other.
 %% Get the argument lists for a function in a module.
 %% Return: [Arglist]
 %% Arglist = [string()]
-get_arglists(ModName, FunName) when is_list(ModName), is_list(FunName) ->
-    [[ModName++":"++FunName]].
+get_arglists(ModName, FunName) ->
+    [distel_html_doc:fetch_fas(ModName, FunName)].
 
 %% Return the name of the beamfile for Mod.
 
