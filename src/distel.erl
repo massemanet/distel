@@ -684,16 +684,19 @@ stack_pos(#attach{stack={Pos,_Max}}) -> Pos.
 %% ----------------------------------------------------------------------
 
 modules(Prefix) ->
-  case otp_doc:modules(Prefix) of
-    {ok,Ans} -> {ok,Ans};
-    {error,_}-> xref_modules(Prefix)
-  end.
+    case distel_html_doc:fetch_mods(Prefix) of
+        [] -> xref_modules(Prefix);
+        Ms -> {ok, [<<M/binary, ":">> || M <- Ms]}
+    end.
 
 functions(Mod, Prefix) ->
-  case otp_doc:functions(Mod,Prefix) of
-    {ok,Ans} -> {ok,Ans};
-    {error,_}-> xref_functions(Mod,Prefix)
-  end.
+    case distel_html_doc:fetch_fas(Mod, Prefix) of
+        [] -> xref_functions(Mod, Prefix);
+        FAs -> {ok, [get_function(FA) || FA <- FAs]}
+    end.
+
+get_function(FA) ->
+    string:trim(hd(re:split(FA, "\\("))).
 
 xref_completions(F,A) ->
     fun(server) -> distel_completions;
