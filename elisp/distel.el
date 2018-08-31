@@ -236,6 +236,16 @@ Please see the documentation of `erlang-menu-base-items'.")
 
 (eval-when-compile (require 'font-lock))
 
+(defun distel-inferior-machine ()
+  "Start an inferior erlang machine with appropriate name and path."
+  (interactive)
+  (setq inferior-erlang-buffer-name "*distel redbug*")
+  (inferior-erlang "cd /opt/wrk/redbug && erl -sname distel_redbug@localhost -pa _build/default/lib/*/ebin")
+  (setq erl-nodename-cache 'distel_redbug@localhost)
+  (setq distel-modeline-node "distel_redbug@localhost")
+  (force-mode-line-update)
+  (erl-ping 'distel_redbug@localhost))
+
 (defun report-distel-problem (summary)
   "Report a bug to the distel-hackers mailing list."
   (interactive (list (read-string "One-line summary: ")))

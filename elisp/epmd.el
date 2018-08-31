@@ -11,9 +11,10 @@
   ;; Arg is the request
   (let* ((len (length arg))
          (len-msb (ash len -8))
-         (len-lsb (logand len 255)))
-    (fsm-send-string (concat (string len-msb len-lsb)
-                             arg)))
+         (len-lsb (logand len 255))
+         (msg (concat (string len-msb len-lsb) arg)))
+    (message "epmd-process - msg: %s" msg)
+    (fsm-send-string msg))
   (ecase (elt arg 0)
     ((?n) (fsm-change-state #'epmd-recv-names-resp))
     ((?z) (fsm-change-state #'epmd-recv-port-resp))
@@ -27,9 +28,9 @@
 
 (defun epmd-recv-port-resp (event data)
   (declare (special arg))
-  (message "Event: %s" event)
-  (message "data: %s" data)
-  (message "arg: %s" arg)
+  (message "epmd-recv-port-resp - Event: %s" event)
+  (message "epmd-recv-port-resp - data: %s" data)
+  (message "epmd-recv-port-resp - arg: %s" arg)
   (ecase event
     ((data)
      (assert (> (length arg) 2))

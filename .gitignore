@@ -3,3 +3,4 @@
 \#*
 ebin
 elisp/*.elc
+rebar.lock

@@ -20,7 +20,7 @@
 -export([modules/1, functions/2, xref_modules/1, xref_functions/2,
          rebuild_completions/0]).
 -export([free_vars/1]).
--export([apropos/2, describe/4, get_arglists/2]).
+-export([apropos/2, describe/4, arglists/2]).
 -export([xref_callgraph/1, who_calls/3, rebuild_callgraph/0]).
 
 -include_lib("kernel/include/file.hrl").
@@ -686,7 +686,7 @@ stack_pos(#attach{stack={Pos,_Max}}) -> Pos.
 modules(Prefix) ->
     case distel_html_doc:fetch_mods(Prefix) of
         [] -> xref_modules(Prefix);
-        Ms -> {ok, [<<M/binary, ":">> || M <- Ms]}
+        Ms -> {ok, [get_module(M) || M <- Ms]}
     end.
 
 functions(Mod, Prefix) ->
@@ -695,8 +695,30 @@ functions(Mod, Prefix) ->
         FAs -> {ok, [get_function(FA) || FA <- FAs]}
     end.
 
+%% Entry point;
+%% Get the argument lists for a function in a module.
+%% Return: ["A1, A2, ...", "B1, B2, ..."]
+arglists(Mod, Fun) ->
+    case distel_html_doc:fetch_fas(Mod, Fun) of
+        [] -> [];
+        FAs -> [get_arglist(FA) || FA <- FAs]
+    end.
+
+%% returns "mod:"
+get_module(M) ->
+    <<M/binary, ":">>.
+
+%% FA is "fun(A1, A2,..) -> Ret"
+%% we return "fun("
 get_function(FA) ->
-    string:trim(hd(re:split(FA, "\\("))).
+    Mod = string:trim(hd(re:split(FA, "\\("))),
+    <<Mod/binary, "(">>.
+
+%% FA is "fun(A1, A2,..) -> Ret"
+%% we return "A1, A2, .."
+get_arglist(FA) ->
+    [_, Args|_] = re:split(FA, "\\(|\\)"),
+    [Args].
 
 xref_completions(F,A) ->
     fun(server) -> distel_completions;
@@ -791,13 +813,6 @@ fdoc_binaryify(Other) -> Other.
 %% heuristically derived from the patterns in each clause of the
 %% function. We try to derive the most human-meaningful arglist we
 %% can.
-
-%% Entry point;
-%% Get the argument lists for a function in a module.
-%% Return: [Arglist]
-%% Arglist = [string()]
-get_arglists(ModName, FunName) ->
-    [distel_html_doc:fetch_fas(ModName, FunName)].
 
 %% Return the name of the beamfile for Mod.
 
