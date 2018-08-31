@@ -20,7 +20,7 @@
 -export([modules/1, functions/2, xref_modules/1, xref_functions/2,
          rebuild_completions/0]).
 -export([free_vars/1]).
--export([apropos/2, describe/4, arglists/2]).
+-export([apropos/1, describe/2, arglists/2]).
 -export([xref_callgraph/1, who_calls/3, rebuild_callgraph/0]).
 
 -include_lib("kernel/include/file.hrl").
@@ -178,6 +178,14 @@ find_source(Mod) ->
     error ->
       {error, fmt("Can't find module '~p' on ~p", [Mod, node()])}
   end.
+
+beamfile(Mod) ->
+    case code:which(Mod) of
+        File when is_list(File) ->
+            {ok, File};
+        _ ->
+            error
+    end.
 
 %% Ret: AbsName | throw(Reason)
 %% Ret: AbsName | throw(Reason)
@@ -700,8 +708,18 @@ functions(Mod, Prefix) ->
 %% Return: ["A1, A2, ...", "B1, B2, ..."]
 arglists(Mod, Fun) ->
     case distel_html_doc:fetch_fas(Mod, Fun) of
-        [] -> [];
-        FAs -> [get_arglist(FA) || FA <- FAs]
+        [] -> {ok, []};
+        FAs -> {ok, [get_arglist(FA) || FA <- FAs]}
+    end.
+
+describe(Mod, Fun) ->
+    describe(Mod, Fun, all).
+
+%% returns ["fun(A1, A2,...) -> Return"]
+describe(Mod, Fun, _Arity) ->
+    case distel_html_doc:fetch_fas(Mod, Fun) of
+        [] -> {ok, []};
+        FAs -> {ok, FAs}
     end.
 
 %% returns "mod:"
@@ -779,50 +797,8 @@ free_vars(Text, StartLine) ->
 %% Online documentation
 %% ----------------------------------------------------------------------
 
-apropos(RE, false) ->
-    apropos(RE);
-apropos(RE, true) ->
-    fdoc:stop(),
-    apropos(RE).
-
-apropos(RE) ->
-    fdoc_binaryify(fdoc:get_apropos(RE)).
-
-describe(M, F, A, false) ->
-    describe(M, F, A);
-describe(M, F, A, true) ->
-    fdoc:stop(),
-    describe(M, F, A).
-
-describe(M, F, A) ->
-%% FIXME using nonm-cached version instead.  remove old code
-    fdoc_binaryify(fdoc:describe2(M, F, A)).
-%    fdoc_binaryify(fdoc:description(M, F, A)).
-
-%% Converts strings to binaries, for Emacs
-fdoc_binaryify({ok, Matches}) ->
-    {ok, [{M, F, A, to_bin(Doc)} || {M, F, A, Doc} <- Matches]};
-fdoc_binaryify(Other) -> Other.
-
-%% ----------------------------------------------------------------------
-%% Argument list snarfing
-%% ----------------------------------------------------------------------
-
-%% Given the name of a function we return the argument lists for each
-%% of its definitions (of different arities). The argument lists are
-%% heuristically derived from the patterns in each clause of the
-%% function. We try to derive the most human-meaningful arglist we
-%% can.
-
-%% Return the name of the beamfile for Mod.
-
-beamfile(Mod) ->
-    case code:which(Mod) of
-        File when is_list(File) ->
-            {ok, File};
-        _ ->
-            error
-    end.
+apropos(_RE) ->
+    [].
 
 %%-----------------------------------------------------------------
 %% Call graph
