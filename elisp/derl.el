@@ -88,7 +88,8 @@ some time later, `erl-nodedown-hook' is run."
          ;;     (let ((n 1)) `(lambda () ,n))
          ;;       => (lambda () 1)
          (fail-cont `(lambda ()
-                       (kill-buffer ,buffer)
+                       (let ((kill-buffer-query-functions nil))
+                         (kill-buffer ,buffer))
                        (derl-nodedown ',node))))
     (epmd-port-please name host
                       ;; success continuation
