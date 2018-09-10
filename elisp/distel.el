@@ -250,6 +250,7 @@ Please see the documentation of `erlang-menu-base-items'.")
     (setq erl-nodename-cache (make-symbol erlname))
     (setq distel-modeline-node erlname)
     (force-mode-line-update)
+    (sleep-for 1)
     (erl-ping (make-symbol erlname))))
 
 (defun report-distel-problem (summary)
