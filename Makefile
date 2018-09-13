@@ -9,8 +9,8 @@ infodir     = ${prefix}/info
 erlc        = erlc
 emacs       = emacs
 
-ELISP_DIR = ${datadir}/distel/elisp
-EBIN_DIR = ${datadir}/distel/ebin
+ELISP_DIR   = ${datadir}/distel/elisp
+EBIN_DIR    = ${datadir}/distel/ebin
 ERL_SRC_DIR = ${datadir}/distel/src
 
 ########################################
@@ -19,8 +19,7 @@ ERL_SRC_DIR = ${datadir}/distel/src
 ERL_SRC := $(wildcard src/*.erl)
 ERL_OBJ := $(patsubst src/%.erl,ebin/%.beam,${ERL_SRC})
 
-ELISP_SRC := elisp/erlext.el elisp/mcase.el elisp/net-fsm.el elisp/epmd.el \
-	elisp/erl.el elisp/derl.el
+ELISP_SRC := $(wildcard elisp/*.el)
 ELISP_OBJ := $(patsubst %.el,%.elc,${ELISP_SRC})
 
 DOC_SRC  := doc/distel.texi
