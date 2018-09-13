@@ -231,7 +231,7 @@ Please see the documentation of `erlang-menu-base-items'.")
         (progn
           (let ((default-directory (file-name-directory dir)))
             (require 'compile)
-            (compile "pwd && make -C.. ebin erl"))))))
+            (compile "pwd && make -C.."))))))
 
 ;; Bug reportage
 
