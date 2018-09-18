@@ -18,6 +18,15 @@
 (eval-when-compile (require 'cl))
 (require 'mcase)
 
+;; Compile erlang source files when installed as emacs package
+(eval-when-compile
+  (let ((dir (locate-file "erl.el" load-path)))
+    (if dir
+        (progn
+          (let ((default-directory (file-name-directory dir)))
+            (require 'compile)
+            (compile "pwd && make -k -C.."))))))
+
 (eval-and-compile
   (or (fboundp 'defvar-local)
       (defmacro defvar-local (var val &optional docstring)

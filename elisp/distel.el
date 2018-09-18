@@ -223,16 +223,6 @@ about Emacs' online help, use \"\\[help-for-help]\".
 
 Please see the documentation of `erlang-menu-base-items'.")
 
-;; Compile erlang source files when installed as emacs package
-
-(eval-when-compile
-  (let ((dir (locate-file "distel.el" load-path)))
-    (if dir
-        (progn
-          (let ((default-directory (file-name-directory dir)))
-            (require 'compile)
-            (compile "pwd && make -C.."))))))
-
 ;; Bug reportage
 
 (defvar distel-bugs-address "distel-hackers@lists.sourceforge.net"
