@@ -39,7 +39,6 @@ fetch_mods(Prefix) ->
 
 base_url() -> "http://erlang.org/doc/apps".
 
-
 %% get all {function_name, args} for a module
 get_fas(Mod) ->
     case ets_get({fas, Mod}) of
@@ -55,6 +54,7 @@ get_fas(Mod) ->
 get_fas(Mod, Path) ->
     URL = join([base_url(), dummy, Path], "/"),
     try trane:wget_sax(URL, fun get_fa/2, {[]}) of
+        {_, FAs} -> ets_put({fas, Mod, FAs});
         {FAs} -> ets_put({fas, Mod, FAs})
     catch
         ?EXCEPTION(C, R, S) -> exit({Path, C, R, ?GET_STACK(S)})
