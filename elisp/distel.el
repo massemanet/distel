@@ -11,6 +11,16 @@
 (require 'erlang)
 (require 'easy-mmode)
 
+;; Compile erlang source files when installed as emacs package
+
+(eval-when-compile
+  (let ((fname (locate-file "distel.el" load-path)))
+    (if fname
+        (let ((dir (file-name-directory (directory-file-name (file-name-directory fname)))))
+          (if (= 0 (call-process "make" nil nil nil "-C" dir "erl"))
+              (message "Compiled erl files.")
+            (message "Compiling erl file failed; %s" dir))))))
+
 ;; Customization
 
 (defgroup distel '()
