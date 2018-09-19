@@ -18,8 +18,8 @@
     (if fname
         (let ((dir (file-name-directory (directory-file-name (file-name-directory fname)))))
           (if (= 0 (call-process "make" nil nil nil "-C" dir "erl"))
-              (message "Compiled erl files.")
-            (message "Compiling erl file failed; %s" dir))))))
+              (message "distel - Compiled erl files.")
+            (message "distel - Compiling erl file failed; %s" dir))))))
 
 ;; Customization
 

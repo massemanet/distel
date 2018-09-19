@@ -277,14 +277,15 @@ On an error, Result will be [badrpc Reason]."
     (erl-send-rpc node 'erlang 'node nil)
     (erl-receive (node)
         ((['rex response]
-          (if (or (equal node response)
-                  (and (symbolp response)
-                       (equal (symbol-name node)
-                              (concat (symbol-name response) ".local"))))
-              (message "Successfully communicated with remote node %S"
-                       node)
-            (message "Failed to communicate with node %S: %S"
-                     node response)))))))
+          (if (symbolp response)
+              (let* ((nodeQ (symbol-name node))
+                     (nodeA (symbol-name response))
+                     (nodeMac nodeA ".local"))
+                (if (or (equal nodeQ nodeA)
+                        (equal nodeQ nodeMac))
+                    (message "distel - communicated with %s" nodeA)
+                  (message "distel - failed to communicate with %s: %s"
+                           nodeQ nodeA)))))))
 
 ;;;; Process list
 
