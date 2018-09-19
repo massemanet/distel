@@ -18,15 +18,6 @@
 (eval-when-compile (require 'cl))
 (require 'mcase)
 
-;; Compile erlang source files when installed as emacs package
-(eval-when-compile
-  (let ((dir (locate-file "erl.el" load-path)))
-    (if dir
-        (progn
-          (let ((default-directory (file-name-directory dir)))
-            (require 'compile)
-            (compile "pwd && make -k -C.."))))))
-
 (eval-and-compile
   (or (fboundp 'defvar-local)
       (defmacro defvar-local (var val &optional docstring)
@@ -272,10 +263,6 @@ Also makes the current process immediately reschedulable."
   ;; the scheduler loop will catch this and know what to do
   (throw 'schedule-out 'reschedule))
 
-(defun erl-idle ()
-  (erl-receive ()
-      ()))
-
 (defun erl-make-ref ()
   "Make a unique reference object."
   (vector erl-tag 'erl-ref erl-node-name (incf erl-ref-counter) 0))
@@ -407,6 +394,10 @@ If LINK is true, the process is linked before being run."
       (erl-make-schedulable %pid))
     (erl-maybe-schedule)
     %pid))
+
+(defun erl-idle ()
+  (erl-receive ()
+      ()))
 
 (defun erl-deliver-message (pid message)
   "Deliver MESSAGE to the mailbox of the local process PID.
