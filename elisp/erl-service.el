@@ -285,7 +285,7 @@ On an error, Result will be [badrpc Reason]."
                         (equal nodeQ nodeMac))
                     (message "distel - communicated with %s" nodeA)
                   (message "distel - failed to communicate with %s: %s"
-                           nodeQ nodeA)))))))
+                           nodeQ nodeA)))))))))
 
 ;;;; Process list
 
@@ -969,8 +969,6 @@ SOLE is a function which is called when a single completion is selected."
                (message "Sole completion")
                (apply sole '()))
               ((null completion))
-;              (message "Can't find completion for %s \"%s\"" what pattern)
-;              (ding))
               ((not (string= pattern completion))
                (delete-region beg end)
                (insert completion)
@@ -1090,7 +1088,7 @@ variables."
 ;;;; fdoc interface
 
 (defface erl-fdoc-name-face
-    '((t (:bold t)))
+  '((t (:bold t)))
   "Face for function names in `fdoc' results."
   :group 'distel)
 
@@ -1141,7 +1139,7 @@ variables."
          (maybe-fun-and-maybe-arity
           (format "\\(:\\(%s\\)%s\\)?" fun-re maybe-arity)))
     (concat "^" the-module maybe-fun-and-maybe-arity "$"))
-    "Regexp matching \"module[:function[/arity]]\".
+  "Regexp matching \"module[:function[/arity]]\".
 The match positions are erl-mfa-regexp-{module,function,arity}-match.")
 
 (defvar erl-mfa-regexp-module-match   1)
