@@ -17,10 +17,10 @@
 -export([fprof/1, fprof/3]).
 -export([debug_toggle/2, debug_add/1, break_toggle/2, break_delete/2,
          break_add/2, break_restore/1, debug_subscribe/1, debug_attach/2]).
--export([modules/1, functions/2, xref_modules/1, xref_functions/2,
-         rebuild_completions/0]).
+-export([completions/2]).
+
 -export([free_vars/1]).
--export([apropos/1, describe/2, arglists/2]).
+-export([xref_modules/1, xref_functions/2, rebuild_completions/0]).
 -export([xref_callgraph/1, who_calls/3, rebuild_callgraph/0]).
 
 -include_lib("kernel/include/file.hrl").
@@ -690,6 +690,14 @@ stack_pos(#attach{stack={Pos,_Max}}) -> Pos.
 %% ----------------------------------------------------------------------
 %% Completion support
 %% ----------------------------------------------------------------------
+
+completions(meta, Str) -> {ok, Str};
+completions(annotation, Str) -> {ok, Str};
+completions(candidates, Str) ->
+    case string:tokens(Str, ":") of
+        [Mod, Prefix] -> functions(Mod, Prefix);
+        [Prefix] -> modules(Prefix)
+    end.
 
 modules(Prefix) ->
     case distel_html_doc:fetch_mods(Prefix) of

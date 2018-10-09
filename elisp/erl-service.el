@@ -280,7 +280,7 @@ On an error, Result will be [badrpc Reason]."
           (if (symbolp response)
               (let* ((nodeQ (symbol-name node))
                      (nodeA (symbol-name response))
-                     (nodeMac nodeA ".local"))
+                     (nodeMac (concat nodeA ".local")))
                 (if (or (equal nodeQ nodeA)
                         (equal nodeQ nodeMac))
                     (message "distel - communicated with %s" nodeA)
