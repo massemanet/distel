@@ -256,46 +256,47 @@
 ;; Test erlext-encode-ieee-double
 ;;
 ;; (cl-mapcar (lambda (x y) (equal (erlext-encode-ieee-double x) y))
-;;            '(1e+INF -1e+INF -12.2 1.0000000000000004)
+;;            '(1e+INF -1e+INF -12.2 1.0000000000000004 0.84)
 ;;            '((127 240 0 0 0 0 0 0)
 ;;              (255 240 0 0 0 0 0 0)
 ;;              (192 40 102 102 102 102 102 102)
-;;              (63 240 0 0 0 0 0 2)))
-;; => (t t t t)
+;;              (63 240 0 0 0 0 0 2)
+;;              (63 234 225 71 174 20 122 225)))
+;; => (t t t t t)
 (defun erlext-encode-ieee-double (n)
   ;; Ref: http://en.wikipedia.org/wiki/Double-precision_floating-point_format
   (cl-labels ((fill-mantissa (vec frac)
-             (loop for i from 12 to 63
-                   for tmp = (- frac (expt 0.5 (- i 11)))
-                   when (>= tmp 0)
-                   do (setf (aref vec i) (prog1 1 (setq frac tmp)))))
-           (bytes (bits)
-             (loop for i from 0 to 63
-                   for b = 7 then (1- b)
-                   sum (* (aref bits i) (expt 2 b)) into byte
-                   when (zerop b)
-                   collect (prog1 byte (setf byte 0 b 8)))))
-    (let* ((result (make-vector 64 0))
+                (loop for i from 12 to 63
+                      for tmp = (- frac (expt 0.5 (- i 11)))
+                      when (>= tmp 0)
+                      do (setf (aref vec i) (prog1 1 (setq frac tmp)))))
+              (bits->bytes (bits)
+                (loop for i from 0 to 63
+                      for b = 7 then (1- b)
+                      sum (* (aref bits i) (expt 2 b)) into byte
+                      when (zerop b)
+                      collect (prog1 byte (setf byte 0 b 8)))))
+    (let* ((bits (make-vector 64 0))
            (bias 1023)
            (E (frexp n))
            (S (pop E)))
       ;; Sign
       (when (< S 0)
-        (setf (aref result 0) 1))
+        (setf (aref bits 0) 1 S (abs S)))
       ;; Exponent & Mantissa
-      (cond ((isnan n) (cl-fill result 1 :start 1 :end 64))
-            ((member S '(1.0e+INF -1.0e+INF))
-             (cl-fill result 1 :start 1 :end 12)
-             (cl-fill result 0 :start 12 :end 64))
-            ((zerop E)                  ; subnormals
-             (cl-fill result 0 :start 1 :end 12)
-             (fill-mantissa result S))
+      (cond ((isnan n) (cl-fill bits 1 :start 1 :end 64))
+            ((eql S 1.0e+INF)
+             (cl-fill bits 1 :start 1 :end 12)
+             (cl-fill bits 0 :start 12 :end 64))
+            ((<= E (- 1 bias))          ;subnormals
+             (cl-fill bits 0 :start 1 :end 12)
+             (fill-mantissa bits (* (expt 2 (+ E (1- bias))) S)))
             ;; Move factor 2 to S so that S >= 1.0
             (t (loop for x = (+ (1- E) bias) then (ash x -1)
                      for i from 11 downto 1
-                     do (setf (aref result i) (logand x 1)))
-               (fill-mantissa result (1- (* 2 (abs S))))))
-      (bytes result))))
+                     do (setf (aref bits i) (logand x 1)))
+               (fill-mantissa bits (1- (* 2 S)))))
+      (bits->bytes bits))))
 
 (defun erlext-write-float (n)
   (cond
@@ -468,16 +469,16 @@
 ;;                 (apply #'insert (erlext-encode-ieee-double x))
 ;;                 (goto-char (point-min))
 ;;                 (equal (erlext-read-ieee-double) x))))
-;;   (mapcar #'test '(1.0e+INF -1.0e+INF -12.2 1.0000000000000004)))
-;; => (t t t t)
+;;   (mapcar #'test '(1.0e+INF -1.0e+INF -12.2 1.0000000000000004 0.84)))
+;; => (t t t t t)
 (defun erlext-read-ieee-double ()
-  (cl-labels ((to-bits (byte)
-             (nreverse (loop repeat 8
-                             collect (prog1 (logand byte 1)
-                                       (setq byte (ash byte -1)))))))
+  (cl-labels ((bytes->bits (byte)
+                (nreverse (loop repeat 8
+                                collect (prog1 (logand byte 1)
+                                          (setq byte (ash byte -1)))))))
     (let* ((bias 1023)
            (bits (apply #'vector (loop repeat 8
-                                       append (to-bits (erlext-read1)))))
+                                       append (bytes->bits (erlext-read1)))))
            (sign (if (zerop (aref bits 0)) 1 -1))
            (exponent (loop for i from 11 downto 1
                            sum (if (zerop (aref bits i))
@@ -490,8 +491,8 @@
         (#x7ff (if (zerop fraction)
                    (* sign 1.0e+INF)
                  0.0e+NaN))
-        (0 (* sign (expt 2 (1- bias)) fraction))
-        (t (* sign (expt 2 (- exponent bias)) (1+ fraction)))))))
+        (0 (* sign (expt 2.0 (1- bias)) fraction))
+        (t (* sign (expt 2.0 (- exponent bias)) (1+ fraction)))))))
 
 (defun erlext-read-float ()
   (string-to-number (erlext-readn 31)))
