@@ -15,7 +15,8 @@
 ;; mailbox. If the process returns without setting a new continuation,
 ;; it terminates with 'normal' status.
 
-(eval-when-compile (require 'cl))
+(eval-when-compile (require 'cl-lib))
+(eval-when-compile (require 'cl))       ;deprecated
 (require 'mcase)
 
 (eval-and-compile
@@ -44,20 +45,30 @@
             :named
             (:initial-offset 1)         ; make room for erl-tag (TYPE)
             (:constructor nil)          ; no default constructor
-            (:constructor %make-erl-local-pid (&optional (id (incf erl-pid-counter))
-                                                         (node erl-node-name)
-                                                         (serial 0)
-                                                         (creation 0))))
+            (:constructor %make-erl-local-pid
+                          (id serial &optional (node erl-node-name) (creation 0))))
   node id serial creation)
 
-(defun make-erl-local-pid (&optional id)
+(defun make-erl-local-pid ()
   "Make a node-local pid."
-  (let ((pid (if id
-                 (%make-erl-local-pid id)
-               (%make-erl-local-pid))))
+  (let ((pid (apply #'%make-erl-local-pid
+                    (erl-get-counter erl-pid-counter))))
     ;; Tag the first element of the pid
     (setf (elt pid 0) erl-tag)
     pid))
+
+(defun erl-get-counter (counter)
+  "Get and then advance counter."
+  (cl-macrolet ((modf (place y) `(cl-callf mod ,place ,y))
+                (roundf (place) `(cl-callf round ,place)))
+    (cl-labels ((increment (cells)
+                  (cl-incf (caar cells))
+                  (modf (caar cells) (cdar cells))
+                  ;; Be defensive; `mod' may return float so round it off.
+                  (roundf (caar cells))
+                  (when (and cells (zerop (caar cells)))
+                    (increment (cdr cells)))))
+      (prog1 (mapcar #'car counter) (increment counter)))))
 
 ;; Global book keeping state
 
@@ -70,18 +81,19 @@
           (match-string 0 fqdn)
         (error "erl: Can't determine hostname.")))))
 
+;; (NUM SERIAL)
+(defvar erl-pid-counter '((0 . #x8000) (0 . #x2000))
+  "Counters for PIDs.")
+
 (defvar erl-node-name
   (intern (format "distel_%S@%s" (emacs-pid) (erl-determine-hostname)))
   "Node name for Emacs.")
 
-(defconst erl-null-pid (make-erl-local-pid 0)
+(defconst erl-null-pid (make-erl-local-pid)
   "\"Null process\", the /dev/null of erl processes.
 Any messages sent to this process are quietly discarded.  When code
 isn't running in the buffer of a particular process, it's running as
 the null process.")
-
-(defvar erl-pid-counter 0
-  "Counter for PIDs.")
 
 (defvar erl-process-buffer-alist nil
   "Automatically-maintained association list of (PID-ID . BUFFER)
