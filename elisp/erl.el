@@ -58,7 +58,7 @@
     pid))
 
 (defun erl-get-counter (counter)
-  "Get and then advance counter."
+  "Get and then advance COUNTER."
   (cl-macrolet ((modf (place y) `(cl-callf mod ,place ,y))
                 (roundf (place) `(cl-callf round ,place)))
     (cl-labels ((increment (cells)
@@ -83,7 +83,7 @@
 
 ;; (NUM SERIAL)
 (defvar erl-pid-counter '((0 . #x8000) (0 . #x2000))
-  "Counters for PIDs.")
+  "Counter for PIDs.")
 
 (defvar erl-node-name
   (intern (format "distel_%S@%s" (emacs-pid) (erl-determine-hostname)))
@@ -96,7 +96,7 @@ isn't running in the buffer of a particular process, it's running as
 the null process.")
 
 (defvar erl-process-buffer-alist nil
-  "Automatically-maintained association list of (PID-ID . BUFFER)
+  "Automatically-maintained association list of (PID . BUFFER)
 mappings for local processes.")
 
 (defvar erl-schedulable-processes nil
@@ -515,6 +515,12 @@ during the next `erl-schedule'."
 
 ;; PID utilities
 
+(defun erl-pid= (pid1 pid2)
+  (and (eq (erl-pid-node pid1)     (erl-pid-node pid2))
+       (=  (erl-pid-id pid1)       (erl-pid-id pid2))
+       (=  (erl-pid-serial pid1)   (erl-pid-serial pid2))
+       (=  (erl-pid-creation pid1) (erl-pid-creation pid2))))
+
 (defun erl-pid-buffer-name (pid)
   (unless (equal (erl-pid-node pid) erl-node-name)
     (error "Not a local pid: %S" pid))
@@ -525,7 +531,7 @@ during the next `erl-schedule'."
 
 (defun erl-pid->buffer (pid)
   "Get PID's buffer."
-  (or (cdr (assoc (erl-pid-id pid) erl-process-buffer-alist))
+  (or (cdr (cl-assoc pid erl-process-buffer-alist :test #'erl-pid=))
       (error "No buffer for pid %S" pid)))
 
 (defun erl-null-pid-p (p)
@@ -534,7 +540,7 @@ during the next `erl-schedule'."
 (defun erl-local-pid-alive-p (pid)
   "Is PID a live local process?"
   (when (erl-local-pid-p pid)
-    (let ((buffer (cdr (assoc (erl-pid-id pid) erl-process-buffer-alist))))
+    (let ((buffer (cdr (cl-assoc pid erl-process-buffer-alist :test #'erl-pid=))))
       (and buffer
            (buffer-live-p buffer)
            (with-erl-process pid
@@ -565,24 +571,13 @@ during the next `erl-schedule'."
 
 (defun erl-enroll-process ()
   "Setup pid->buffer mapping state for the current process."
-  (push (cons (erl-pid-id erl-self) (current-buffer))
-        erl-process-buffer-alist)
+  (push (cons erl-self (current-buffer)) erl-process-buffer-alist)
   (add-hook 'kill-buffer-hook #'erl-unenroll-process nil t)
   (add-hook 'kill-buffer-hook #'erl-propagate-exit nil t))
 
-(defun erl-remove-if (predicate list)
-  "Return a copy of LIST with all items satisfying PREDICATE removed."
-  (let (out)
-    (while list
-      (unless (funcall predicate (car list))
-        (push (car list) out))
-      (setq list (cdr list)))
-    (nreverse out)))
-
 (defun erl-unenroll-process ()
   (setq erl-process-buffer-alist
-        (erl-remove-if #'(lambda (x) (eq (erl-pid-id erl-self) (car x)))
-                   erl-process-buffer-alist)))
+        (cl-remove erl-self erl-process-buffer-alist :key #'car :test #'erl-pid=)))
 
 (defun erl-propagate-exit ()
   (when (null erl-exit-reason)

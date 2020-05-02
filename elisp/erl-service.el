@@ -481,7 +481,8 @@ truncate to fit on the screen."
 
 (defun erl-process-view-buffer-name (pid)
   (format "*pinfo %S on %S*"
-          (erl-pid-id pid) (erl-pid-node pid)))
+          (erl-pid-to-string pid)
+          (erl-pid-node pid)))
 
 (defvar erl-process-view-mode-map
   (let ((m (make-sparse-keymap)))
