@@ -49,13 +49,17 @@
                           (id serial &optional (node erl-node-name) (creation 0))))
   node id serial creation)
 
-(defun make-erl-local-pid ()
+(defun make-erl-local-pid (&optional bootstrap-null-pid)
   "Make a node-local pid."
   (let ((pid (apply #'%make-erl-local-pid
                     (erl-get-counter erl-pid-counter))))
     ;; Tag the first element of the pid
     (setf (elt pid 0) erl-tag)
-    pid))
+    (cond ((and bootstrap-null-pid (not (bound-and-true-p erl-null-pid)))
+           pid)
+          ((or (erl-null-pid-p pid) (erl-local-pid-alive-p pid))
+           (make-erl-local-pid))
+          (t pid))))
 
 (defun erl-get-counter (counter)
   "Get and then advance COUNTER."
@@ -89,7 +93,7 @@
   (intern (format "distel_%S@%s" (emacs-pid) (erl-determine-hostname)))
   "Node name for Emacs.")
 
-(defconst erl-null-pid (make-erl-local-pid)
+(defconst erl-null-pid (make-erl-local-pid 'bootstrap)
   "\"Null process\", the /dev/null of erl processes.
 Any messages sent to this process are quietly discarded.  When code
 isn't running in the buffer of a particular process, it's running as
@@ -219,7 +223,7 @@ alternative."
 
 (defun erl-link (pid)
   "Link the current process with PID."
-  (unless (equal pid erl-self)
+  (unless (erl-pid= pid erl-self)
     (erl-add-link erl-self pid)
     (erl-add-link pid erl-self)))
 
@@ -323,7 +327,7 @@ The pattern syntax is the same as `mcase-let'."
 (defun erl-start-receive (bs clauses after)
   ;; Setup a continuation and immediately return to the scheduler
   ;; loop, which will call us back.
-  (when (equal erl-self erl-null-pid)
+  (when (erl-null-pid-p erl-self)
     (error "No process context for erl-receive"))
   (erl-continue #'erl-receive* bs clauses after)
   (erl-reschedule))
@@ -535,7 +539,7 @@ during the next `erl-schedule'."
       (error "No buffer for pid %S" pid)))
 
 (defun erl-null-pid-p (p)
-  (equal p erl-null-pid))
+  (and (erl-pid-p p) (erl-pid= p erl-null-pid)))
 
 (defun erl-local-pid-alive-p (pid)
   "Is PID a live local process?"
