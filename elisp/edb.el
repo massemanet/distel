@@ -451,7 +451,7 @@ When MOD is given, only update those visiting that module."
   (erl-pid->buffer
    (erl-spawn
      (erl-set-name "EDB Attach to process %S on %S"
-                   (erl-pid-id pid)
+                   (erl-pid-to-string pid)
                    (erl-pid-node pid))
      (rename-buffer (edb-attach-buffer-name pid))
      ;; We must inhibit the erlang-new-file-hook, otherwise we trigger
@@ -743,7 +743,7 @@ Available commands:
 
 (defun edb-del-breakpoints (bp-f bbp-f &optional mod)
   "Updates all internal structures in all buffers."
-  (setq edb-breakpoints (erl-remove-if bp-f edb-breakpoints))
+  (setq edb-breakpoints (cl-remove-if bp-f edb-breakpoints))
   (mapc
    (lambda (buf)
      (with-current-buffer buf

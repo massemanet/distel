@@ -15,7 +15,8 @@
 ;; mailbox. If the process returns without setting a new continuation,
 ;; it terminates with 'normal' status.
 
-(eval-when-compile (require 'cl))
+(eval-when-compile (require 'cl-lib))
+(eval-when-compile (require 'cl))       ;deprecated
 (require 'mcase)
 
 (eval-and-compile
@@ -44,20 +45,34 @@
             :named
             (:initial-offset 1)         ; make room for erl-tag (TYPE)
             (:constructor nil)          ; no default constructor
-            (:constructor %make-erl-local-pid (&optional (id (incf erl-pid-counter))
-                                                         (node erl-node-name)
-                                                         (serial 0)
-                                                         (creation 0))))
+            (:constructor %make-erl-local-pid
+                          (id serial &optional (node erl-node-name) (creation 0))))
   node id serial creation)
 
-(defun make-erl-local-pid (&optional id)
+(defun make-erl-local-pid (&optional bootstrap-null-pid)
   "Make a node-local pid."
-  (let ((pid (if id
-                 (%make-erl-local-pid id)
-               (%make-erl-local-pid))))
+  (let ((pid (apply #'%make-erl-local-pid
+                    (erl-get-counter erl-pid-counter))))
     ;; Tag the first element of the pid
     (setf (elt pid 0) erl-tag)
-    pid))
+    (cond ((and bootstrap-null-pid (not (bound-and-true-p erl-null-pid)))
+           pid)
+          ((or (erl-null-pid-p pid) (erl-local-pid-alive-p pid))
+           (make-erl-local-pid))
+          (t pid))))
+
+(defun erl-get-counter (counter)
+  "Get and then advance COUNTER."
+  (cl-macrolet ((modf (place y) `(cl-callf mod ,place ,y))
+                (roundf (place) `(cl-callf round ,place)))
+    (cl-labels ((increment (cells)
+                  (cl-incf (caar cells))
+                  (modf (caar cells) (cdar cells))
+                  ;; Be defensive; `mod' may return float so round it off.
+                  (roundf (caar cells))
+                  (when (and cells (zerop (caar cells)))
+                    (increment (cdr cells)))))
+      (prog1 (mapcar #'car counter) (increment counter)))))
 
 ;; Global book keeping state
 
@@ -70,21 +85,22 @@
           (match-string 0 fqdn)
         (error "erl: Can't determine hostname.")))))
 
+;; (NUM SERIAL)
+(defvar erl-pid-counter '((0 . #x8000) (0 . #x2000))
+  "Counter for PIDs.")
+
 (defvar erl-node-name
   (intern (format "distel_%S@%s" (emacs-pid) (erl-determine-hostname)))
   "Node name for Emacs.")
 
-(defconst erl-null-pid (make-erl-local-pid 0)
+(defconst erl-null-pid (make-erl-local-pid 'bootstrap)
   "\"Null process\", the /dev/null of erl processes.
 Any messages sent to this process are quietly discarded.  When code
 isn't running in the buffer of a particular process, it's running as
 the null process.")
 
-(defvar erl-pid-counter 0
-  "Counter for PIDs.")
-
 (defvar erl-process-buffer-alist nil
-  "Automatically-maintained association list of (PID-ID . BUFFER)
+  "Automatically-maintained association list of (PID . BUFFER)
 mappings for local processes.")
 
 (defvar erl-schedulable-processes nil
@@ -207,7 +223,7 @@ alternative."
 
 (defun erl-link (pid)
   "Link the current process with PID."
-  (unless (equal pid erl-self)
+  (unless (erl-pid= pid erl-self)
     (erl-add-link erl-self pid)
     (erl-add-link pid erl-self)))
 
@@ -311,7 +327,7 @@ The pattern syntax is the same as `mcase-let'."
 (defun erl-start-receive (bs clauses after)
   ;; Setup a continuation and immediately return to the scheduler
   ;; loop, which will call us back.
-  (when (equal erl-self erl-null-pid)
+  (when (erl-null-pid-p erl-self)
     (error "No process context for erl-receive"))
   (erl-continue #'erl-receive* bs clauses after)
   (erl-reschedule))
@@ -503,6 +519,12 @@ during the next `erl-schedule'."
 
 ;; PID utilities
 
+(defun erl-pid= (pid1 pid2)
+  (and (eq (erl-pid-node pid1)     (erl-pid-node pid2))
+       (=  (erl-pid-id pid1)       (erl-pid-id pid2))
+       (=  (erl-pid-serial pid1)   (erl-pid-serial pid2))
+       (=  (erl-pid-creation pid1) (erl-pid-creation pid2))))
+
 (defun erl-pid-buffer-name (pid)
   (unless (equal (erl-pid-node pid) erl-node-name)
     (error "Not a local pid: %S" pid))
@@ -513,16 +535,16 @@ during the next `erl-schedule'."
 
 (defun erl-pid->buffer (pid)
   "Get PID's buffer."
-  (or (cdr (assoc (erl-pid-id pid) erl-process-buffer-alist))
+  (or (cdr (cl-assoc pid erl-process-buffer-alist :test #'erl-pid=))
       (error "No buffer for pid %S" pid)))
 
 (defun erl-null-pid-p (p)
-  (equal p erl-null-pid))
+  (and (erl-pid-p p) (erl-pid= p erl-null-pid)))
 
 (defun erl-local-pid-alive-p (pid)
   "Is PID a live local process?"
   (when (erl-local-pid-p pid)
-    (let ((buffer (cdr (assoc (erl-pid-id pid) erl-process-buffer-alist))))
+    (let ((buffer (cdr (cl-assoc pid erl-process-buffer-alist :test #'erl-pid=))))
       (and buffer
            (buffer-live-p buffer)
            (with-erl-process pid
@@ -553,24 +575,13 @@ during the next `erl-schedule'."
 
 (defun erl-enroll-process ()
   "Setup pid->buffer mapping state for the current process."
-  (push (cons (erl-pid-id erl-self) (current-buffer))
-        erl-process-buffer-alist)
+  (push (cons erl-self (current-buffer)) erl-process-buffer-alist)
   (add-hook 'kill-buffer-hook #'erl-unenroll-process nil t)
   (add-hook 'kill-buffer-hook #'erl-propagate-exit nil t))
 
-(defun erl-remove-if (predicate list)
-  "Return a copy of LIST with all items satisfying PREDICATE removed."
-  (let (out)
-    (while list
-      (unless (funcall predicate (car list))
-        (push (car list) out))
-      (setq list (cdr list)))
-    (nreverse out)))
-
 (defun erl-unenroll-process ()
   (setq erl-process-buffer-alist
-        (erl-remove-if #'(lambda (x) (eq (erl-pid-id erl-self) (car x)))
-                   erl-process-buffer-alist)))
+        (cl-remove erl-self erl-process-buffer-alist :key #'car :test #'erl-pid=)))
 
 (defun erl-propagate-exit ()
   (when (null erl-exit-reason)
