@@ -1,4 +1,4 @@
-;;; edb.el --- Erlang debugger front-end
+;;; distel-debug.el --- Erlang debugger front-end
 
 (eval-when-compile (require 'cl))
 (require 'erl)
@@ -866,4 +866,4 @@ breakpoints are already marked as stale."
   (loop for x in list
         when (funcall pred x) return x))
 
-(provide 'edb)
+(provide 'distel-debug)
