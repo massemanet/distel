@@ -44,7 +44,7 @@
 
 (require 'erl)
 (require 'erl-service)
-(require 'edb)
+(require 'distel-debug)
 
 (require 'distel-ie)
 
